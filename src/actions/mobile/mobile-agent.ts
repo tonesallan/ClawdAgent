@@ -150,6 +150,9 @@ export class MobileAgent {
         'appium:autoGrantPermissions': true,
         'appium:newCommandTimeout': 600,
         'appium:ignoreHiddenApiPolicyError': true,
+        'appium:settings[waitForIdleTimeout]': 1000,
+        'appium:settings[waitForSelectorTimeout]': 1000,
+        'appium:settings[trackScrollEvents]': false,
       });
       this.log('system', 'info', 'Appium session created — app launched');
     } catch (err: unknown) {
@@ -161,7 +164,7 @@ export class MobileAgent {
     }
 
     await this.sleep(3000);
-    this.dismissPopups();
+    await this.dismissPopups();
     this.startWarmup();
   }
 
