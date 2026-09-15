@@ -89,6 +89,7 @@ export class MobileAgent {
   private dailyResetDate = '';
   private appium: AppiumClient;
   private aiClient: AIClient;
+  private screenSize: { width: number; height: number } | null = null;
 
   private constructor(config: MobileAgentConfig) {
     this.config = config;
@@ -132,6 +133,7 @@ export class MobileAgent {
     if (!appDef) throw new Error(`Unknown app: ${this.config.app}`);
 
     this.state = 'running';
+    this.screenSize = null;
     this.startedAt = new Date().toISOString();
     this.consecutiveErrors = 0;
     this.stats = this.freshStats();
@@ -234,7 +236,7 @@ export class MobileAgent {
   private async performWarmup(): Promise<void> {
     if (this.state !== 'running') return;
     try {
-      await this.appium.swipe(540, 1600, 540, 400, 600);
+      await this.swipeRelative(0.5, 2 / 3, 1 / 6, 600);
       await this.sleep(4000 + Math.random() * 8000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -289,7 +291,7 @@ export class MobileAgent {
       if (Math.random() < 0.4) {
         const scrolls = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < scrolls; i++) {
-          await this.appium.swipe(540, 1500, 540, 500, 400 + Math.floor(Math.random() * 400));
+          await this.swipeRelative(0.5, 0.625, 5 / 24, 400 + Math.floor(Math.random() * 400));
           await this.sleep(2000 + Math.random() * 4000);
         }
       }
@@ -351,9 +353,9 @@ export class MobileAgent {
       case 'like': {
         if (this.config.testMode) { this.log('like', 'success', '[TEST] Would like a video'); return; }
         // Double-tap center of screen to like (TikTok gesture)
-        await this.appium.tap(540, 960);
+        await this.tapRelative(0.5, 0.4);
         await this.sleep(150);
-        await this.appium.tap(540, 960);
+        await this.tapRelative(0.5, 0.4);
         await this.sleep(1500);
         this.log('like', 'success', 'Double-tapped to like video');
         break;
@@ -362,7 +364,7 @@ export class MobileAgent {
         const commentText = await this.generateComment('tiktok');
         if (this.config.testMode) { this.log('comment', 'success', `[TEST] Would comment: "${commentText}"`); return; }
         // Tap comment icon (right side, below like heart)
-        await this.appium.tap(680, 680);
+        await this.tapRelative(680 / 1080, 680 / 2400);
         await this.sleep(2000);
         // Find comment input and type
         try {
@@ -404,7 +406,7 @@ export class MobileAgent {
       case 'scroll': {
         const count = 2 + Math.floor(Math.random() * 4);
         for (let i = 0; i < count; i++) {
-          await this.appium.swipe(540, 1500, 540, 400, 400 + Math.floor(Math.random() * 400));
+          await this.swipeRelative(0.5, 0.625, 1 / 6, 400 + Math.floor(Math.random() * 400));
           await this.sleep(3000 + Math.random() * 5000);
         }
         this.log('scroll', 'success', `Scrolled through ${count} videos`);
@@ -625,6 +627,65 @@ Rules:
 
   // ── Helpers ────────────────────────────────────────────────────────
 
+  private async getScreenSize(): Promise<{ width: number; height: number }> {
+    if (this.screenSize) return this.screenSize;
+
+    try {
+      const detected = await this.appium.getWindowSize();
+      this.screenSize = detected;
+
+      this.log(
+        'system',
+        'info',
+        `Detected screen size: ${detected.width}x${detected.height}`
+      );
+
+      return detected;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+
+      const fallback = { width: 1080, height: 2400 };
+      this.screenSize = fallback;
+
+      this.log(
+        'system',
+        'info',
+        `Screen size detection failed, using 1080x2400 fallback: ${msg}`
+      );
+
+      return fallback;
+    }
+  }
+
+  private async tapRelative(xRatio: number, yRatio: number): Promise<void> {
+    const { width, height } = await this.getScreenSize();
+
+    const x = Math.round(width * xRatio);
+    const y = Math.round(height * yRatio);
+
+    await this.appium.tap(x, y);
+  }
+
+  private async swipeRelative(
+    xRatio: number,
+    startYRatio: number,
+    endYRatio: number,
+    duration: number
+  ): Promise<void> {
+    const { width, height } = await this.getScreenSize();
+
+    const x = Math.round(width * xRatio);
+    const startY = Math.round(height * startYRatio);
+    const endY = Math.round(height * endYRatio);
+
+    await this.appium.swipe(
+      x,
+      startY,
+      x,
+      endY,
+      duration
+    );
+  }
   private async dismissPopups(): Promise<void> {
     const popupTexts = [
       'Allow',

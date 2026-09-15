@@ -143,6 +143,25 @@ export class AppiumClient {
     return res.value || '';
   }
 
+  async getWindowSize(): Promise<{ width: number; height: number }> {
+    const res = await this.request('GET', `${this.baseUrl}/window/rect`);
+    const rect = res.value ?? {};
+
+    const width = Number(rect.width);
+    const height = Number(rect.height);
+
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width <= 0 ||
+      height <= 0
+    ) {
+      throw new Error(`Invalid Appium window size: ${width}x${height}`);
+    }
+
+    return { width, height };
+  }
+
   // ─── App Management ─────────────────────────────────────
 
   async activateApp(appId: string): Promise<void> {
