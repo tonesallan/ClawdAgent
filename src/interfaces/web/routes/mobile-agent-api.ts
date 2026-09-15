@@ -5,6 +5,59 @@ import { Router, Request, Response } from 'express';
 import { MobileAgent, type MobileAgentConfig, type MobileApp, type MobileActionType } from '../../../actions/mobile/mobile-agent.js';
 import logger from '../../../utils/logger.js';
 
+async function resolveDeviceId(requestedDeviceId?: unknown): Promise<string> {
+  const requested =
+    typeof requestedDeviceId === 'string'
+      ? requestedDeviceId.trim()
+      : '';
+
+  // Escolha manual sempre tem prioridade.
+  if (requested) return requested;
+
+  const { execSync } = await import('child_process');
+
+  const output = execSync('adb devices', {
+    timeout: 5000,
+  }).toString();
+
+  const devices = output
+    .split(/\r?\n/)
+    .slice(1)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .map(line => {
+      const [id, status] = line.split(/\s+/);
+      return { id, status };
+    })
+    .filter(device => device.id && device.status === 'device');
+
+  if (devices.length === 0) {
+    throw new Error(
+      'No authorized Android device found via ADB. Connect a device with USB debugging enabled.'
+    );
+  }
+
+  // Prioriza conexão USB sobre ADB por rede/mDNS.
+  const usbDevices = devices.filter(device =>
+    !device.id.includes(':') &&
+    !device.id.includes('_adb-tls-connect._tcp')
+  );
+
+  if (usbDevices.length === 1) {
+    return usbDevices[0].id;
+  }
+
+  if (devices.length === 1) {
+    return devices[0].id;
+  }
+
+  throw new Error(
+    `Multiple Android devices found. Specify deviceId explicitly: ${devices
+      .map(device => device.id)
+      .join(', ')}`
+  );
+}
+
 export function setupMobileAgentRoutes(): Router {
   const router = Router();
 
@@ -83,13 +136,15 @@ export function setupMobileAgentRoutes(): Router {
   router.post('/agents', async (req: Request, res: Response) => {
     try {
       const { app, deviceId, appiumUrl, config } = req.body ?? {};
-      if (!app || !deviceId) { res.status(400).json({ error: 'app and deviceId are required' }); return; }
+      if (!app) { res.status(400).json({ error: 'app is required' }); return; }
 
-      const agentId = `${deviceId}:${app}`;
+      const resolvedDeviceId = await resolveDeviceId(deviceId);
+
+      const agentId = `${resolvedDeviceId}:${app}`;
       const agentConfig: MobileAgentConfig = {
         id: agentId,
         app: app as MobileApp,
-        deviceId,
+        deviceId: resolvedDeviceId,
         appiumUrl: appiumUrl || process.env.APPIUM_URL || 'http://localhost:4723',
         actions: (config?.actions as MobileActionType[]) ?? ['like', 'scroll'],
         schedule: config?.schedule ?? {
