@@ -65,7 +65,7 @@ export interface MobileAgentLogEntry {
 // ── App Definitions ──────────────────────────────────────────────────
 
 const APP_DEFS: Record<MobileApp, { pkg: string; activity: string; actions: MobileActionType[] }> = {
-  tiktok:   { pkg: 'com.zhiliaoapp.musically', activity: 'com.ss.android.ugc.aweme.main.MainActivity', actions: ['like', 'comment', 'follow', 'scroll'] },
+  tiktok:   { pkg: 'com.zhiliaoapp.musically', activity: 'com.ss.android.ugc.aweme.splash.SplashActivity', actions: ['like', 'comment', 'follow', 'scroll'] },
   twitter:  { pkg: 'com.twitter.android',      activity: 'com.twitter.android.StartActivity',              actions: ['like', 'reply', 'retweet', 'follow', 'scroll'] },
   facebook: { pkg: 'com.facebook.katana',       activity: 'com.facebook.katana.LoginActivity',              actions: ['like', 'comment', 'share', 'scroll'] },
 };
@@ -626,18 +626,52 @@ Rules:
   // ── Helpers ────────────────────────────────────────────────────────
 
   private async dismissPopups(): Promise<void> {
-    for (const text of ['Allow', 'OK', 'Continue', 'Got it', 'Not now', 'Skip', 'Maybe later']) {
-      try {
-        const el = await this.appium.findElement('uiautomator', `new UiSelector().text("${text}")`);
-        const displayed = await this.appium.isElementDisplayed(el.elementId);
-        if (displayed) {
-          await this.appium.clickElement(el.elementId);
-          await this.sleep(500);
+    const popupTexts = [
+      'Allow',
+      'OK',
+      'Continue',
+      'Got it',
+      'Not now',
+      'Skip',
+      'Maybe later',
+
+      // pt-BR
+      'Permitir',
+      'Continuar',
+      'Entendi',
+      'Agora não',
+      'Pular',
+      'Talvez mais tarde',
+    ];
+
+    try {
+      const source = await this.appium.getPageSource();
+
+      for (const text of popupTexts) {
+        if (!source.includes(text)) continue;
+
+        try {
+          const el = await this.appium.findElement(
+            'uiautomator',
+            `new UiSelector().text("${text}")`
+          );
+
+          const displayed = await this.appium.isElementDisplayed(el.elementId);
+
+          if (displayed) {
+            await this.appium.clickElement(el.elementId);
+            this.log('system', 'info', `Dismissed popup: ${text}`);
+            await this.sleep(500);
+          }
+        } catch {
+          // Element changed/disappeared between source read and click.
         }
-      } catch { /* expected for most texts */ }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.log('system', 'info', `Popup scan skipped: ${msg}`);
     }
   }
-
   private incrementStat(action: MobileActionType): void {
     switch (action) {
       case 'like': this.stats.likes++; break;
