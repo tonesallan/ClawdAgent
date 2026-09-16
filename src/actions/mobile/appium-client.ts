@@ -184,13 +184,25 @@ export class AppiumClient {
     await this.request('POST', `${this.baseUrl}/appium/device/press_keycode`, { keycode });
   }
 
-  async setClipboard(content: string): Promise<void> {
-    const b64 = Buffer.from(content).toString('base64');
-    await this.request('POST', `${this.baseUrl}/appium/device/set_clipboard`, {
-      content: b64, contentType: 'plaintext',
-    });
-  }
+  async setClipboard(text: string): Promise<void> {
+    const content = Buffer
+      .from(text, 'utf8')
+      .toString('base64');
 
+    await this.request(
+      'POST',
+      `${this.baseUrl}/execute/sync`,
+      {
+        script: 'mobile: setClipboard',
+        args: [
+          {
+            content,
+            contentType: 'plaintext',
+          },
+        ],
+      }
+    );
+  }
   async getClipboard(): Promise<string> {
     const res = await this.request('POST', `${this.baseUrl}/appium/device/get_clipboard`, { contentType: 'plaintext' });
     return Buffer.from(res.value || '', 'base64').toString('utf-8');

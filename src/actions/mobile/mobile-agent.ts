@@ -385,48 +385,175 @@ export class MobileAgent {
         break;
       }
       case 'comment': {
+        if (this.config.testMode) {
+          this.log(
+            'comment',
+            'success',
+            '[TEST] Would comment on TikTok video'
+          );
+          return;
+        }
+
         const commentText = await this.generateComment('tiktok');
-        if (this.config.testMode) { this.log('comment', 'success', `[TEST] Would comment: "${commentText}"`); return; }
-        // Tap comment icon (right side, below like heart)
-        await this.tapRelative(680 / 1080, 680 / 2400);
-        await this.sleep(2000);
-        // Find comment input and type
+
         try {
-          const input = await this.appium.findElement('uiautomator', 'new UiSelector().textContains("Add comment")');
-          await this.appium.clickElement(input.elementId);
-          await this.sleep(500);
-          await this.appium.sendKeys(input.elementId, commentText);
+          let commentButton;
+
+          try {
+            commentButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Leia ou adicione comentários")'
+            );
+          } catch {
+            commentButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionContains("comment")'
+            );
+          }
+
+          await this.appium.clickElement(
+            commentButton.elementId
+          );
+
+          await this.sleep(1200);
+
+          let commentInput;
+
+          try {
+            commentInput = await this.appium.findElement(
+              'id',
+              'com.zhiliaoapp.musically:id/ejc'
+            );
+          } catch {
+            commentInput = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().className("android.widget.EditText")'
+            );
+          }
+
+          await this.appium.clickElement(
+            commentInput.elementId
+          );
+
+          // TikTok ignora sendKeys neste campo.
+          // Limpa, usa o clipboard do Appium 3 e cola via Android.
+          await this.appium.clearElement(
+            commentInput.elementId
+          );
+
+          await this.sleep(300);
+
+          await this.appium.setClipboard(commentText);
+
+          // Android KEYCODE_PASTE
+          await this.appium.pressKey(279);
+
           await this.sleep(800);
-          // Tap send/post button
-          const sendBtn = await this.appium.findElement('uiautomator', 'new UiSelector().textContains("Post")');
-          await this.appium.clickElement(sendBtn.elementId);
-          await this.sleep(2000);
-          // Close comment panel
-          await this.appium.pressKey(4); // BACK
-          this.log('comment', 'success', `Commented: "${commentText.slice(0, 60)}..."`);
+
+          const source = await this.appium.getPageSource();
+
+          const inputLine = source
+            .split(/\r?\n/)
+            .find(line =>
+              line.includes('com.zhiliaoapp.musically:id/ejc')
+            );
+
+          if (!inputLine) {
+            throw new Error(
+              'TikTok comment field could not be validated'
+            );
+          }
+
+          const sendLine = source
+            .split(/\r?\n/)
+            .find(line =>
+              line.includes('com.zhiliaoapp.musically:id/d1u')
+            );
+
+          if (
+            !sendLine ||
+            !sendLine.includes('enabled="true"')
+          ) {
+            throw new Error(
+              'TikTok comment send button is disabled'
+            );
+          }
+
+          const sendButton =
+            await this.appium.findElement(
+              'id',
+              'com.zhiliaoapp.musically:id/d1u'
+            );
+
+          await this.appium.clickElement(
+            sendButton.elementId
+          );
+
+          await this.sleep(1500);
+
+          this.log(
+            'comment',
+            'success',
+            `Posted TikTok comment: "${commentText.slice(0, 60)}"`
+          );
         } catch (err: unknown) {
-          await this.appium.pressKey(4);
+          const msg =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
+          this.log(
+            'comment',
+            'error',
+            'TikTok comment failed',
+            msg
+          );
+
           throw err;
         }
+
         break;
       }
       case 'follow': {
-        if (this.config.testMode) { this.log('follow', 'success', '[TEST] Would follow creator'); return; }
-        try {
-          const followBtn = await this.appium.findElement('uiautomator', 'new UiSelector().text("Follow")');
-          const isDisplayed = await this.appium.isElementDisplayed(followBtn.elementId);
-          if (isDisplayed) {
-            await this.appium.clickElement(followBtn.elementId);
-            await this.sleep(1500);
-            this.log('follow', 'success', 'Followed creator');
-          } else {
-            this.log('follow', 'skipped', 'Follow button not visible');
-          }
-        } catch {
-          this.log('follow', 'skipped', 'No follow button found');
+        if (this.config.testMode) {
+          this.log('follow', 'success', '[TEST] Would follow user');
+          return;
         }
+
+        try {
+          let followButton;
+
+          try {
+            followButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Seguir ")'
+            );
+          } catch {
+            followButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Follow ")'
+            );
+          }
+
+          await this.appium.clickElement(followButton.elementId);
+          await this.sleep(1000);
+
+          this.log(
+            'follow',
+            'success',
+            'Clicked TikTok follow button'
+          );
+        } catch {
+          this.log(
+            'follow',
+            'skipped',
+            'User already followed or TikTok follow button not found'
+          );
+        }
+
         break;
       }
+
       case 'scroll': {
         const count = 2 + Math.floor(Math.random() * 4);
         for (let i = 0; i < count; i++) {
