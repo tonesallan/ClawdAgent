@@ -352,12 +352,36 @@ export class MobileAgent {
     switch (action) {
       case 'like': {
         if (this.config.testMode) { this.log('like', 'success', '[TEST] Would like a video'); return; }
-        // Double-tap center of screen to like (TikTok gesture)
-        await this.tapRelative(0.5, 0.4);
-        await this.sleep(150);
-        await this.tapRelative(0.5, 0.4);
-        await this.sleep(1500);
-        this.log('like', 'success', 'Double-tapped to like video');
+        try {
+          let likeButton;
+
+          try {
+            likeButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Curtir vídeo")'
+            );
+          } catch {
+            likeButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Like video")'
+            );
+          }
+
+          await this.appium.clickElement(likeButton.elementId);
+          await this.sleep(1000);
+
+          this.log(
+            'like',
+            'success',
+            'Clicked TikTok like button'
+          );
+        } catch {
+          this.log(
+            'like',
+            'skipped',
+            'Video already liked or TikTok like button not found'
+          );
+        }
         break;
       }
       case 'comment': {
