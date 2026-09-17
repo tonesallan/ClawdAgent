@@ -1435,7 +1435,7 @@ export class MobileAgent {
 
       /*
        * O TextView do username nem sempre e o elemento clicavel.
-       * Tocamos no centro horizontal real da tela, na mesma linha
+       * Tocamos no centro horizontal do username, na mesma linha
        * do resultado, evitando o botao de relacionamento a direita.
        */
       const screen =
@@ -1446,9 +1446,7 @@ export class MobileAgent {
           120,
           Math.min(
             screen.width - 120,
-            Math.round(
-              screen.width / 2,
-            ),
+            x,
           ),
         );
 
