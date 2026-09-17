@@ -454,6 +454,42 @@ export async function transitionTikTokAction(
   const db = getDb();
 
   return db.transaction(async (tx) => {
+    const [current] =
+      await tx
+        .select({
+          type:
+            tiktokActions.type,
+          status:
+            tiktokActions.status,
+        })
+        .from(
+          tiktokActions,
+        )
+        .where(
+          eq(
+            tiktokActions.id,
+            id,
+          ),
+        )
+        .limit(1);
+
+    if (!current) {
+      return null;
+    }
+
+    if (
+      current.type ===
+        TIKTOK_ACTION_TYPES.UNFOLLOW &&
+      input.status !==
+        TIKTOK_ACTION_STATUSES.PENDING &&
+      input.status !==
+        TIKTOK_ACTION_STATUSES.CANCELLED
+    ) {
+      throw new Error(
+        'TikTok UNFOLLOW review may only remain pending or be cancelled manually.',
+      );
+    }
+
     const [row] = await tx
       .update(tiktokActions)
       .set({
