@@ -1,0 +1,118 @@
+name: Apply TikTok exact-result tap fix
+
+on:
+  push:
+    branches:
+      - feature/android-tiktok-local
+
+permissions:
+  contents: write
+
+jobs:
+  apply-fix:
+    if: contains(github.event.head_commit.message, 'chore(tiktok): stage exact-result tap fix')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/android-tiktok-local
+          fetch-depth: 0
+
+      - name: Apply exact username tap patch
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('src/actions/mobile/mobile-agent.ts')
+          source = path.read_text(encoding='utf-8')
+
+          old = '''      /*
+       * O TextView do username nem sempre e o elemento clicavel.
+       * Tocamos no centro horizontal real da tela, na mesma linha
+       * do resultado, evitando o botao de relacionamento a direita.
+       */
+      const screen =
+        await this.getScreenSize();
+
+      const tapX =
+        Math.max(
+          120,
+          Math.min(
+            screen.width - 120,
+            Math.round(
+              screen.width / 2,
+            ),
+          ),
+        );
+
+      await this.appium
+        .tap(tapX, y);
+'''
+
+          new = '''      /*
+       * O TextView do username nao e clicavel na UI real mapeada.
+       * O toque precisa permanecer na linha do resultado exato e,
+       * principalmente, sobre a area horizontal do username encontrado.
+       *
+       * Antes usavamos o centro da tela, ignorando o `x` calculado a
+       * partir dos bounds do candidato. Em layouts com botao de relacao
+       * a direita, isso pode acertar outra area da linha e nao abrir o
+       * perfil. Mantemos margens de seguranca apenas como clamp.
+       */
+      const screen =
+        await this.getScreenSize();
+
+      const tapX =
+        Math.max(
+          120,
+          Math.min(
+            screen.width - 120,
+            x,
+          ),
+        );
+
+      const tapY =
+        Math.max(
+          120,
+          Math.min(
+            screen.height - 120,
+            y,
+          ),
+        );
+
+      await this.appium
+        .tap(tapX, tapY);
+'''
+
+          occurrences = source.count(old)
+          if occurrences != 1:
+              raise SystemExit(
+                  f'expected exactly one navigation tap block, found {occurrences}'
+              )
+
+          path.write_text(source.replace(old, new), encoding='utf-8')
+
+      - name: Validate patch shape
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --check
+          git diff -- src/actions/mobile/mobile-agent.ts
+          grep -F '.tap(tapX, tapY);' src/actions/mobile/mobile-agent.ts
+          if grep -A12 -B12 'const tapX' src/actions/mobile/mobile-agent.ts | grep -F 'screen.width / 2'; then
+            echo 'old screen-center tap still present in navigation block'
+            exit 1
+          fi
+
+      - name: Commit source patch and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm .github/workflows/apply-tiktok-exact-result-tap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/actions/mobile/mobile-agent.ts .github/workflows/apply-tiktok-exact-result-tap.yml
+          git commit -m 'fix(tiktok): tap exact username result coordinates'
+          git push origin HEAD:feature/android-tiktok-local
