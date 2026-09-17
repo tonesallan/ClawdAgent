@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   containsExactTikTokUsername,
@@ -6,6 +8,13 @@ import {
   parseTikTokXmlBounds,
   tikTokProfileSourceMatchesUsername,
 } from '../../src/tiktok/android-profile-navigation.js';
+
+const profileOpenedFixturePath = fileURLToPath(
+  new URL(
+    '../../work/phase6c1-evidence/profile-opened.xml',
+    import.meta.url,
+  ),
+);
 
 describe('TikTok Android profile navigation XML helpers', () => {
   it('ignores the search input and selects the exact username result', () => {
@@ -94,6 +103,27 @@ describe('TikTok Android profile navigation XML helpers', () => {
     ).toBe(true);
     expect(
       tikTokProfileSourceMatchesUsername(profile, 'tiktok2'),
+    ).toBe(false);
+  });
+
+  it('confirms the username from the real Phase 6C.1 opened-profile dump', () => {
+    const profileSource = readFileSync(
+      profileOpenedFixturePath,
+      'utf8',
+    );
+
+    expect(
+      tikTokProfileSourceMatchesUsername(
+        profileSource,
+        'tiktok',
+      ),
+    ).toBe(true);
+
+    expect(
+      tikTokProfileSourceMatchesUsername(
+        profileSource,
+        'tiktok2',
+      ),
     ).toBe(false);
   });
 });
