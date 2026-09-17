@@ -21,6 +21,7 @@ import {
   createTikTokAction,
   createOrReuseOpenTikTokAction,
   rescheduleTikTokAction,
+  transitionTikTokAction,
 } from '../../src/memory/repositories/tiktok-actions.js';
 
 function createSelectChain(
@@ -310,5 +311,190 @@ describe(
         }),
       );
     });
+    it.each([
+      'scheduled',
+      'running',
+      'success',
+      'failed',
+    ] as const)(
+      'prevents UNFOLLOW from transitioning to %s',
+      async status => {
+        const tx = {
+          select:
+            vi.fn(
+              () =>
+                createSelectChain([
+                  {
+                    type:
+                      'UNFOLLOW',
+                    status:
+                      'pending',
+                  },
+                ]),
+            ),
+        };
+
+        const db = {
+          transaction:
+            vi.fn(
+              async (
+                callback:
+                  (tx: any) =>
+                    Promise<unknown>,
+              ) =>
+                callback(tx),
+            ),
+        };
+
+        dbMocks
+          .getDb
+          .mockReturnValue(
+            db,
+          );
+
+        await expect(
+          transitionTikTokAction(
+            'unfollow-review-1',
+            {
+              status,
+            },
+          ),
+        ).rejects.toThrow(
+          'TikTok UNFOLLOW review may only remain pending or be cancelled manually.',
+        );
+
+        expect(
+          tx.select,
+        ).toHaveBeenCalledTimes(1);
+      },
+    );
+
+    it('allows an UNFOLLOW review to be cancelled manually', async () => {
+      const updatedRow = {
+        id:
+          'unfollow-review-1',
+        type:
+          'UNFOLLOW',
+        status:
+          'cancelled',
+        provider:
+          'android',
+      };
+
+      const updateReturning =
+        vi.fn(
+          async () => [
+            updatedRow,
+          ],
+        );
+
+      const updateWhere =
+        vi.fn(() => ({
+          returning:
+            updateReturning,
+        }));
+
+      const updateSet =
+        vi.fn(() => ({
+          where:
+            updateWhere,
+        }));
+
+      const update =
+        vi.fn(() => ({
+          set:
+            updateSet,
+        }));
+
+      const historyValues =
+        vi.fn(
+          async () => undefined,
+        );
+
+      const insert =
+        vi.fn(() => ({
+          values:
+            historyValues,
+        }));
+
+      const tx = {
+        select:
+          vi.fn(
+            () =>
+              createSelectChain([
+                {
+                  type:
+                    'UNFOLLOW',
+                  status:
+                    'pending',
+                },
+              ]),
+          ),
+        update,
+        insert,
+      };
+
+      const db = {
+        transaction:
+          vi.fn(
+            async (
+              callback:
+                (tx: any) =>
+                  Promise<unknown>,
+            ) =>
+              callback(tx),
+          ),
+      };
+
+      dbMocks
+        .getDb
+        .mockReturnValue(
+          db,
+        );
+
+      const result =
+        await transitionTikTokAction(
+          'unfollow-review-1',
+          {
+            status:
+              'cancelled',
+            metadata: {
+              event:
+                'manual_review_cancelled',
+            },
+          },
+        );
+
+      expect(result).toBe(
+        updatedRow,
+      );
+
+      expect(
+        updateSet,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status:
+            'cancelled',
+        }),
+      );
+
+      expect(
+        historyValues,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          actionId:
+            'unfollow-review-1',
+          status:
+            'cancelled',
+          provider:
+            'android',
+          metadata: {
+            event:
+              'manual_review_cancelled',
+          },
+        }),
+      );
+    });
+
   },
 );
