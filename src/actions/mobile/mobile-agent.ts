@@ -8,6 +8,7 @@ import { AIClient } from '../../core/ai-client.js';
 import logger from '../../utils/logger.js';
 import {
   findTikTokProfileSearchCandidate,
+  getTikTokProfileTapPoint,
   tikTokProfileSourceMatchesUsername,
 } from '../../tiktok/android-profile-navigation.js';
 
@@ -1240,42 +1241,25 @@ export class MobileAgent {
       );
     }
 
-    const {
-      x1,
-      y1,
-      x2,
-      y2,
-    } = candidate.bounds;
-
-    const x =
-      Math.round(
-        (x1 + x2) / 2,
-      );
-
-    const y =
-      Math.round(
-        (y1 + y2) / 2,
-      );
-
     /*
      * O TextView do username nem sempre e o elemento clicavel.
-     * Tocamos no centro horizontal do username, na mesma linha
-     * do resultado, evitando o botao de relacionamento a direita.
+     * O ponto de toque vem dos bounds do username exato encontrado,
+     * com apenas um clamp horizontal de seguranca.
      */
     const screen =
       await this.getScreenSize();
 
-    const tapX =
-      Math.max(
-        120,
-        Math.min(
-          screen.width - 120,
-          x,
-        ),
+    const tapPoint =
+      getTikTokProfileTapPoint(
+        candidate.bounds,
+        screen.width,
       );
 
     await this.appium
-      .tap(tapX, y);
+      .tap(
+        tapPoint.x,
+        tapPoint.y,
+      );
 
     await wait(1800);
 
