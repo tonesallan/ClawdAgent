@@ -1,0 +1,6075 @@
+{
+  "generatedAt": "2026-09-16T02:36:08.382Z",
+  "totals": {
+    "followers": 150,
+    "following": 354,
+    "followBack": 18,
+    "mutualFollowers": 132,
+    "mutualFollowing": 132,
+    "notFollowingBack": 222
+  },
+  "followBackCandidates": [
+    {
+      "displayName": "Vitor,Breno e Théo",
+      "username": "theomenezes9402",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": ".",
+      "username": "izabelcristina_43",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Maria/Antonio",
+      "username": "maria.winckler.ro",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "laurafleitas2708",
+      "username": "laurafleitas2708",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Passarinho",
+      "username": "passarinho2977",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "user47499905384",
+      "username": "fernando.investimento0",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "pollyanaalves600",
+      "username": "pollyanaalves600",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Ana Claudia",
+      "username": "ana.claudia4820",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Talita Barbosa",
+      "username": "tatabarbosa3010",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Enrique Amesty",
+      "username": "enriqueamesty2",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Altair Silveira",
+      "username": "altair.silveira8",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "user266974462748",
+      "username": "joaniraberta",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "s",
+      "username": "titio._.tomioka",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "miqueyas_luz",
+      "username": "iala038",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Pris2904",
+      "username": "priscilaolivei5",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "ADRIANA🇧🇷",
+      "username": "glauciaadrianadan",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "𝕲𝖚𝖊𝖗𝖗𝖊𝖎𝖗𝖔💎⚔️",
+      "username": "devil_may.cry01",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Rafael oficial329",
+      "username": "rafaoficial09",
+      "relation": "Seguir de volta",
+      "accountType": "normal"
+    }
+  ],
+  "notFollowingBackCandidates": [
+    {
+      "displayName": "Super Achados Mil",
+      "username": "superachadosmil",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "𝓙𝓪𝓬𝓴",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Dudu_briques",
+      "username": "dudu_briques",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Vender no Mercado Livre",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Zn brique",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "ARRANGE GAMETRACKS",
+      "username": "arrange.gametrack",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "escaleno_",
+      "username": "escaleno_",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Adilsin",
+      "username": "adilsin_etnia",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Luiz | Entusiasta IA",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Leonardo",
+      "username": "leoquick1",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Thais Cristina",
+      "username": "thaiscristina626",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Zn brique",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Barbosa",
+      "username": "juu.abarbosa",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Photo_Tvoritel",
+      "username": "photo_tvoritel",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "ꀘꂵꁝ°𝕰𝖒𝖝°ꀘꂵꁝ",
+      "username": "_luckzy",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "𝐂𝐥𝐚𝐬𝐬𝐢𝐜𝐚𝐥 𝐌𝐮𝐬𝐢𝐜",
+      "username": "classicalmusicart",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "promptkillers",
+      "username": "promptkillers",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Vlog Bíblico",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Psicólogo Sérgio",
+      "username": "psicosergioo",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Julio Rocha",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "user69379657680",
+      "username": "user69379657680",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Testando Tecnologias",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "biscoito.sortudo",
+      "username": "biscoito.sortudo",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Aura Street",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "R.EditsOfc",
+      "username": "r.editsofc",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Pineapple Storm",
+      "username": "pnplpineapple",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "barbara_barbaridade",
+      "username": "barbara_barbaridade",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "jvxrmine",
+      "username": "jvxrmine",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Luka Techlithium",
+      "username": "techlithium",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "ፕḨع-ፕฬΘ乙 (ჟ)",
+      "username": "the_twoz",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "INDOMAVE1S",
+      "username": "indomave1s",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Mais Renda",
+      "username": "maisrenda_",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "TOP CONCURSOS",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "GABI MONTEIRO",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "𝙋𝙡𝙖𝙮𝙈𝙞𝙭💫",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "𝙋𝙡𝙖𝙮𝙈𝙞𝙭💫",
+      "username": "_play.mix_",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Gudang kreatif",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Martendal da elétrika",
+      "username": "eletrika2k25",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Jeferson",
+      "username": "moraes.jef",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "MR7 Sound",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Acampamento Emaús",
+      "username": "acampsemaus",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Leandro Caldas",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Akashi Cruz",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Jadina Medeiros",
+      "username": "jadinamedeiros2",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "crllzxz",
+      "username": "crllzxz",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "leonaraoliveirapsi",
+      "username": "leonaraoliveirapsi",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Filmes Mania",
+      "username": "filmesmaniaa",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Olhar na Profissão",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Olhar na Profissão",
+      "username": "olharnaprofissao",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Elaine Pasdiora",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Jhon Gomex",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Daniel Pedreiro",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "𝚁𝙽 𝙱𝙰𝙶𝚂 𝚂𝚃𝚄𝙳𝙸𝙾🇨🇦",
+      "username": "rn.bags.studio",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "JULÍNN - handmade bags",
+      "username": "julinn.knit",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "𝘼𝙡𝙫𝙞𝙣_𝙋𝙧𝙤𝙟𝙚𝙘𝙩",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Achei postei",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Sergiu Culibaba",
+      "username": "officiallyaccount209",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "looh_mendez🤯",
+      "username": "mykaa00",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "vanessada8a80",
+      "username": "vanessada8a80",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Venom: The Last Dance",
+      "username": "venommovie",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Leandro Neves",
+      "username": "leaandroneves",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Victor Béser",
+      "username": "victorbeser",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Ale Lacava | Vendas",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Eduardo Tevah",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Gesi Santos | Excel",
+      "username": "excelsemstress",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "physiobrain",
+      "username": "physiobrain",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Jandersonsantosoficial",
+      "username": "jandersonsantosoficial",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Bonito, Mato Grosso do Sul",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "上田遥/Haruka 🎀🪽",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "上田遥/Haruka 🎀🪽",
+      "username": "haruka._.piano",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Flavio Belardo",
+      "username": "flavio.belardo",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Infinito Universo",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Sharshock",
+      "username": "sharshock",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Mamonas Assassinas Oficial",
+      "username": "mamonasassassinasoficial",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Gabrielly_modas",
+      "username": "gabrielly_modas",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Code The World",
+      "username": "codetheworld.io",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "cutscenesx",
+      "username": "cutscenesx",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Atacado25",
+      "username": "atacado25",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "✌🏻inícius",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "alinesantos_rh",
+      "username": "alinesantos_rh",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Dudu caminhoneiro 🚛💨💨",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "PILOTOPROFISSIONAL 🚦",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "O Boticário",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Ricardo Mello - EGR",
+      "username": "oricardomello",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Refinamento Masculino",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Refinamento Masculino",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "ArilabTk",
+      "username": "arilabtk",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "lctop_7",
+      "username": "lctop_7",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Mr tdahzinho🧠",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Allan",
+      "username": "allan.ferr",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "curiosidadessfut",
+      "username": "curiosidadessfut",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Arthur Oliveira | Advogado",
+      "username": "arthur.oliveiraadv",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Leandro Velasco",
+      "username": "dr.leandrovelasco",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Lucas Rabelo",
+      "username": "bountybreaker",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "André Mendes",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "MATEMÁGICA | William Mota",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "ferrarirecomenda",
+      "username": "ferrarirecomenda",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "doutorashimano",
+      "username": "doutorashimano",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Alexandre Ferreira OABMS 14646",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "ARACCELLY GIL | ADVOGADA",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Android Gamer",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "wallpaper",
+      "username": "wallpaperw0rld",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Psicóloga Carolyne de Stefani",
+      "username": "psi.carolynedestefani",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Jornada IA",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "lorrayne oliverz",
+      "username": "lorrayneoliverz",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Resina Business",
+      "username": "resinabusiness",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Eu Fiz Tu Faz - Marcia Vieira",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Broglio Cerâmica",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Fatos Inteligentes",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Filippe Sims",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Giovanni Begossi",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Coraubanne",
+      "username": "coraubanne",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "DaBala",
+      "username": "dabala",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "conradiologia.br",
+      "username": "conradiologia.br",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "gabyalvestik",
+      "username": "gabyalvestik",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Aprender Excel",
+      "username": "eusimplifiquei",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Participation Certificate",
+      "username": "participationcertificate",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Tuna Tudo",
+      "username": "tunatudo",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Igor Picoli",
+      "username": "igor_picoli",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Os Barbixas Cortes",
+      "username": "osbarbixascortes",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "laralonghini.psi",
+      "username": "laralonghini.psi",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "wisdom",
+      "username": "wisdomfrs",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Amandafitas",
+      "username": "amandafitas",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Patrícia Fischer",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Barbara Bastos",
+      "username": "eu.barbarabastos",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Lorena TDAHTA",
+      "username": "lorenatdahta",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Lucas Inutilismo",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "dasha_shpringer",
+      "username": "dasha_shpringer",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Rei do ChatGPT",
+      "username": "reidochatgpt",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "user49081686970",
+      "username": "anatomiaplena",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "NECROPSIA & TANATOPRAXIA🗨",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "autofilosofia",
+      "username": "thealeatorioo_",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "jeanalessandrob",
+      "username": "jeanalessandrob",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "SEM FILTRO CLIPS 💥🔥",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "insights gpt",
+      "username": "insightsgpt",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Manual da Lábia 🌹",
+      "username": "manualdalabia.oficial",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "carta aberta",
+      "username": "carta_abertaamor",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "meme",
+      "username": "memekkj0",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Mapa nerd",
+      "username": "mapanerd",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "pedrinhuol",
+      "username": "pedrinhuol",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Psicólogo Mateus",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Bilhetes de uma página",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Domingos",
+      "username": "domingostv_ofc",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "frases❤️",
+      "username": "frases_pravc1",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "momentsofgaming",
+      "username": "momentsofgaming",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "amandapraeles",
+      "username": "amandapraeles",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Marlon Mattedi",
+      "username": "mattedimarlon",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Daniel Vicentini",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Bruno Lima Nunes",
+      "username": "brunolnunes",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "_Musicas antigas_",
+      "username": "_musicasantigas_",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Christopher Michael",
+      "username": "christwodafur",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Tom Hackimer",
+      "username": "hackattackimer",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Julio Cesar",
+      "username": "tik_horror",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Lucas Scheuer",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Nykolas Teles",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "jomo",
+      "username": "jvitormr_",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Yasmim Coradelo",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "🐰🇲 🇪 🇺  🇦 🇲 🇦 🇳 🇹 🇪",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Cos Bel Leonor Leono",
+      "username": "cosbelleonorleono",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Julia K Barni",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Letícia Mandelli",
+      "username": "let.mandelli",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "uma_pessoa_bory_biuld",
+      "username": "uma_pessoa_bory_biuld",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "ED $OARES",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Rosangela Oliveira",
+      "username": "rosangelaoliveira464",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Pedro Arcafra",
+      "username": "pedroarcafra",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Dom Calais",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Petrick",
+      "username": "petrick",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Ana",
+      "username": "ana",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Tony",
+      "username": "tonyareda",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Clara",
+      "username": "clara_1s1",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Macrofying",
+      "username": "macrofying",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Juliana Ramos | Menina Arroto",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Daniel Penin",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "EVOLUA",
+      "username": "evolualabs",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Camaradaboris",
+      "username": "camaradaboris",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Zezão",
+      "username": "canalzezao",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "LicenseSkinz",
+      "username": "licenseskinz",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "fps.camis",
+      "username": "fps.camis",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Giovanni Teles Bianchi",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "VR Games 🐒",
+      "username": "cheeseman.vr",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "maiketv_",
+      "username": "maiketv_",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Edywds",
+      "username": "edywds",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Jack Black",
+      "username": "jackblack",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Funcionario_Clt",
+      "username": "funcionario_clt",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Solrak_298",
+      "username": "karlos_araujo298",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Adriele Moraes",
+      "username": "adrielemoraes7",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Liah Gonçalves",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Leandro Branquinho",
+      "username": "leandro.branquinho",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Não sou o Daniel Marya",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Fatos Desconhecidos",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Maninhonovaes",
+      "username": "maninhonovaes",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "mih💞",
+      "username": "a_menina_das_rifas.ofc",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Maytree 메이트리",
+      "username": "maytree_music",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "coffee",
+      "username": "coffee_mates",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Centro de Formação Vale",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Centro de Formação Vale",
+      "username": "_brunomc",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Daniel Marya",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "O Zé Ninguém",
+      "username": "o_ze_ninguem",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "+34 ᎪᏆᏚᏚᎪ Ꮪ_Ꭰ 🇪🇸🐺",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Sickickmusic",
+      "username": "sickickmusic",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "OficialEddy",
+      "username": "oficialeddy",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Carol Capel",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Marco Luque",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Daniel Marya2 🥞",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "liswonder",
+      "username": "liswonder",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Bryam Medeiros",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "nobody sausage",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Daiana Parisato",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Yanni Sabongi",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Pedro Daher",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Azul do Fusca",
+      "username": "azuldofusca",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "BarbixasFC",
+      "username": "barbixasfanclub",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Fernanda Martinez",
+      "username": "apenas.fernanda",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Idrc.mattyy",
+      "username": "idrc.mattyy",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "obonossauro",
+      "username": "obonossauro",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Severo | Ninja Zx4RR",
+      "username": "svro.zx4rr",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "LIV-e",
+      "username": ".liv_e",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Gabriel",
+      "username": "gabriel_crassh",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Geisy",
+      "username": "geisydalto",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Tamires",
+      "username": "silvaaztamires",
+      "relation": "Seguindo",
+      "accountType": "normal"
+    },
+    {
+      "displayName": "Fernando Navarro",
+      "username": null,
+      "relation": "Seguindo",
+      "accountType": "shop"
+    },
+    {
+      "displayName": "Boyce Avenue",
+      "username": "boyceavenuetiktok",
+      "relation": "Seguindo",
+      "accountType": "shop"
+    }
+  ],
+  "mutual": {
+    "followers": [
+      {
+        "displayName": "Jean Pedro Siqueira",
+        "username": "xscarface07",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Samuca guincho",
+        "username": "samuca.guincho",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "pollyana",
+        "username": "user9528668465376",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Otto Ast",
+        "username": "otto.ast",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila lima",
+        "username": "kamila.lima351",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Paulo Henrique Da Silva",
+        "username": "paulo.henrique.da405",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Brayan",
+        "username": "user4519415362913",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maya Liz",
+        "username": "maya.liz40",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "P@ULINHA",
+        "username": "paullynha4.6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sergio Kazuo Misokami",
+        "username": "arthumutum",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "flor",
+        "username": "user79768054148007",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gustavo Jaques281",
+        "username": "gustavojaques281",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Aquela do MS",
+        "username": "aquela_do_ms",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielaortiz56",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jean Silva",
+        "username": "jean.silva4052",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Le Dalto",
+        "username": "ledalto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Matheus F. Moura",
+        "username": "matheusfmoura",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Guilherme filho leonel Filho l",
+        "username": "guilherme.filho.l",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jô Berta",
+        "username": "j.berta",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natalia",
+        "username": "nataliaworkt",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cristiano Gomes De Souza",
+        "username": "cristianogomesde1",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Josivaldo almirao",
+        "username": "josivaldo.almirao",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "jucirleisouzagome",
+        "username": "jucirleisouzagomes",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Bokinha025_GQD30am",
+        "username": "bokinha025_gqd30am",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Thiago Magalhães da Luz",
+        "username": "thiago.magalhes.d4",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Escorp",
+        "username": "williammartnez75",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Genilson Floriano",
+        "username": "genilson.floriano",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user4104059625192",
+        "username": "user4104059625192",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Auxiliadora",
+        "username": "maria.auxiliadora96450",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mauricio Bianchi",
+        "username": "mauriciobianchi",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Nelson grapa",
+        "username": "nelsongrapa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ariadna Silva",
+        "username": "ariadna0985",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cleide moda plus size",
+        "username": "cleide_moda_plusize",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Edersón Vargas Da Si",
+        "username": "user7524863219276",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Lü Santos",
+        "username": "neiaendymanu",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Domingos Dos Santos Neto",
+        "username": "domingosdossantosneto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Pedra Verde comunica",
+        "username": "pvc_comunica",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tierra.y.Mar",
+        "username": "tierra_y_mar_crafts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Laura Medina",
+        "username": "lauramedina831",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "anapauladossantos1528",
+        "username": "anapauladossantos1528",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cidinhasantos944",
+        "username": "cidinhasantos944",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alessandra Gomes",
+        "username": "alessandragomes447",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user8091045122168",
+        "username": "0416jo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "marilzarodrigue42",
+        "username": "marilzarodrigue42",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "thiagopereira6637",
+        "username": "thiagopereira6637",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Hugo Mello Construções",
+        "username": "hugomellogu",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória",
+        "username": "elanavitoria0017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Floraci Silveira641",
+        "username": "floracisilveira64",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória Magalh",
+        "username": "elanamagalhaes017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana paula",
+        "username": "anapaula8137o",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Letícia Morimoto",
+        "username": "leticiamorimoto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "valdecir.",
+        "username": "valdecirlopessouza",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "wm",
+        "username": "gunswiz0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Robson",
+        "username": "robsonferreirag36",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "compartilhando conhecimento.",
+        "username": "daniel44520",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alisson S. Nicoletti",
+        "username": "alissonsnicoletti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "maiconsadoski",
+        "username": "maiconsadoski",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sergiofelix149",
+        "username": "sergiofelix149",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "edirdossantos700",
+        "username": "edirdossantos700",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Arthur Jose Giba",
+        "username": "arthurjosep",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "dixx_ney",
+        "username": "dixx_ney067068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Diego Laier",
+        "username": "dlaier",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nahpsilvaHotmailcom",
+        "username": "nahpsilvahotmailcom19880",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "charlesabernathy22",
+        "username": "charles_abernathy",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Josi Clarindo",
+        "username": "josiclarindo2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nobrapela",
+        "username": "nobrapela",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "karolinyeinecke",
+        "username": "karolinyeinecke",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Natália Negrão556",
+        "username": "dynjir33a2ll",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elzabiscoitofino",
+        "username": "elzasilvanascim2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cidinha Oliveira8732",
+        "username": "cidinhaoliveira8751",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fernanda Rodrigues",
+        "username": "fernandarodrigues068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "deonilzaafonso",
+        "username": "deonilzaafonso",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "airtonraimundo3",
+        "username": "airtonraimundo3",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maiara Steidel",
+        "username": "mai.steidel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Dalto",
+        "username": "lucianadalto0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila Lima",
+        "username": "kamilalima87",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cristianoooju",
+        "username": "cristianoooju",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Praciel",
+        "username": "lucianapraciel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daiane Palma",
+        "username": "daianepalma4",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elisangelafreires6",
+        "username": "elisangelafreires6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "viniciusbrito847",
+        "username": "viniciusbrito847",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "celiaklein0",
+        "username": "celiaklein0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fabio Roger",
+        "username": "fabioroger47",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "leidianeborbacurti",
+        "username": "leidianeborbacurti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natanygoncalves123",
+        "username": "natanygoncalves123",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user208472569268",
+        "username": "julianagayosogmail.comt5",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Deisy Dos Anjos",
+        "username": "deisydosanjos",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "josicavalcanti271",
+        "username": "josicavalcanti271",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "zeckaespinosa",
+        "username": "zeckaespinosa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "liducenadeoliveirapinto",
+        "username": "liducenadeoliveirapinto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Carolina Araujo",
+        "username": "carolinaaraujo074",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvana",
+        "username": "silvanaalves395",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvio",
+        "username": "slvhsntts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "kassilaalyne1",
+        "username": "kassilaalyne1",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cris indica ✨Moda Feminina",
+        "username": "jandiraindica",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "atospereira89",
+        "username": "atospereira89",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tchesco Vieira",
+        "username": "tchescovieira",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "DANIELE",
+        "username": "danieletrindade1990",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Danilo 🇩🇪",
+        "username": "danlo20191",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "BDM DIGITAL venha conhecer",
+        "username": "sergio.peruci",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana Paula",
+        "username": "anapaulasalina",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "top_song_76",
+        "username": "top_song_76",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sebastian Ovalle",
+        "username": "sebastianovalle343",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "LUANGAMEZONE🔥",
+        "username": "luan.nascimento.ofc",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "gunswiz",
+        "username": "gunswiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "riikkee2",
+        "username": "riikkee2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Neo Oversoul",
+        "username": "jpd_nascimento",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Flavio Luiz",
+        "username": "user7439088948733",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielasilveraortiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Day Rossatti",
+        "username": "dayrossatti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jeferson F. Carvalho",
+        "username": "jhefy.haruno",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elaine Cristina",
+        "username": "elainecristina839",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sioliveira010",
+        "username": "sioliveira010",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eleandra Porto",
+        "username": "eleandraporto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tainara Ramos",
+        "username": "tainararamos68",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Eduarda Silvei",
+        "username": "dudinhaeduarda",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana karoline Marchi",
+        "username": "anakarolinemarchi6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eltu",
+        "username": "eltinho000",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Althyere Silva",
+        "username": "althyere",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cezar P.m.",
+        "username": "cezarpaniaguamart",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Naty Ogawa",
+        "username": "natyogawa97",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gláucia Amaral",
+        "username": "glauamaral.91",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luan",
+        "username": "oluaninacio",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Leticia Teles",
+        "username": "leticiateles29",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Monique Evellyn",
+        "username": "moniqueevellyn09",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rovinson Rosim Saldi",
+        "username": "rovinsonrsm",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mateus Concato",
+        "username": "mateusleonco",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Suelen Marks",
+        "username": "suelenmarks40422",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Grazzy de Carlo",
+        "username": "miladyfreak",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Danielly Oliiveira",
+        "username": "daniellyosilvaa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "DolcidiaeGeo",
+        "username": "dolcidiaegeo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rutik Lone",
+        "username": "rutiklone8",
+        "relation": "Amigos",
+        "accountType": "normal"
+      }
+    ],
+    "following": [
+      {
+        "displayName": "Jean Pedro Siqueira",
+        "username": "xscarface07",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "pollyana",
+        "username": "user9528668465376",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Samuca guincho",
+        "username": "samuca.guincho",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila lima",
+        "username": "kamila.lima351",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Brayan",
+        "username": "user4519415362913",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Paulo Henrique Da Silva",
+        "username": "paulo.henrique.da405",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maya Liz",
+        "username": "maya.liz40",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Laura Medina",
+        "username": "lauramedina831",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "P@ULINHA",
+        "username": "paullynha4.6",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "sergio Kazuo Misokami",
+        "username": "arthumutum",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "flor",
+        "username": "user79768054148007",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Otto Ast",
+        "username": "otto.ast",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gustavo Jaques281",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Gustavo Jaques281",
+        "username": "gustavojaques281",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Aquela do MS",
+        "username": "aquela_do_ms",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Diego Laier",
+        "username": "dlaier",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "deonilzaafonso",
+        "username": "deonilzaafonso",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "thiagopereira6637",
+        "username": "thiagopereira6637",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Natália Negrão556",
+        "username": "dynjir33a2ll",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória",
+        "username": "elanavitoria0017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Floraci Silveira641",
+        "username": "floracisilveira64",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "marilzarodrigue42",
+        "username": "marilzarodrigue42",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user8091045122168",
+        "username": "0416jo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alessandra Gomes",
+        "username": "alessandragomes447",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cidinhasantos944",
+        "username": "cidinhasantos944",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "anapauladossantos1528",
+        "username": "anapauladossantos1528",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Pedra Verde comunica",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Lü Santos",
+        "username": "neiaendymanu",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Edersón Vargas Da Si",
+        "username": "user7524863219276",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Nelson grapa",
+        "username": "nelsongrapa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mauricio Bianchi",
+        "username": "mauriciobianchi",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Auxiliadora",
+        "username": "maria.auxiliadora96450",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user4104059625192",
+        "username": "user4104059625192",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Escorp",
+        "username": "williammartnez75",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "jucirleisouzagome",
+        "username": "jucirleisouzagomes",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Thiago Magalhães da Luz",
+        "username": "thiago.magalhes.d4",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Bokinha025_GQD30am",
+        "username": "bokinha025_gqd30am",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Josivaldo almirao",
+        "username": "josivaldo.almirao",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cristiano Gomes De Souza",
+        "username": "cristianogomesde1",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jô Berta",
+        "username": "j.berta",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Guilherme filho leonel Filho l",
+        "username": "guilherme.filho.l",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Matheus F. Moura",
+        "username": "matheusfmoura",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Le Dalto",
+        "username": "ledalto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jean Silva",
+        "username": "jean.silva4052",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielaortiz56",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ariadna Silva",
+        "username": "ariadna0985",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Cleide moda plus size",
+        "username": "cleide_moda_plusize",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Domingos Dos Santos Neto",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Hugo Mello Construções",
+        "username": "hugomellogu",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tierra.y.Mar",
+        "username": "tierra_y_mar_crafts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória Magalh",
+        "username": "elanamagalhaes017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana paula",
+        "username": "anapaula8137o",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Letícia Morimoto",
+        "username": "leticiamorimoto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Arthur Jose Giba",
+        "username": "arthurjosep",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "dixx_ney",
+        "username": "dixx_ney067068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sergiofelix149",
+        "username": "sergiofelix149",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "edirdossantos700",
+        "username": "edirdossantos700",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "maiconsadoski",
+        "username": "maiconsadoski",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "compartilhando conhecimento.",
+        "username": "daniel44520",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Robson",
+        "username": "robsonferreirag36",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "valdecir.",
+        "username": "valdecirlopessouza",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "wm",
+        "username": "gunswiz0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alisson S. Nicoletti",
+        "username": "alissonsnicoletti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nahpsilvaHotmailcom",
+        "username": "nahpsilvahotmailcom19880",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "charlesabernathy22",
+        "username": "charles_abernathy",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nobrapela",
+        "username": "nobrapela",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Josi Clarindo",
+        "username": "josiclarindo2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elzabiscoitofino",
+        "username": "elzasilvanascim2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "karolinyeinecke",
+        "username": "karolinyeinecke",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cidinha Oliveira8732",
+        "username": "cidinhaoliveira8751",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "airtonraimundo3",
+        "username": "airtonraimundo3",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Dalto",
+        "username": "lucianadalto0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maiara Steidel",
+        "username": "mai.steidel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cristianoooju",
+        "username": "cristianoooju",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila Lima",
+        "username": "kamilalima87",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Praciel",
+        "username": "lucianapraciel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fernanda Rodrigues",
+        "username": "fernandarodrigues068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elisangelafreires6",
+        "username": "elisangelafreires6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "viniciusbrito847",
+        "username": "viniciusbrito847",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "zeckaespinosa",
+        "username": "zeckaespinosa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "josicavalcanti271",
+        "username": "josicavalcanti271",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Deisy Dos Anjos",
+        "username": "deisydosanjos",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daiane Palma",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user208472569268",
+        "username": "julianagayosogmail.comt5",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natanygoncalves123",
+        "username": "natanygoncalves123",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "leidianeborbacurti",
+        "username": "leidianeborbacurti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fabio Roger",
+        "username": "fabioroger47",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "celiaklein0",
+        "username": "celiaklein0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "liducenadeoliveirapinto",
+        "username": "liducenadeoliveirapinto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Carolina Araujo",
+        "username": "carolinaaraujo074",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvana",
+        "username": "silvana",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Silvio",
+        "username": "slvhsntts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "kassilaalyne1",
+        "username": "kassilaalyne1",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Cris indica ✨Moda Feminina",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "atospereira89",
+        "username": "atospereira89",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tchesco Vieira",
+        "username": "tchescovieira",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "DANIELE",
+        "username": "danieletrindade1990",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Danilo 🇩🇪",
+        "username": "danlo20191",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "BDM DIGITAL venha conhecer",
+        "username": "sergio.peruci",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana Paula",
+        "username": "anapaulasalina",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sebastian Ovalle",
+        "username": "sebastianovalle343",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "LUANGAMEZONE🔥",
+        "username": "luan.nascimento.ofc",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "top_song_76",
+        "username": "top_song_76",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "gunswiz",
+        "username": "gunswiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "riikkee2",
+        "username": "riikkee2",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Neo Oversoul",
+        "username": "jpd_nascimento",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielasilveraortiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natalia",
+        "username": "nataliaworkt",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Flavio Luiz",
+        "username": "user7439088948733",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tainara Ramos",
+        "username": "tainararamos68",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eleandra Porto",
+        "username": "eleandraporto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sioliveira010",
+        "username": "sioliveira010",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elaine Cristina",
+        "username": "elainecristina839",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jeferson F. Carvalho",
+        "username": "jhefy.haruno",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Day Rossatti",
+        "username": "dayrossatti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Eduarda Silvei",
+        "username": "dudinhaeduarda",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana karoline Marchi",
+        "username": "anakarolinemarchi6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eltu",
+        "username": "eltinho000",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Althyere Silva",
+        "username": "althyere",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cezar P.m.",
+        "username": "cezarpaniaguamart",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Naty Ogawa",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Gláucia Amaral",
+        "username": "glauamaral.91",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Monique Evellyn",
+        "username": "moniqueevellyn09",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rutik Lone",
+        "username": "rutiklone8",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luan",
+        "username": "luan",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Danielly Oliiveira",
+        "username": "daniellyosilvaa",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "DolcidiaeGeo",
+        "username": "dolcidiaegeo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Grazzy de Carlo",
+        "username": "miladyfreak",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Leticia Teles",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Mateus Concato",
+        "username": "mateusleonco",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Rovinson Rosim Saldi",
+        "username": "rovinsonrsm",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Suelen Marks",
+        "username": "suelenmarks40422",
+        "relation": "Amigos",
+        "accountType": "normal"
+      }
+    ]
+  },
+  "raw": {
+    "followers": [
+      {
+        "displayName": "Vitor,Breno e Théo",
+        "username": "theomenezes9402",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": ".",
+        "username": "izabelcristina_43",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria/Antonio",
+        "username": "maria.winckler.ro",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "laurafleitas2708",
+        "username": "laurafleitas2708",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jean Pedro Siqueira",
+        "username": "xscarface07",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Passarinho",
+        "username": "passarinho2977",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user47499905384",
+        "username": "fernando.investimento0",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Samuca guincho",
+        "username": "samuca.guincho",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "pollyana",
+        "username": "user9528668465376",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Otto Ast",
+        "username": "otto.ast",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "pollyanaalves600",
+        "username": "pollyanaalves600",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila lima",
+        "username": "kamila.lima351",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Paulo Henrique Da Silva",
+        "username": "paulo.henrique.da405",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Brayan",
+        "username": "user4519415362913",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maya Liz",
+        "username": "maya.liz40",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana Claudia",
+        "username": "ana.claudia4820",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "P@ULINHA",
+        "username": "paullynha4.6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sergio Kazuo Misokami",
+        "username": "arthumutum",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "flor",
+        "username": "user79768054148007",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gustavo Jaques281",
+        "username": "gustavojaques281",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Aquela do MS",
+        "username": "aquela_do_ms",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielaortiz56",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jean Silva",
+        "username": "jean.silva4052",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Le Dalto",
+        "username": "ledalto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Matheus F. Moura",
+        "username": "matheusfmoura",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Guilherme filho leonel Filho l",
+        "username": "guilherme.filho.l",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jô Berta",
+        "username": "j.berta",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natalia",
+        "username": "nataliaworkt",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cristiano Gomes De Souza",
+        "username": "cristianogomesde1",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Josivaldo almirao",
+        "username": "josivaldo.almirao",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "jucirleisouzagome",
+        "username": "jucirleisouzagomes",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Bokinha025_GQD30am",
+        "username": "bokinha025_gqd30am",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Thiago Magalhães da Luz",
+        "username": "thiago.magalhes.d4",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Talita Barbosa",
+        "username": "tatabarbosa3010",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Escorp",
+        "username": "williammartnez75",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Genilson Floriano",
+        "username": "genilson.floriano",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user4104059625192",
+        "username": "user4104059625192",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Auxiliadora",
+        "username": "maria.auxiliadora96450",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mauricio Bianchi",
+        "username": "mauriciobianchi",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Nelson grapa",
+        "username": "nelsongrapa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ariadna Silva",
+        "username": "ariadna0985",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cleide moda plus size",
+        "username": "cleide_moda_plusize",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Edersón Vargas Da Si",
+        "username": "user7524863219276",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Lü Santos",
+        "username": "neiaendymanu",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Enrique Amesty",
+        "username": "enriqueamesty2",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Domingos Dos Santos Neto",
+        "username": "domingosdossantosneto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Pedra Verde comunica",
+        "username": "pvc_comunica",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tierra.y.Mar",
+        "username": "tierra_y_mar_crafts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Laura Medina",
+        "username": "lauramedina831",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "anapauladossantos1528",
+        "username": "anapauladossantos1528",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cidinhasantos944",
+        "username": "cidinhasantos944",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alessandra Gomes",
+        "username": "alessandragomes447",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user8091045122168",
+        "username": "0416jo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "marilzarodrigue42",
+        "username": "marilzarodrigue42",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Altair Silveira",
+        "username": "altair.silveira8",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "thiagopereira6637",
+        "username": "thiagopereira6637",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Hugo Mello Construções",
+        "username": "hugomellogu",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória",
+        "username": "elanavitoria0017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Floraci Silveira641",
+        "username": "floracisilveira64",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória Magalh",
+        "username": "elanamagalhaes017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user266974462748",
+        "username": "joaniraberta",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana paula",
+        "username": "anapaula8137o",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Letícia Morimoto",
+        "username": "leticiamorimoto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "valdecir.",
+        "username": "valdecirlopessouza",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "wm",
+        "username": "gunswiz0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Robson",
+        "username": "robsonferreirag36",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "compartilhando conhecimento.",
+        "username": "daniel44520",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alisson S. Nicoletti",
+        "username": "alissonsnicoletti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "maiconsadoski",
+        "username": "maiconsadoski",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sergiofelix149",
+        "username": "sergiofelix149",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "edirdossantos700",
+        "username": "edirdossantos700",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Arthur Jose Giba",
+        "username": "arthurjosep",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "dixx_ney",
+        "username": "dixx_ney067068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Diego Laier",
+        "username": "dlaier",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nahpsilvaHotmailcom",
+        "username": "nahpsilvahotmailcom19880",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "charlesabernathy22",
+        "username": "charles_abernathy",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Josi Clarindo",
+        "username": "josiclarindo2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nobrapela",
+        "username": "nobrapela",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "karolinyeinecke",
+        "username": "karolinyeinecke",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Natália Negrão556",
+        "username": "dynjir33a2ll",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elzabiscoitofino",
+        "username": "elzasilvanascim2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cidinha Oliveira8732",
+        "username": "cidinhaoliveira8751",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "s",
+        "username": "titio._.tomioka",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fernanda Rodrigues",
+        "username": "fernandarodrigues068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "deonilzaafonso",
+        "username": "deonilzaafonso",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "airtonraimundo3",
+        "username": "airtonraimundo3",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maiara Steidel",
+        "username": "mai.steidel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Dalto",
+        "username": "lucianadalto0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila Lima",
+        "username": "kamilalima87",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cristianoooju",
+        "username": "cristianoooju",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Praciel",
+        "username": "lucianapraciel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daiane Palma",
+        "username": "daianepalma4",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elisangelafreires6",
+        "username": "elisangelafreires6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "viniciusbrito847",
+        "username": "viniciusbrito847",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "celiaklein0",
+        "username": "celiaklein0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fabio Roger",
+        "username": "fabioroger47",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "leidianeborbacurti",
+        "username": "leidianeborbacurti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natanygoncalves123",
+        "username": "natanygoncalves123",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user208472569268",
+        "username": "julianagayosogmail.comt5",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Deisy Dos Anjos",
+        "username": "deisydosanjos",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "josicavalcanti271",
+        "username": "josicavalcanti271",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "zeckaespinosa",
+        "username": "zeckaespinosa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "miqueyas_luz",
+        "username": "iala038",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "liducenadeoliveirapinto",
+        "username": "liducenadeoliveirapinto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Carolina Araujo",
+        "username": "carolinaaraujo074",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvana",
+        "username": "silvanaalves395",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Pris2904",
+        "username": "priscilaolivei5",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvio",
+        "username": "slvhsntts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "ADRIANA🇧🇷",
+        "username": "glauciaadrianadan",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "kassilaalyne1",
+        "username": "kassilaalyne1",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cris indica ✨Moda Feminina",
+        "username": "jandiraindica",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "atospereira89",
+        "username": "atospereira89",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tchesco Vieira",
+        "username": "tchescovieira",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "DANIELE",
+        "username": "danieletrindade1990",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Danilo 🇩🇪",
+        "username": "danlo20191",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "𝕲𝖚𝖊𝖗𝖗𝖊𝖎𝖗𝖔💎⚔️",
+        "username": "devil_may.cry01",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "BDM DIGITAL venha conhecer",
+        "username": "sergio.peruci",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana Paula",
+        "username": "anapaulasalina",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "top_song_76",
+        "username": "top_song_76",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sebastian Ovalle",
+        "username": "sebastianovalle343",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "LUANGAMEZONE🔥",
+        "username": "luan.nascimento.ofc",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "gunswiz",
+        "username": "gunswiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "riikkee2",
+        "username": "riikkee2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Neo Oversoul",
+        "username": "jpd_nascimento",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Flavio Luiz",
+        "username": "user7439088948733",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielasilveraortiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Day Rossatti",
+        "username": "dayrossatti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jeferson F. Carvalho",
+        "username": "jhefy.haruno",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elaine Cristina",
+        "username": "elainecristina839",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sioliveira010",
+        "username": "sioliveira010",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eleandra Porto",
+        "username": "eleandraporto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tainara Ramos",
+        "username": "tainararamos68",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Eduarda Silvei",
+        "username": "dudinhaeduarda",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana karoline Marchi",
+        "username": "anakarolinemarchi6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eltu",
+        "username": "eltinho000",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Althyere Silva",
+        "username": "althyere",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cezar P.m.",
+        "username": "cezarpaniaguamart",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Naty Ogawa",
+        "username": "natyogawa97",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gláucia Amaral",
+        "username": "glauamaral.91",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luan",
+        "username": "oluaninacio",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rafael oficial329",
+        "username": "rafaoficial09",
+        "relation": "Seguir de volta",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Leticia Teles",
+        "username": "leticiateles29",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Monique Evellyn",
+        "username": "moniqueevellyn09",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rovinson Rosim Saldi",
+        "username": "rovinsonrsm",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mateus Concato",
+        "username": "mateusleonco",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Suelen Marks",
+        "username": "suelenmarks40422",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Grazzy de Carlo",
+        "username": "miladyfreak",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Danielly Oliiveira",
+        "username": "daniellyosilvaa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "DolcidiaeGeo",
+        "username": "dolcidiaegeo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rutik Lone",
+        "username": "rutiklone8",
+        "relation": "Amigos",
+        "accountType": "normal"
+      }
+    ],
+    "following": [
+      {
+        "displayName": "Super Achados Mil",
+        "username": "superachadosmil",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "𝓙𝓪𝓬𝓴",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Dudu_briques",
+        "username": "dudu_briques",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Vender no Mercado Livre",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Zn brique",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "ARRANGE GAMETRACKS",
+        "username": "arrange.gametrack",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "escaleno_",
+        "username": "escaleno_",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Adilsin",
+        "username": "adilsin_etnia",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Luiz | Entusiasta IA",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Leonardo",
+        "username": "leoquick1",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Thais Cristina",
+        "username": "thaiscristina626",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Zn brique",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jean Pedro Siqueira",
+        "username": "xscarface07",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Barbosa",
+        "username": "juu.abarbosa",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Photo_Tvoritel",
+        "username": "photo_tvoritel",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "ꀘꂵꁝ°𝕰𝖒𝖝°ꀘꂵꁝ",
+        "username": "_luckzy",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "𝐂𝐥𝐚𝐬𝐬𝐢𝐜𝐚𝐥 𝐌𝐮𝐬𝐢𝐜",
+        "username": "classicalmusicart",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "promptkillers",
+        "username": "promptkillers",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Vlog Bíblico",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Psicólogo Sérgio",
+        "username": "psicosergioo",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Julio Rocha",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user69379657680",
+        "username": "user69379657680",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Testando Tecnologias",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "biscoito.sortudo",
+        "username": "biscoito.sortudo",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Aura Street",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "R.EditsOfc",
+        "username": "r.editsofc",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Pineapple Storm",
+        "username": "pnplpineapple",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "barbara_barbaridade",
+        "username": "barbara_barbaridade",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "jvxrmine",
+        "username": "jvxrmine",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Luka Techlithium",
+        "username": "techlithium",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "ፕḨع-ፕฬΘ乙 (ჟ)",
+        "username": "the_twoz",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "INDOMAVE1S",
+        "username": "indomave1s",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mais Renda",
+        "username": "maisrenda_",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "TOP CONCURSOS",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "pollyana",
+        "username": "user9528668465376",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Samuca guincho",
+        "username": "samuca.guincho",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "GABI MONTEIRO",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "𝙋𝙡𝙖𝙮𝙈𝙞𝙭💫",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "𝙋𝙡𝙖𝙮𝙈𝙞𝙭💫",
+        "username": "_play.mix_",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gudang kreatif",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Martendal da elétrika",
+        "username": "eletrika2k25",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Jeferson",
+        "username": "moraes.jef",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "MR7 Sound",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Acampamento Emaús",
+        "username": "acampsemaus",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Leandro Caldas",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Akashi Cruz",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Jadina Medeiros",
+        "username": "jadinamedeiros2",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "crllzxz",
+        "username": "crllzxz",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "leonaraoliveirapsi",
+        "username": "leonaraoliveirapsi",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Filmes Mania",
+        "username": "filmesmaniaa",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Kamila lima",
+        "username": "kamila.lima351",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Olhar na Profissão",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Olhar na Profissão",
+        "username": "olharnaprofissao",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Brayan",
+        "username": "user4519415362913",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Paulo Henrique Da Silva",
+        "username": "paulo.henrique.da405",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maya Liz",
+        "username": "maya.liz40",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elaine Pasdiora",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Jhon Gomex",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Laura Medina",
+        "username": "lauramedina831",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Daniel Pedreiro",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "P@ULINHA",
+        "username": "paullynha4.6",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "𝚁𝙽 𝙱𝙰𝙶𝚂 𝚂𝚃𝚄𝙳𝙸𝙾🇨🇦",
+        "username": "rn.bags.studio",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "JULÍNN - handmade bags",
+        "username": "julinn.knit",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "𝘼𝙡𝙫𝙞𝙣_𝙋𝙧𝙤𝙟𝙚𝙘𝙩",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "sergio Kazuo Misokami",
+        "username": "arthumutum",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "flor",
+        "username": "user79768054148007",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Otto Ast",
+        "username": "otto.ast",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Achei postei",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Gustavo Jaques281",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Gustavo Jaques281",
+        "username": "gustavojaques281",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Aquela do MS",
+        "username": "aquela_do_ms",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sergiu Culibaba",
+        "username": "officiallyaccount209",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Diego Laier",
+        "username": "dlaier",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "looh_mendez🤯",
+        "username": "mykaa00",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "deonilzaafonso",
+        "username": "deonilzaafonso",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "thiagopereira6637",
+        "username": "thiagopereira6637",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Natália Negrão556",
+        "username": "dynjir33a2ll",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elana Vitória",
+        "username": "elanavitoria0017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Floraci Silveira641",
+        "username": "floracisilveira64",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "marilzarodrigue42",
+        "username": "marilzarodrigue42",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user8091045122168",
+        "username": "0416jo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alessandra Gomes",
+        "username": "alessandragomes447",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cidinhasantos944",
+        "username": "cidinhasantos944",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "anapauladossantos1528",
+        "username": "anapauladossantos1528",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Pedra Verde comunica",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Lü Santos",
+        "username": "neiaendymanu",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Edersón Vargas Da Si",
+        "username": "user7524863219276",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Nelson grapa",
+        "username": "nelsongrapa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mauricio Bianchi",
+        "username": "mauriciobianchi",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Auxiliadora",
+        "username": "maria.auxiliadora96450",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user4104059625192",
+        "username": "user4104059625192",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Escorp",
+        "username": "williammartnez75",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "jucirleisouzagome",
+        "username": "jucirleisouzagomes",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Thiago Magalhães da Luz",
+        "username": "thiago.magalhes.d4",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Bokinha025_GQD30am",
+        "username": "bokinha025_gqd30am",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Josivaldo almirao",
+        "username": "josivaldo.almirao",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cristiano Gomes De Souza",
+        "username": "cristianogomesde1",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jô Berta",
+        "username": "j.berta",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Guilherme filho leonel Filho l",
+        "username": "guilherme.filho.l",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Matheus F. Moura",
+        "username": "matheusfmoura",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Le Dalto",
+        "username": "ledalto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jean Silva",
+        "username": "jean.silva4052",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielaortiz56",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "vanessada8a80",
+        "username": "vanessada8a80",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Venom: The Last Dance",
+        "username": "venommovie",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Leandro Neves",
+        "username": "leaandroneves",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Victor Béser",
+        "username": "victorbeser",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ale Lacava | Vendas",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eduardo Tevah",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gesi Santos | Excel",
+        "username": "excelsemstress",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "physiobrain",
+        "username": "physiobrain",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jandersonsantosoficial",
+        "username": "jandersonsantosoficial",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Bonito, Mato Grosso do Sul",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "上田遥/Haruka 🎀🪽",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "上田遥/Haruka 🎀🪽",
+        "username": "haruka._.piano",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Flavio Belardo",
+        "username": "flavio.belardo",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Infinito Universo",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sharshock",
+        "username": "sharshock",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mamonas Assassinas Oficial",
+        "username": "mamonasassassinasoficial",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabrielly_modas",
+        "username": "gabrielly_modas",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Code The World",
+        "username": "codetheworld.io",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "cutscenesx",
+        "username": "cutscenesx",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Atacado25",
+        "username": "atacado25",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "✌🏻inícius",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "alinesantos_rh",
+        "username": "alinesantos_rh",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Dudu caminhoneiro 🚛💨💨",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "PILOTOPROFISSIONAL 🚦",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "O Boticário",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Ariadna Silva",
+        "username": "ariadna0985",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Ricardo Mello - EGR",
+        "username": "oricardomello",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Refinamento Masculino",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Refinamento Masculino",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "ArilabTk",
+        "username": "arilabtk",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "lctop_7",
+        "username": "lctop_7",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Mr tdahzinho🧠",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Allan",
+        "username": "allan.ferr",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "curiosidadessfut",
+        "username": "curiosidadessfut",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Arthur Oliveira | Advogado",
+        "username": "arthur.oliveiraadv",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Leandro Velasco",
+        "username": "dr.leandrovelasco",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Lucas Rabelo",
+        "username": "bountybreaker",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "André Mendes",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "MATEMÁGICA | William Mota",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "ferrarirecomenda",
+        "username": "ferrarirecomenda",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Cleide moda plus size",
+        "username": "cleide_moda_plusize",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "doutorashimano",
+        "username": "doutorashimano",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Alexandre Ferreira OABMS 14646",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "ARACCELLY GIL | ADVOGADA",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Domingos Dos Santos Neto",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Android Gamer",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "wallpaper",
+        "username": "wallpaperw0rld",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Psicóloga Carolyne de Stefani",
+        "username": "psi.carolynedestefani",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jornada IA",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "lorrayne oliverz",
+        "username": "lorrayneoliverz",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Hugo Mello Construções",
+        "username": "hugomellogu",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tierra.y.Mar",
+        "username": "tierra_y_mar_crafts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Resina Business",
+        "username": "resinabusiness",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eu Fiz Tu Faz - Marcia Vieira",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Broglio Cerâmica",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Fatos Inteligentes",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Filippe Sims",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Giovanni Begossi",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Coraubanne",
+        "username": "coraubanne",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "DaBala",
+        "username": "dabala",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "conradiologia.br",
+        "username": "conradiologia.br",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "gabyalvestik",
+        "username": "gabyalvestik",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Aprender Excel",
+        "username": "eusimplifiquei",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Participation Certificate",
+        "username": "participationcertificate",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tuna Tudo",
+        "username": "tunatudo",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Igor Picoli",
+        "username": "igor_picoli",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Os Barbixas Cortes",
+        "username": "osbarbixascortes",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "laralonghini.psi",
+        "username": "laralonghini.psi",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "wisdom",
+        "username": "wisdomfrs",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Amandafitas",
+        "username": "amandafitas",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Patrícia Fischer",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Barbara Bastos",
+        "username": "eu.barbarabastos",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Lorena TDAHTA",
+        "username": "lorenatdahta",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Lucas Inutilismo",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "dasha_shpringer",
+        "username": "dasha_shpringer",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Rei do ChatGPT",
+        "username": "reidochatgpt",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user49081686970",
+        "username": "anatomiaplena",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "NECROPSIA & TANATOPRAXIA🗨",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "autofilosofia",
+        "username": "thealeatorioo_",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "jeanalessandrob",
+        "username": "jeanalessandrob",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "SEM FILTRO CLIPS 💥🔥",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "insights gpt",
+        "username": "insightsgpt",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Elana Vitória Magalh",
+        "username": "elanamagalhaes017",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Manual da Lábia 🌹",
+        "username": "manualdalabia.oficial",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "carta aberta",
+        "username": "carta_abertaamor",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "meme",
+        "username": "memekkj0",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana paula",
+        "username": "anapaula8137o",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Mapa nerd",
+        "username": "mapanerd",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "pedrinhuol",
+        "username": "pedrinhuol",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Psicólogo Mateus",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Bilhetes de uma página",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Domingos",
+        "username": "domingostv_ofc",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "frases❤️",
+        "username": "frases_pravc1",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "momentsofgaming",
+        "username": "momentsofgaming",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "amandapraeles",
+        "username": "amandapraeles",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Letícia Morimoto",
+        "username": "leticiamorimoto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Marlon Mattedi",
+        "username": "mattedimarlon",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Arthur Jose Giba",
+        "username": "arthurjosep",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "dixx_ney",
+        "username": "dixx_ney067068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sergiofelix149",
+        "username": "sergiofelix149",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "edirdossantos700",
+        "username": "edirdossantos700",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "maiconsadoski",
+        "username": "maiconsadoski",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "compartilhando conhecimento.",
+        "username": "daniel44520",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Robson",
+        "username": "robsonferreirag36",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "valdecir.",
+        "username": "valdecirlopessouza",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "wm",
+        "username": "gunswiz0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Alisson S. Nicoletti",
+        "username": "alissonsnicoletti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nahpsilvaHotmailcom",
+        "username": "nahpsilvahotmailcom19880",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "charlesabernathy22",
+        "username": "charles_abernathy",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daniel Vicentini",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "nobrapela",
+        "username": "nobrapela",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Josi Clarindo",
+        "username": "josiclarindo2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Bruno Lima Nunes",
+        "username": "brunolnunes",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elzabiscoitofino",
+        "username": "elzasilvanascim2",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "karolinyeinecke",
+        "username": "karolinyeinecke",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cidinha Oliveira8732",
+        "username": "cidinhaoliveira8751",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "_Musicas antigas_",
+        "username": "_musicasantigas_",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Christopher Michael",
+        "username": "christwodafur",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tom Hackimer",
+        "username": "hackattackimer",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Julio Cesar",
+        "username": "tik_horror",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Lucas Scheuer",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Nykolas Teles",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "jomo",
+        "username": "jvitormr_",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Yasmim Coradelo",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "🐰🇲 🇪 🇺  🇦 🇲 🇦 🇳 🇹 🇪",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Cos Bel Leonor Leono",
+        "username": "cosbelleonorleono",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "airtonraimundo3",
+        "username": "airtonraimundo3",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Dalto",
+        "username": "lucianadalto0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maiara Steidel",
+        "username": "mai.steidel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Julia K Barni",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "cristianoooju",
+        "username": "cristianoooju",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Kamila Lima",
+        "username": "kamilalima87",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Letícia Mandelli",
+        "username": "let.mandelli",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luciana Praciel",
+        "username": "lucianapraciel",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fernanda Rodrigues",
+        "username": "fernandarodrigues068",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "elisangelafreires6",
+        "username": "elisangelafreires6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "uma_pessoa_bory_biuld",
+        "username": "uma_pessoa_bory_biuld",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "ED $OARES",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "viniciusbrito847",
+        "username": "viniciusbrito847",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "zeckaespinosa",
+        "username": "zeckaespinosa",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "josicavalcanti271",
+        "username": "josicavalcanti271",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Deisy Dos Anjos",
+        "username": "deisydosanjos",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daiane Palma",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "user208472569268",
+        "username": "julianagayosogmail.comt5",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natanygoncalves123",
+        "username": "natanygoncalves123",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "leidianeborbacurti",
+        "username": "leidianeborbacurti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fabio Roger",
+        "username": "fabioroger47",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rosangela Oliveira",
+        "username": "rosangelaoliveira464",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "celiaklein0",
+        "username": "celiaklein0",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "liducenadeoliveirapinto",
+        "username": "liducenadeoliveirapinto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Carolina Araujo",
+        "username": "carolinaaraujo074",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvana",
+        "username": "silvana",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Pedro Arcafra",
+        "username": "pedroarcafra",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Dom Calais",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Petrick",
+        "username": "petrick",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Ana",
+        "username": "ana",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Tony",
+        "username": "tonyareda",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Silvio",
+        "username": "slvhsntts",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Clara",
+        "username": "clara_1s1",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Macrofying",
+        "username": "macrofying",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Juliana Ramos | Menina Arroto",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "kassilaalyne1",
+        "username": "kassilaalyne1",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Cris indica ✨Moda Feminina",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Daniel Penin",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "atospereira89",
+        "username": "atospereira89",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "EVOLUA",
+        "username": "evolualabs",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Camaradaboris",
+        "username": "camaradaboris",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Zezão",
+        "username": "canalzezao",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Tchesco Vieira",
+        "username": "tchescovieira",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "LicenseSkinz",
+        "username": "licenseskinz",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "DANIELE",
+        "username": "danieletrindade1990",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "fps.camis",
+        "username": "fps.camis",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Giovanni Teles Bianchi",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "VR Games 🐒",
+        "username": "cheeseman.vr",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "maiketv_",
+        "username": "maiketv_",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Edywds",
+        "username": "edywds",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Jack Black",
+        "username": "jackblack",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Danilo 🇩🇪",
+        "username": "danlo20191",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "BDM DIGITAL venha conhecer",
+        "username": "sergio.peruci",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Funcionario_Clt",
+        "username": "funcionario_clt",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana Paula",
+        "username": "anapaulasalina",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sebastian Ovalle",
+        "username": "sebastianovalle343",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Solrak_298",
+        "username": "karlos_araujo298",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "LUANGAMEZONE🔥",
+        "username": "luan.nascimento.ofc",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "top_song_76",
+        "username": "top_song_76",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "gunswiz",
+        "username": "gunswiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Adriele Moraes",
+        "username": "adrielemoraes7",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Liah Gonçalves",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "riikkee2",
+        "username": "riikkee2",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Leandro Branquinho",
+        "username": "leandro.branquinho",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Neo Oversoul",
+        "username": "jpd_nascimento",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Não sou o Daniel Marya",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Fatos Desconhecidos",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Maninhonovaes",
+        "username": "maninhonovaes",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Gabriela Ortiz",
+        "username": "gabrielasilveraortiz",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "mih💞",
+        "username": "a_menina_das_rifas.ofc",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "natalia",
+        "username": "nataliaworkt",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maytree 메이트리",
+        "username": "maytree_music",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "coffee",
+        "username": "coffee_mates",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Centro de Formação Vale",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Centro de Formação Vale",
+        "username": "_brunomc",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daniel Marya",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "O Zé Ninguém",
+        "username": "o_ze_ninguem",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "+34 ᎪᏆᏚᏚᎪ Ꮪ_Ꭰ 🇪🇸🐺",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Flavio Luiz",
+        "username": "user7439088948733",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Sickickmusic",
+        "username": "sickickmusic",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "OficialEddy",
+        "username": "oficialeddy",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Carol Capel",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Marco Luque",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daniel Marya2 🥞",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "liswonder",
+        "username": "liswonder",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Bryam Medeiros",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "nobody sausage",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Daiana Parisato",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Yanni Sabongi",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Pedro Daher",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Azul do Fusca",
+        "username": "azuldofusca",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tainara Ramos",
+        "username": "tainararamos68",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eleandra Porto",
+        "username": "eleandraporto",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "sioliveira010",
+        "username": "sioliveira010",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Elaine Cristina",
+        "username": "elainecristina839",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Jeferson F. Carvalho",
+        "username": "jhefy.haruno",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Day Rossatti",
+        "username": "dayrossatti",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Maria Eduarda Silvei",
+        "username": "dudinhaeduarda",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Ana karoline Marchi",
+        "username": "anakarolinemarchi6",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Eltu",
+        "username": "eltinho000",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "BarbixasFC",
+        "username": "barbixasfanclub",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fernanda Martinez",
+        "username": "apenas.fernanda",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Althyere Silva",
+        "username": "althyere",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Cezar P.m.",
+        "username": "cezarpaniaguamart",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Naty Ogawa",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Gláucia Amaral",
+        "username": "glauamaral.91",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Idrc.mattyy",
+        "username": "idrc.mattyy",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "obonossauro",
+        "username": "obonossauro",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Severo | Ninja Zx4RR",
+        "username": "svro.zx4rr",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "LIV-e",
+        "username": ".liv_e",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Monique Evellyn",
+        "username": "moniqueevellyn09",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Gabriel",
+        "username": "gabriel_crassh",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Rutik Lone",
+        "username": "rutiklone8",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Luan",
+        "username": "luan",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Danielly Oliiveira",
+        "username": "daniellyosilvaa",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "DolcidiaeGeo",
+        "username": "dolcidiaegeo",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Geisy",
+        "username": "geisydalto",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Grazzy de Carlo",
+        "username": "miladyfreak",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Leticia Teles",
+        "username": null,
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Mateus Concato",
+        "username": "mateusleonco",
+        "relation": "Amigos",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Rovinson Rosim Saldi",
+        "username": "rovinsonrsm",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Suelen Marks",
+        "username": "suelenmarks40422",
+        "relation": "Amigos",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Tamires",
+        "username": "silvaaztamires",
+        "relation": "Seguindo",
+        "accountType": "normal"
+      },
+      {
+        "displayName": "Fernando Navarro",
+        "username": null,
+        "relation": "Seguindo",
+        "accountType": "shop"
+      },
+      {
+        "displayName": "Boyce Avenue",
+        "username": "boyceavenuetiktok",
+        "relation": "Seguindo",
+        "accountType": "shop"
+      }
+    ]
+  }
+}

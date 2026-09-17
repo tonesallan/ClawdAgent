@@ -15,6 +15,13 @@
       "when": 1771708437809,
       "tag": "0001_kind_warpath",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789531116077,
+      "tag": "0002_tiktok_automation_persistence",
+      "breakpoints": true
     }
   ]
 }

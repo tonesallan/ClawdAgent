@@ -1,0 +1,693 @@
+
+==================================================
+ FASE 10 - APPROVAL INTEGRATION
+==================================================
+Branch: feature/android-tiktok-local
+HEAD: d5248ff
+
+==================================================
+ FILE: src\core\approval-gate.ts
+==================================================
+import { randomUUID } from 'crypto';
+import logger from '../utils/logger.js';
+
+/**
+ * Human-in-the-loop Approval Gate.
+ * High-risk actions are queued here, awaiting human approval via
+ * the web dashboard or Telegram before execution proceeds.
+ */
+
+export type ApprovalStatus = 'pending' | 'approved' | 'denied' | 'expired';
+
+export interface PendingApproval {
+  id: string;
+  agentId: string;
+  action: string;
+  description: string;
+  riskCategory: string;
+  riskScore: number;
+  estimatedCost: number;
+  createdAt: number;
+  expiresAt: number;
+  status: ApprovalStatus;
+  resolvedBy?: string;
+  resolvedAt?: number;
+}
+
+type ApprovalCallback = (approved: boolean) => void;
+
+export class ApprovalGate {
+  private pending = new Map<string, PendingApproval>();
+  private callbacks = new Map<string, ApprovalCallback>();
+  private history: PendingApproval[] = [];
+  private notifyFn?: (approval: PendingApproval) => void;
+
+  /** Register a notification callback (e.g., send Telegram alert) */
+  onApprovalNeeded(fn: (approval: PendingApproval) => void): void {
+    this.notifyFn = fn;
+  }
+
+  /**
+   * Request human approval for a high-risk action.
+   * Returns a promise that resolves with true (approved) or false (denied/expired).
+   * Timeout: 5 minutes by default.
+   */
+  async requestApproval(opts: {
+    agentId: string;
+    action: string;
+    description: string;
+    riskCategory: string;
+    riskScore: number;
+    estimatedCost?: number;
+    timeoutMs?: number;
+  }): Promise<boolean> {
+    const timeoutMs = opts.timeoutMs ?? 300_000; // 5 minutes
+    const approval: PendingApproval = {
+      id: randomUUID(),
+      agentId: opts.agentId,
+      action: opts.action,
+      description: opts.description,
+      riskCategory: opts.riskCategory,
+      riskScore: opts.riskScore,
+      estimatedCost: opts.estimatedCost ?? 0,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + timeoutMs,
+      status: 'pending',
+    };
+
+    this.pending.set(approval.id, approval);
+    logger.info('Approval requested', { id: approval.id, agent: opts.agentId, action: opts.action.slice(0, 100) });
+
+    // Notify (e.g., Telegram admin)
+    this.notifyFn?.(approval);
+
+    return new Promise<boolean>((resolve) => {
+      this.callbacks.set(approval.id, resolve);
+
+      // Auto-expire after timeout.
+      // Default: deny on timeout (safe). Set APPROVAL_AUTO_APPROVE_ON_TIMEOUT=true to auto-approve low-risk.
+      setTimeout(() => {
+        if (approval.status === 'pending') {
+          const allowAutoApprove = process.env.APPROVAL_AUTO_APPROVE_ON_TIMEOUT === 'true';
+          const autoApprove = allowAutoApprove && approval.riskScore < 0.5;
+          approval.status = autoApprove ? 'approved' : 'expired';
+          this.finalize(approval.id, autoApprove, autoApprove ? 'system:auto_approve_timeout' : 'system:timeout');
+          logger.info('Approval timeout', { id: approval.id, autoApproved: autoApprove, risk: approval.riskScore });
+        }
+      }, timeoutMs);
+    });
+  }
+
+  /** Approve a pending request */
+  approve(id: string, resolvedBy = 'admin'): boolean {
+    const approval = this.pending.get(id);
+    if (!approval || approval.status !== 'pending') return false;
+    approval.status = 'approved';
+    this.finalize(id, true, resolvedBy);
+    logger.info('Approval granted', { id, by: resolvedBy });
+    return true;
+  }
+
+  /** Deny a pending request */
+  deny(id: string, resolvedBy = 'admin'): boolean {
+    const approval = this.pending.get(id);
+    if (!approval || approval.status !== 'pending') return false;
+    approval.status = 'denied';
+    this.finalize(id, false, resolvedBy);
+    logger.info('Approval denied', { id, by: resolvedBy });
+    return true;
+  }
+
+  /** Get all pending approvals */
+  getPending(): PendingApproval[] {
+    this.expireStale();
+    return Array.from(this.pending.values()).filter(a => a.status === 'pending');
+  }
+
+  /** Get approval history (last 100) */
+  getHistory(): PendingApproval[] {
+    return this.history.slice(-100);
+  }
+
+  /** Get counts for dashboard */
+  getStats(): { pending: number; approvedToday: number; deniedToday: number } {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const ts = todayStart.getTime();
+
+    return {
+      pending: this.getPending().length,
+      approvedToday: this.history.filter(a => a.status === 'approved' && (a.resolvedAt ?? 0) >= ts).length,
+      deniedToday: this.history.filter(a => a.status === 'denied' && (a.resolvedAt ?? 0) >= ts).length,
+    };
+  }
+
+  private finalize(id: string, approved: boolean, resolvedBy: string): void {
+    const approval = this.pending.get(id);
+    if (approval) {
+      approval.resolvedBy = resolvedBy;
+      approval.resolvedAt = Date.now();
+      this.history.push(approval);
+      if (this.history.length > 200) this.history.shift();
+    }
+    this.pending.delete(id);
+    const cb = this.callbacks.get(id);
+    if (cb) {
+      cb(approved);
+      this.callbacks.delete(id);
+    }
+  }
+
+  private expireStale(): void {
+    const now = Date.now();
+    for (const [id, a] of this.pending) {
+      if (a.status === 'pending' && now > a.expiresAt) {
+        a.status = 'expired';
+        this.finalize(id, false, 'system:timeout');
+      }
+    }
+  }
+}
+
+/** Singleton instance */
+let gate: ApprovalGate | null = null;
+
+export function getApprovalGate(): ApprovalGate {
+  if (!gate) gate = new ApprovalGate();
+  return gate;
+}
+
+==================================================
+ src\interfaces\web\routes\dashboard.ts :: export function setupDashboardRoutes
+==================================================
+MATCH LINE 21
+import { Router } from 'express';
+import os from 'os';
+import { sql } from 'drizzle-orm';
+import { getDashboardData, isBridgeReady } from '../../../core/intelligence-bridge.js';
+import { getAllAgents } from '../../../agents/registry.js';
+import { checkOllamaModels, getAgentModelMapping, OLLAMA_MODELS } from '../../../core/ollama-model-registry.js';
+import { getDb } from '../../../memory/database.js';
+import { usageLogs, messages, tasks } from '../../../memory/schema.js';
+import { getApprovalGate } from '../../../core/approval-gate.js';
+import type { Skill } from '../../../core/skills-engine.js';
+import type { ModelOption } from '../../../core/model-router.js';
+
+// In-memory activity log (capped at 50 entries)
+const activityLog: Array<{ time: string; type: string; message: string; agent?: string; platform?: string }> = [];
+
+export function pushActivity(type: string, message: string, meta?: { agent?: string; platform?: string }) {
+  activityLog.unshift({ time: new Date().toISOString(), type, message, ...meta });
+  if (activityLog.length > 50) activityLog.length = 50;
+}
+
+export function setupDashboardRoutes(deps: {
+  getUptime: () => number;
+  getCronTasks: () => any[];
+  getUsageSummary: () => any;
+  getWorkflowCount: () => number;
+  getMcpInfo: () => { servers: number; tools: number };
+  getSkills?: () => Skill[];
+  getModels?: () => ModelOption[];
+  getProviders?: () => string[];
+  getMcpServers?: () => Array<{ id: string; tools?: string[] }>;
+  getSSHServers?: () => Array<{ id: string; name?: string; host: string; status?: string }>;
+}): Router {
+  const router = Router();
+
+  router.get('/status', (_req, res) => {
+    const mem = process.memoryUsage();
+    const cpus = os.cpus();
+    const cpuUsage = cpus.length > 0
+      ? Math.round(cpus.reduce((acc, cpu) => {
+          const total = Object.values(cpu.times).reduce((a, b) => a + b, 0);
+          return acc + (1 - cpu.times.idle / total) * 100;
+        }, 0) / cpus.length)
+      : 0;
+    const totalMem = Math.round(os.totalmem() / 1024 / 1024);
+    const freeMem = Math.round(os.freemem() / 1024 / 1024);
+
+    res.json({
+      status: 'online',
+      uptime: deps.getUptime(),
+      memory: {
+        heapUsed: Math.round(mem.heapUsed / 1024 / 1024),
+        heapTotal: Math.round(mem.heapTotal / 1024 / 1024),
+        rss: Math.round(mem.rss / 1024 / 1024),
+      },
+      system: {
+        cpuPercent: cpuUsage,
+        memUsedMB: totalMem - freeMem,
+        memTotalMB: totalMem,
+        memPercent: Math.round(((totalMem - freeMem) / totalMem) * 100),
+        platform: os.platform(),
+        hostname: os.hostname(),
+      },
+      mcp: deps.getMcpInfo(),
+      workflows: deps.getWorkflowCount(),
+    });
+  });
+
+  router.get('/costs', (_req, res) => {
+    res.json(deps.getUsageSummary());
+  });
+
+  router.get('/cron', (_req, res) => {
+    res.json(deps.getCronTasks());
+  });
+
+  // GET /api/dashboard/activity — recent activity feed
+  router.get('/activity', (_req, res) => {
+    res.json(activityLog.slice(0, 20));
+  });
+
+  // GET /api/dashboard/models — Ollama model status + agent mappings
+
+
+==================================================
+ src\interfaces\web\routes\dashboard.ts :: router.get('/approvals'
+==================================================
+MATCH LINE 441
+
+      // Build a 7×24 grid (default 0)
+      const grid: number[][] = Array.from({ length: 7 }, () => Array(24).fill(0));
+      for (const r of rows) {
+        grid[Number(r.dow)][Number(r.hour)] = Number(r.count);
+      }
+
+      // If usage_logs is empty, fall back to messages table
+      const total = rows.reduce((s, r) => s + Number(r.count), 0);
+      if (total === 0) {
+        const msgRows: Array<{ dow: number; hour: number; count: number }> = await db
+          .select({
+            dow: sql<number>`EXTRACT(DOW FROM ${messages.createdAt})`.as('dow'),
+            hour: sql<number>`EXTRACT(HOUR FROM ${messages.createdAt})`.as('hour'),
+            count: sql<number>`COUNT(*)`.as('count'),
+          })
+          .from(messages)
+          .where(sql`${messages.createdAt} >= NOW() - INTERVAL '4 weeks'`)
+          .groupBy(
+            sql`EXTRACT(DOW FROM ${messages.createdAt})`,
+            sql`EXTRACT(HOUR FROM ${messages.createdAt})`,
+          );
+        for (const r of msgRows) {
+          grid[Number(r.dow)][Number(r.hour)] = Number(r.count);
+        }
+      }
+
+      res.json({ grid, period: '4 weeks' });
+    } catch (err: any) {
+      // Return empty grid on error (e.g. DB not ready)
+      res.json({ grid: Array.from({ length: 7 }, () => Array(24).fill(0)), period: '4 weeks', error: err.message });
+    }
+  });
+
+  // ── Approval Gate endpoints ────────────────────────────────────────
+  router.get('/approvals', (_req, res) => {
+    const gate = getApprovalGate();
+    res.json({ pending: gate.getPending(), stats: gate.getStats() });
+  });
+
+  router.get('/approvals/history', (_req, res) => {
+    const gate = getApprovalGate();
+    res.json(gate.getHistory());
+  });
+
+  router.post('/approvals/:id/approve', (req, res) => {
+    const gate = getApprovalGate();
+    const ok = gate.approve(req.params.id, 'web-admin');
+    res.json({ ok, id: req.params.id, action: 'approved' });
+  });
+
+  router.post('/approvals/:id/deny', (req, res) => {
+    const gate = getApprovalGate();
+    const ok = gate.deny(req.params.id, 'web-admin');
+    res.json({ ok, id: req.params.id, action: 'denied' });
+  });
+
+  router.get('/containers', async (_req, res) => {
+    try {
+      const { exec } = await import('child_process');
+      const { promisify } = await import('util');
+      const execAsync = promisify(exec);
+      const { stdout } = await execAsync('docker ps --format "{{.ID}}\\t{{.Names}}\\t{{.Status}}\\t{{.Image}}\\t{{.Ports}}"');
+      const containers = stdout.trim().split('\n').filter(Boolean).map(line => {
+        const [id, name, status, image, ports] = line.split('\t');
+        return { id, name, status, image, ports };
+      });
+      res.json(containers);
+    } catch { res.json([]); }
+  });
+
+  // GET /api/dashboard/promoter — auto-promoter stats
+  router.get('/promoter', async (_req, res) => {
+    try {
+      const { getPromotionStats } = await import('../../../core/auto-promoter.js');
+      res.json(getPromotionStats());
+    } catch { res.json({ error: 'Promoter not initialized' }); }
+  });
+
+  // POST /api/dashboard/promoter/run — manually trigger promotion cycle
+  router.post('/promoter/run', async (_req, res) => {
+    try {
+      const { runPromotionCycle } = await import('../../../core/auto-promoter.js');
+      const result = await runPromotionCycle();
+      pushActivity('promotion', result.split('\n')[0]);
+      res.json({ success: true, result });
+    } catch (err: any) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  return router;
+}
+
+
+==================================================
+ src\interfaces\web\public\dashboard.html :: approvals
+==================================================
+[SEM MATCH]
+
+==================================================
+ WEB FILES COM APPROVAL
+==================================================
+web\src\api\client.ts:149: dashboardApprovals: () => apiRequest<{ pending: any[]; stats: { pending: number; approvedToday: number; deniedToday: number } }>('/dashboard/approvals'),
+web\src\api\client.ts:150: approveAction: (id: string) => apiRequest<{ ok: boolean }>(`/dashboard/approvals/${id}/approve`, { method: 'POST' }),
+web\src\api\client.ts:151: denyAction: (id: string) => apiRequest<{ ok: boolean }>(`/dashboard/approvals/${id}/deny`, { method: 'POST' }),
+
+==================================================
+ src\tiktok\hashtag-review-queue.ts :: listPendingTikTokDiscoveryReviews
+==================================================
+MATCH LINE 278
+
+        provider:
+          input.provider,
+
+        discoveredAt:
+          input.discoveredAt,
+      }),
+    );
+  }
+
+  return {
+    acceptedCount:
+      accepted.length,
+
+    createdCount:
+      items.filter(
+        item =>
+          item.created,
+      ).length,
+
+    reusedCount:
+      items.filter(
+        item =>
+          !item.created,
+      ).length,
+
+    items,
+  };
+}
+
+export async function listPendingTikTokDiscoveryReviews(
+  accountKey: string,
+  limit = 50,
+): Promise<TikTokAction[]> {
+
+  return listPendingTikTokActionsByType(
+    accountKey,
+    TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW,
+    limit,
+  );
+}
+
+export async function resolveTikTokDiscoveryReview(
+  actionId: string,
+  decision:
+    TikTokDiscoveryReviewDecision,
+
+  reason?: string,
+): Promise<TikTokAction> {
+
+  const action =
+    await getTikTokAction(
+      actionId,
+    );
+
+  if (!action) {
+
+    throw new Error(
+      `TikTok discovery review not found: ${actionId}`,
+    );
+  }
+
+  if (
+    action.type !==
+    TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW
+  ) {
+
+    throw new Error(
+      `Action is not a discovery review: ${actionId}`,
+    );
+  }
+
+  if (
+    action.status !==
+    TIKTOK_ACTION_STATUSES.PENDING
+  ) {
+
+    throw new Error(
+      `Discovery review is not pending: ${actionId}`,
+    );
+  }
+
+  const reviewedAt =
+    new Date();
+
+  /*
+   * IMPORTANT:
+   *
+   * APPROVED means only that the candidate was approved during
+   * human review.
+   *
+   * It does NOT create or execute FOLLOW, LIKE, COMMENT, DM,
+   * PROFILE_VISIT or any other TikTok engagement.
+   *
+   * Any future engagement must be created as a separate action
+   * with its own policy/review/limits.
+   */
+  const status =
+    decision ===
+      'approved'
+      ? TIKTOK_ACTION_STATUSES.SUCCESS
+      : TIKTOK_ACTION_STATUSES.CANCELLED;
+
+  const resolved =
+    await transitionTikTokAction(
+      action.id,
+      {
+        status,
+
+        result: {
+          reviewDecision:
+            decision,
+
+          reviewedAt:
+            reviewedAt.toISOString(),
+
+          reason:
+            reason ?? null,
+
+          engagementCreated:
+            false,
+
+          engagementExecuted:
+            false,
+        },
+
+        metadata: {
+          event:
+            'discovery_review_resolved',
+
+          reviewDecision:
+
+
+==================================================
+ src\tiktok\hashtag-review-queue.ts :: resolveTikTokDiscoveryReview
+==================================================
+MATCH LINE 290
+      accepted.length,
+
+    createdCount:
+      items.filter(
+        item =>
+          item.created,
+      ).length,
+
+    reusedCount:
+      items.filter(
+        item =>
+          !item.created,
+      ).length,
+
+    items,
+  };
+}
+
+export async function listPendingTikTokDiscoveryReviews(
+  accountKey: string,
+  limit = 50,
+): Promise<TikTokAction[]> {
+
+  return listPendingTikTokActionsByType(
+    accountKey,
+    TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW,
+    limit,
+  );
+}
+
+export async function resolveTikTokDiscoveryReview(
+  actionId: string,
+  decision:
+    TikTokDiscoveryReviewDecision,
+
+  reason?: string,
+): Promise<TikTokAction> {
+
+  const action =
+    await getTikTokAction(
+      actionId,
+    );
+
+  if (!action) {
+
+    throw new Error(
+      `TikTok discovery review not found: ${actionId}`,
+    );
+  }
+
+  if (
+    action.type !==
+    TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW
+  ) {
+
+    throw new Error(
+      `Action is not a discovery review: ${actionId}`,
+    );
+  }
+
+  if (
+    action.status !==
+    TIKTOK_ACTION_STATUSES.PENDING
+  ) {
+
+    throw new Error(
+      `Discovery review is not pending: ${actionId}`,
+    );
+  }
+
+  const reviewedAt =
+    new Date();
+
+  /*
+   * IMPORTANT:
+   *
+   * APPROVED means only that the candidate was approved during
+   * human review.
+   *
+   * It does NOT create or execute FOLLOW, LIKE, COMMENT, DM,
+   * PROFILE_VISIT or any other TikTok engagement.
+   *
+   * Any future engagement must be created as a separate action
+   * with its own policy/review/limits.
+   */
+  const status =
+    decision ===
+      'approved'
+      ? TIKTOK_ACTION_STATUSES.SUCCESS
+      : TIKTOK_ACTION_STATUSES.CANCELLED;
+
+  const resolved =
+    await transitionTikTokAction(
+      action.id,
+      {
+        status,
+
+        result: {
+          reviewDecision:
+            decision,
+
+          reviewedAt:
+            reviewedAt.toISOString(),
+
+          reason:
+            reason ?? null,
+
+          engagementCreated:
+            false,
+
+          engagementExecuted:
+            false,
+        },
+
+        metadata: {
+          event:
+            'discovery_review_resolved',
+
+          reviewDecision:
+            decision,
+        },
+      },
+    );
+
+  if (!resolved) {
+
+    throw new Error(
+      `Failed to resolve discovery review: ${actionId}`,
+    );
+  }
+
+  return resolved;
+}
+
+
+==================================================
+ STATUS
+==================================================
+ M src/actions/mobile/mobile-agent.ts
+ M src/memory/migrations/meta/_journal.json
+ M src/memory/schema.ts
+?? analyze-tiktok-follow-relationships.ts
+?? analyze-tiktok-follow-rows.ts
+?? backups/
+?? collect-tiktok-follow-full.ts
+?? collect-tiktok-relationship-queue-v2.ts
+?? collect-tiktok-relationship-queue.ts
+?? inspect-tiktok-follow-rows.ts
+?? inspect-tiktok-follow-unmatched.ts
+?? map-tiktok-follow-relationships.ts
+?? src/memory/migrations/0002_tiktok_automation_persistence.sql
+?? src/memory/migrations/meta/0002_snapshot.json
+?? src/memory/repositories/tiktok-actions.ts
+?? src/memory/repositories/tiktok-configuration.ts
+?? src/memory/repositories/tiktok-limits.ts
+?? src/memory/repositories/tiktok-relationships.ts
+?? src/tiktok/
+?? tiktok-follow-full-report.json
+?? tiktok-follow-relationship-clean.json
+?? tiktok-follow-relationship-map.json
+?? tiktok-follow-relationship-rows.json
+?? tiktok-follow-row-structure.json
+?? tiktok-follow-unmatched-structures.json
+?? tiktok-followers-candidates.json
+?? tiktok-followers-full.json
+?? tiktok-followers-structure.json
+?? tiktok-following-candidates.json
+?? tiktok-following-full.json
+?? tiktok-following-structure.json
+?? tiktok-map-followers.xml
+?? tiktok-map-following.xml
+?? tiktok-map-profile-follow-round.xml
+?? tiktok-relationship-queue-v2.json
+?? tiktok-relationship-queue.json
+?? work/

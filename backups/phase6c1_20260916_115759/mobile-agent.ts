@@ -839,9 +839,6 @@ export class MobileAgent {
         .filter(line =>
           line.includes(
             'com.zhiliaoapp.musically:id/u68'
-          ) ||
-          line.includes(
-            'com.zhiliaoapp.musically:id/fm9'
           )
         );
 
@@ -870,13 +867,6 @@ export class MobileAgent {
         value.includes('follow back')
       ) {
         return 'follows_us';
-      }
-
-      if (
-        /text="seguir"/i.test(line) ||
-        /text="follow"/i.test(line)
-      ) {
-        return 'not_following';
       }
     }
 
@@ -947,561 +937,181 @@ export class MobileAgent {
       );
     }
 
-    const wait = async (
-      ms: number,
-    ): Promise<void> => {
-      await this.sleep(ms);
-    };
-
-    const findOptional =
-      async (
-        strategy: string,
-        selector: string,
-      ): Promise<
-        { elementId: string } | null
-      > => {
-
-        try {
-          return await this.appium
-            .findElement(
-              strategy,
-              selector,
-            );
-        }
-        catch {
-          return null;
-        }
-      };
-
-    const findSearchInput =
-      async (): Promise<
-        { elementId: string } | null
-      > => {
-
-        return (
-          await findOptional(
-            'id',
-            'com.zhiliaoapp.musically:id/htb',
-          )
-        ) ?? (
-          await findOptional(
-            'uiautomator',
-            'new UiSelector().className("android.widget.EditText")',
-          )
-        );
-      };
-
-    const findSearchButton =
-      async (): Promise<
-        { elementId: string } | null
-      > => {
-
-        return (
-          await findOptional(
-            'id',
-            'com.zhiliaoapp.musically:id/k9z',
-          )
-        ) ?? (
-          await findOptional(
-            'uiautomator',
-            'new UiSelector().description("Procurar")',
-          )
-        ) ?? (
-          await findOptional(
-            'uiautomator',
-            'new UiSelector().description("Search")',
-          )
-        );
-      };
-
     /*
-     * A sessao usa noReset=true.
-     * Portanto o TikTok pode abrir exatamente na tela
-     * deixada pelo teste anterior.
+     * 1. Abrir busca.
      *
-     * Primeiro verificamos se a busca JA esta aberta.
+     * Mapeamento validado anteriormente:
+     * id/k9z = botao de pesquisa.
      */
-    let searchInput =
-      await findSearchInput();
+    let searchButton;
 
-    if (!searchInput) {
-
-      /*
-       * Remove apenas popups comuns conhecidos.
-       */
-      await this.dismissPopups();
-
-      /*
-       * Tenta usar a busca na tela atual.
-       * Se nao existir, volta gradualmente.
-       */
-      for (
-        let attempt = 0;
-        attempt < 4 && !searchInput;
-        attempt++
-      ) {
-
-        const searchButton =
-          await findSearchButton();
-
-        if (searchButton) {
-
-          await this.appium
-            .clickElement(
-              searchButton.elementId,
-            );
-
-          await wait(700);
-
-          searchInput =
-            await findSearchInput();
-
-          if (searchInput) {
-            break;
-          }
-        }
-
-        if (attempt < 3) {
-
-          await this.appium
-            .pressKey(4);
-
-          await wait(500);
-
-          searchInput =
-            await findSearchInput();
-        }
-      }
-    }
-
-    /*
-     * Recuperacao adicional:
-     * vai para Home e tenta abrir a busca.
-     *
-     * Isso e apenas navegacao.
-     */
-    if (!searchInput) {
-
-      const homeButton =
-        await findOptional(
+    try {
+      searchButton =
+        await this.appium.findElement(
           'id',
-          'com.zhiliaoapp.musically:id/olw',
+          'com.zhiliaoapp.musically:id/k9z'
         );
-
-      if (homeButton) {
-
-        await this.appium
-          .clickElement(
-            homeButton.elementId,
+    }
+    catch {
+      try {
+        searchButton =
+          await this.appium.findElement(
+            'uiautomator',
+            'new UiSelector().description("Procurar")'
           );
-
-        await wait(800);
-
-        const searchButton =
-          await findSearchButton();
-
-        if (searchButton) {
-
-          await this.appium
-            .clickElement(
-              searchButton.elementId,
-            );
-
-          await wait(700);
-
-          searchInput =
-            await findSearchInput();
-        }
+      }
+      catch {
+        searchButton =
+          await this.appium.findElement(
+            'uiautomator',
+            'new UiSelector().description("Search")'
+          );
       }
     }
 
-    if (!searchInput) {
+    await this.appium.clickElement(
+      searchButton.elementId
+    );
 
-      throw new Error(
-        'TikTok search UI could not be reached safely',
-      );
-    }
-
-    /*
-     * Preenche a pesquisa.
-     */
-    await this.appium
-      .clickElement(
-        searchInput.elementId,
-      );
-
-    await this.appium
-      .clearElement(
-        searchInput.elementId,
-      );
-
-    await this.appium
-      .setClipboard(
-        `@${normalizedUsername}`,
-      );
-
-    // Android KEYCODE_PASTE
-    await this.appium
-      .pressKey(279);
-
-    await wait(500);
+    await this.sleep(800);
 
     /*
-     * Executa pesquisa.
+     * 2. Campo de busca.
+     *
+     * Mapeamento:
+     * id/htb
      */
-    const submit =
-      await findOptional(
-        'id',
-        'com.zhiliaoapp.musically:id/tv_search_textview',
-      );
+    let searchInput;
 
-    if (submit) {
-
-      await this.appium
-        .clickElement(
-          submit.elementId,
+    try {
+      searchInput =
+        await this.appium.findElement(
+          'id',
+          'com.zhiliaoapp.musically:id/htb'
         );
     }
-    else {
-
-      // ENTER
-      await this.appium
-        .pressKey(66);
+    catch {
+      searchInput =
+        await this.appium.findElement(
+          'uiautomator',
+          'new UiSelector().className("android.widget.EditText")'
+        );
     }
 
-    await wait(2200);
+    await this.appium.clickElement(
+      searchInput.elementId
+    );
+
+    await this.appium.clearElement(
+      searchInput.elementId
+    );
 
     /*
-     * Se o TikTok mostrar abas de resultado, preferimos a aba
-     * de usuarios/contas antes de tocar no resultado.
+     * TikTok pode ignorar sendKeys em alguns campos.
+     * Usamos o clipboard do Appium + KEYCODE_PASTE,
+     * abordagem que ja funciona no projeto.
      */
-    const userTabSelectors = [
-      'new UiSelector().textContains("Usu")',
-      'new UiSelector().textContains("User")',
-      'new UiSelector().textContains("Pessoas")',
-      'new UiSelector().textContains("People")',
-      'new UiSelector().textContains("Conta")',
-      'new UiSelector().textContains("Account")',
+    await this.appium.setClipboard(
+      normalizedUsername
+    );
+
+    await this.appium.pressKey(279);
+
+    await this.sleep(500);
+
+    /*
+     * 3. Executar busca.
+     *
+     * Mapeamento:
+     * id/tv_search_textview
+     */
+    try {
+      const submit =
+        await this.appium.findElement(
+          'id',
+          'com.zhiliaoapp.musically:id/tv_search_textview'
+        );
+
+      await this.appium.clickElement(
+        submit.elementId
+      );
+    }
+    catch {
+      // Android ENTER
+      await this.appium.pressKey(66);
+    }
+
+    await this.sleep(1500);
+
+    /*
+     * 4. Encontrar resultado EXATO.
+     *
+     * Nao usamos displayName porque nomes exibidos
+     * podem se repetir.
+     *
+     * Tambem excluimos o proprio campo de pesquisa
+     * para nao clicar nele por engano.
+     */
+    const candidates = [
+      `//*[@text="@${normalizedUsername}" and not(contains(@resource-id,"/htb"))]`,
+      `//*[@text="${normalizedUsername}" and not(contains(@resource-id,"/htb"))]`,
+      `//*[@content-desc="@${normalizedUsername}"]`,
+      `//*[@content-desc="${normalizedUsername}"]`,
     ];
 
-    for (
-      const selector of userTabSelectors
-    ) {
+    let resultElement:
+      { elementId: string } |
+      null = null;
 
-      const tab =
-        await findOptional(
-          'uiautomator',
-          selector,
-        );
-
-      if (tab) {
-
-        await this.appium
-          .clickElement(
-            tab.elementId,
+    for (const xpath of candidates) {
+      try {
+        resultElement =
+          await this.appium.findElement(
+            'xpath',
+            xpath
           );
 
-        await wait(1200);
-        break;
+        if (resultElement) {
+          break;
+        }
+      }
+      catch {
+        // tenta o proximo seletor exato
       }
     }
 
-      /*
-       * Fallback robusto:
-       * le o XML da tela e encontra a linha que realmente
-       * contem o username.
-       *
-       * Ignora o proprio campo de pesquisa.
-       */
-      const resultsSource =
-        await this.appium
-          .getPageSource();
-
-      const wanted =
-        normalizedUsername
-          .toLocaleLowerCase('pt-BR');
-
-      const lines =
-        resultsSource
-          .split(/\r?\n/);
-
-      const getAttribute =
-        (
-          line: string,
-          attribute: string,
-        ): string => {
-
-          const match =
-            line.match(
-              new RegExp(
-                `${attribute}="([^"]*)"`,
-                'i',
-              ),
-            );
-
-          return match?.[1] ?? '';
-        };
-
-      const normalizeXmlText =
-        (value: string): string =>
-          value
-            .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-            .trim()
-            .replace(/^@/, '')
-            .toLocaleLowerCase(
-              'pt-BR',
-            );
-
-      const usernameInDescription =
-        (value: string): boolean => {
-
-          const escaped =
-            wanted.replace(
-              /[.*+?^${}()|[\]\\]/g,
-              '\\$&',
-            );
-
-          return new RegExp(
-            `(^|[^a-z0-9._])@?${escaped}([^a-z0-9._]|$)`,
-            'i',
-          )
-            .test(
-              value
-                .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-                .toLocaleLowerCase(
-                  'pt-BR',
-                ),
-            );
-        };
-
-      const candidates =
-        lines
-          .filter(line => {
-
-            const lower =
-              line.toLocaleLowerCase(
-                'pt-BR',
-              );
-
-            if (
-              lower.includes(
-                'com.zhiliaoapp.musically:id/htb',
-              ) ||
-              lower.includes(
-                'android.widget.edittext',
-              )
-            ) {
-              return false;
-            }
-
-            const text =
-              normalizeXmlText(
-                getAttribute(
-                  line,
-                  'text',
-                ),
-              );
-
-            const desc =
-              normalizeXmlText(
-                getAttribute(
-                  line,
-                  'content-desc',
-                ),
-              );
-
-            if (
-              text === wanted ||
-              desc === wanted
-            ) {
-              return true;
-            }
-
-            /*
-             * Alguns layouts colocam mais informacao
-             * no content-desc.
-             */
-            if (
-              usernameInDescription(
-                getAttribute(
-                  line,
-                  'content-desc',
-                ),
-              )
-            ) {
-              return true;
-            }
-
-            return false;
-          })
-          .sort((a, b) => {
-
-            const score =
-              (line: string): number => {
-
-                let value = 0;
-
-                if (
-                  line.includes(
-                    'txt_desc',
-                  )
-                ) {
-                  value += 10;
-                }
-
-                if (
-                  line.includes(
-                    `@${normalizedUsername}`,
-                  )
-                ) {
-                  value += 5;
-                }
-
-                if (
-                  line.includes(
-                    'clickable="true"',
-                  )
-                ) {
-                  value += 3;
-                }
-
-                return value;
-              };
-
-            return score(b) - score(a);
-          });
-
-      const candidate =
-        candidates[0];
-
-      if (!candidate) {
-
-        const mentions =
-          lines
-            .filter(line =>
-              line
-                .toLocaleLowerCase(
-                  'pt-BR',
-                )
-                .includes(wanted)
-            )
-            .filter(line =>
-              !line.includes(
-                'com.zhiliaoapp.musically:id/htb',
-              )
-            )
-            .slice(0, 5)
-            .map(line =>
-              line.trim()
-            );
-
-        throw new Error(
-          `Exact TikTok username not found: @${normalizedUsername}. XML matches: ${JSON.stringify(mentions)}`,
-        );
-      }
-
-      const bounds =
-        candidate.match(
-          /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/,
-        );
-
-      if (!bounds) {
-        throw new Error(
-          `TikTok username found but bounds unavailable: @${normalizedUsername}`,
-        );
-      }
-
-      const x1 =
-        Number(bounds[1]);
-
-      const y1 =
-        Number(bounds[2]);
-
-      const x2 =
-        Number(bounds[3]);
-
-      const y2 =
-        Number(bounds[4]);
-
-      const x =
-        Math.round(
-          (x1 + x2) / 2,
-        );
-
-      const y =
-        Math.round(
-          (y1 + y2) / 2,
-        );
-
-      /*
-       * O TextView do username nem sempre e o elemento clicavel.
-       * Tocamos no centro horizontal real da tela, na mesma linha
-       * do resultado, evitando o botao de relacionamento a direita.
-       */
-      const screen =
-        await this.getScreenSize();
-
-      const tapX =
-        Math.max(
-          120,
-          Math.min(
-            screen.width - 120,
-            Math.round(
-              screen.width / 2,
-            ),
-          ),
-        );
-
-      await this.appium
-        .tap(tapX, y);
-
-    await wait(1800);
-
-    /*
-     * Confirma que saimos da tela de busca e que
-     * o username esta presente na pagina aberta.
-     */
-    const profileSource =
-      await this.appium
-        .getPageSource();
-
-    const profileLower =
-      profileSource
-        .toLocaleLowerCase(
-          'pt-BR',
-        );
-
-    if (
-      profileLower.includes(
-        'com.zhiliaoapp.musically:id/htb',
-      )
-    ) {
+    if (!resultElement) {
       throw new Error(
-        `TikTok search result was found but profile did not open: @${normalizedUsername}`,
+        `Exact TikTok username not found in search results: @${normalizedUsername}`
       );
     }
 
+    await this.appium.clickElement(
+      resultElement.elementId
+    );
+
+    await this.sleep(1500);
+
+    /*
+     * 5. Verificacao basica de identidade.
+     *
+     * Nao classifica relacao aqui.
+     * A classificacao continua sendo responsabilidade
+     * de inspectTikTokCurrentRelationship().
+     */
+    const profileSource =
+      await this.appium.getPageSource();
+
     if (
-      !new RegExp(
-        `(^|[^a-z0-9._])@?${normalizedUsername
-          .toLocaleLowerCase(
-            'pt-BR',
-          )
-          .replace(
-            /[.*+?^${}()|[\]\\]/g,
-            '\\$&',
-          )}([^a-z0-9._]|$)`,
-        'i',
-      )
-        .test(
-          profileLower.replace(
-            /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
-            '',
-          ),
+      !profileSource
+        .toLocaleLowerCase('pt-BR')
+        .includes(
+          normalizedUsername
+            .toLocaleLowerCase('pt-BR')
         )
     ) {
       throw new Error(
-        `TikTok profile identity could not be confirmed: @${normalizedUsername}`,
+        `TikTok profile identity could not be confirmed: @${normalizedUsername}`
       );
     }
 

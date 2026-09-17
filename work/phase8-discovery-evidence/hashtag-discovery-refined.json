@@ -1,0 +1,57 @@
+{
+  "source": "saved-real-android-xml",
+  "readOnly": true,
+  "persistentFeatureEnabled": false,
+  "rawNodeCount": 217,
+  "refinedCandidateCount": 2,
+  "falseNumericHashtags": [],
+  "testIncludeHashtag": "trend",
+  "testAcceptedCount": 1,
+  "exactTikTokAcceptedCount": 0,
+  "exactTikTokExplanation": "Exact include=tiktok does not match related hashtags such as tiktokviral. This is expected exact-match behavior.",
+  "candidates": [
+    {
+      "source": "android_xml",
+      "text": "Its knows too well 😂   #trend #singlemom #soundtrend",
+      "contentDescription": null,
+      "resourceId": "com.zhiliaoapp.musically:id/desc",
+      "className": "android.widget.Button",
+      "bounds": "[33,2156][513,2260]",
+      "hashtags": [
+        "trend",
+        "singlemom",
+        "soundtrend"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/desc|[33,2156][513,2260]|Its knows too well 😂   #trend #singlemom #soundtrend ||trend,singlemom,soundtrend"
+    },
+    {
+      "source": "android_xml",
+      "text": "#tiktokviral #viralizarnotiktok Vocês PRECISAM testar esses ganchos...😳🤯",
+      "contentDescription": null,
+      "resourceId": "com.zhiliaoapp.musically:id/desc",
+      "className": "android.widget.Button",
+      "bounds": "[568,2155][1036,2255]",
+      "hashtags": [
+        "tiktokviral",
+        "viralizarnotiktok"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/desc|[568,2155][1036,2255]|#tiktokviral #viralizarnotiktok Vocês PRECISAM testar esses ganchos...😳🤯||tiktokviral,viralizarnotiktok"
+    }
+  ],
+  "accepted": [
+    {
+      "source": "android_xml",
+      "text": "Its knows too well 😂   #trend #singlemom #soundtrend",
+      "contentDescription": null,
+      "resourceId": "com.zhiliaoapp.musically:id/desc",
+      "className": "android.widget.Button",
+      "bounds": "[33,2156][513,2260]",
+      "hashtags": [
+        "trend",
+        "singlemom",
+        "soundtrend"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/desc|[33,2156][513,2260]|Its knows too well 😂   #trend #singlemom #soundtrend ||trend,singlemom,soundtrend"
+    }
+  ]
+}

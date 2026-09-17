@@ -1,0 +1,82 @@
+{
+  "query": "#tiktok",
+  "readOnly": true,
+  "persistentFeatureEnabled": false,
+  "rawNodeCount": 217,
+  "visibleCandidateCount": 5,
+  "acceptedCandidateCount": 0,
+  "candidates": [
+    {
+      "source": "android_xml",
+      "text": null,
+      "contentDescription": "Vídeo criado por tiktok, hear how @Palina La Diva &#127760; spinning tracks on LIVE brings techno lovers together &#129705;, Curtido por 5,7 mil usuários",
+      "resourceId": "com.zhiliaoapp.musically:id/user_video_view",
+      "className": "android.widget.Button",
+      "bounds": "[22,696][435,1246]",
+      "hashtags": [
+        "127760",
+        "129705"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/user_video_view|[22,696][435,1246]||Vídeo criado por tiktok, hear how @Palina La Diva &#127760; spinning tracks on LIVE brings techno lovers together &#129705;, Curtido por 5,7 mil usuários|127760,129705"
+    },
+    {
+      "source": "android_xml",
+      "text": null,
+      "contentDescription": "Vídeo criado por tiktok, @Alex Warren thinks he'll never write anything better than... can you guess? Search Files has the answer &#128064;, Curtido por 10,7 mil usuários",
+      "resourceId": "com.zhiliaoapp.musically:id/user_video_view",
+      "className": "android.widget.Button",
+      "bounds": "[457,696][870,1246]",
+      "hashtags": [
+        "128064"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/user_video_view|[457,696][870,1246]||Vídeo criado por tiktok, @Alex Warren thinks he'll never write anything better than... can you guess? Search Files has the answer &#128064;, Curtido por 10,7 mil usuários|128064"
+    },
+    {
+      "source": "android_xml",
+      "text": null,
+      "contentDescription": "Vídeo criado por Abby West, Its knows too well &#128514;   #trend #singlemom #soundtrend , Curtido por 7,4 mi usuários",
+      "resourceId": "com.zhiliaoapp.musically:id/vh0",
+      "className": "android.widget.Button",
+      "bounds": "[11,1301][535,2270]",
+      "hashtags": [
+        "128514",
+        "trend",
+        "singlemom",
+        "soundtrend"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/vh0|[11,1301][535,2270]||Vídeo criado por Abby West, Its knows too well &#128514;   #trend #singlemom #soundtrend , Curtido por 7,4 mi usuários|128514,trend,singlemom,soundtrend"
+    },
+    {
+      "source": "android_xml",
+      "text": "Its knows too well &#128514;   #trend #singlemom #soundtrend",
+      "contentDescription": null,
+      "resourceId": "com.zhiliaoapp.musically:id/desc",
+      "className": "android.widget.Button",
+      "bounds": "[33,2156][513,2260]",
+      "hashtags": [
+        "128514",
+        "trend",
+        "singlemom",
+        "soundtrend"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/desc|[33,2156][513,2260]|Its knows too well &#128514;   #trend #singlemom #soundtrend ||128514,trend,singlemom,soundtrend"
+    },
+    {
+      "source": "android_xml",
+      "text": "#tiktokviral #viralizarnotiktok Vocês PRECISAM testar esses ganchos...&#128563;&#129327;",
+      "contentDescription": null,
+      "resourceId": "com.zhiliaoapp.musically:id/desc",
+      "className": "android.widget.Button",
+      "bounds": "[568,2155][1036,2255]",
+      "hashtags": [
+        "tiktokviral",
+        "viralizarnotiktok",
+        "128563",
+        "129327"
+      ],
+      "fingerprint": "com.zhiliaoapp.musically:id/desc|[568,2155][1036,2255]|#tiktokviral #viralizarnotiktok Vocês PRECISAM testar esses ganchos...&#128563;&#129327;||tiktokviral,viralizarnotiktok,128563,129327"
+    }
+  ],
+  "accepted": [],
+  "limitation": null
+}

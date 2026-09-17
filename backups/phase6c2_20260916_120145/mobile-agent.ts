@@ -839,9 +839,6 @@ export class MobileAgent {
         .filter(line =>
           line.includes(
             'com.zhiliaoapp.musically:id/u68'
-          ) ||
-          line.includes(
-            'com.zhiliaoapp.musically:id/fm9'
           )
         );
 
@@ -870,13 +867,6 @@ export class MobileAgent {
         value.includes('follow back')
       ) {
         return 'follows_us';
-      }
-
-      if (
-        /text="seguir"/i.test(line) ||
-        /text="follow"/i.test(line)
-      ) {
-        return 'not_following';
       }
     }
 
@@ -1137,7 +1127,7 @@ export class MobileAgent {
 
     await this.appium
       .setClipboard(
-        `@${normalizedUsername}`,
+        normalizedUsername,
       );
 
     // Android KEYCODE_PASTE
@@ -1172,39 +1162,42 @@ export class MobileAgent {
     await wait(2200);
 
     /*
-     * Se o TikTok mostrar abas de resultado, preferimos a aba
-     * de usuarios/contas antes de tocar no resultado.
+     * Primeiro ainda tentamos seletores normais.
      */
-    const userTabSelectors = [
-      'new UiSelector().textContains("Usu")',
-      'new UiSelector().textContains("User")',
-      'new UiSelector().textContains("Pessoas")',
-      'new UiSelector().textContains("People")',
-      'new UiSelector().textContains("Conta")',
-      'new UiSelector().textContains("Account")',
+    const exactSelectors = [
+      `new UiSelector().text("@${normalizedUsername}")`,
+      `new UiSelector().text("${normalizedUsername}")`,
+      `new UiSelector().description("@${normalizedUsername}")`,
+      `new UiSelector().description("${normalizedUsername}")`,
     ];
 
+    let resultElement:
+      { elementId: string } |
+      null = null;
+
     for (
-      const selector of userTabSelectors
+      const selector of exactSelectors
     ) {
 
-      const tab =
+      resultElement =
         await findOptional(
           'uiautomator',
           selector,
         );
 
-      if (tab) {
-
-        await this.appium
-          .clickElement(
-            tab.elementId,
-          );
-
-        await wait(1200);
+      if (resultElement) {
         break;
       }
     }
+
+    if (resultElement) {
+
+      await this.appium
+        .clickElement(
+          resultElement.elementId,
+        );
+    }
+    else {
 
       /*
        * Fallback robusto:
@@ -1242,38 +1235,6 @@ export class MobileAgent {
           return match?.[1] ?? '';
         };
 
-      const normalizeXmlText =
-        (value: string): string =>
-          value
-            .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-            .trim()
-            .replace(/^@/, '')
-            .toLocaleLowerCase(
-              'pt-BR',
-            );
-
-      const usernameInDescription =
-        (value: string): boolean => {
-
-          const escaped =
-            wanted.replace(
-              /[.*+?^${}()|[\]\\]/g,
-              '\\$&',
-            );
-
-          return new RegExp(
-            `(^|[^a-z0-9._])@?${escaped}([^a-z0-9._]|$)`,
-            'i',
-          )
-            .test(
-              value
-                .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-                .toLocaleLowerCase(
-                  'pt-BR',
-                ),
-            );
-        };
-
       const candidates =
         lines
           .filter(line => {
@@ -1295,20 +1256,26 @@ export class MobileAgent {
             }
 
             const text =
-              normalizeXmlText(
-                getAttribute(
-                  line,
-                  'text',
-                ),
-              );
+              getAttribute(
+                line,
+                'text',
+              )
+                .trim()
+                .replace(/^@/, '')
+                .toLocaleLowerCase(
+                  'pt-BR',
+                );
 
             const desc =
-              normalizeXmlText(
-                getAttribute(
-                  line,
-                  'content-desc',
-                ),
-              );
+              getAttribute(
+                line,
+                'content-desc',
+              )
+                .trim()
+                .replace(/^@/, '')
+                .toLocaleLowerCase(
+                  'pt-BR',
+                );
 
             if (
               text === wanted ||
@@ -1322,11 +1289,8 @@ export class MobileAgent {
              * no content-desc.
              */
             if (
-              usernameInDescription(
-                getAttribute(
-                  line,
-                  'content-desc',
-                ),
+              desc.includes(
+                `@${wanted}`,
               )
             ) {
               return true;
@@ -1433,27 +1397,9 @@ export class MobileAgent {
           (y1 + y2) / 2,
         );
 
-      /*
-       * O TextView do username nem sempre e o elemento clicavel.
-       * Tocamos no centro horizontal real da tela, na mesma linha
-       * do resultado, evitando o botao de relacionamento a direita.
-       */
-      const screen =
-        await this.getScreenSize();
-
-      const tapX =
-        Math.max(
-          120,
-          Math.min(
-            screen.width - 120,
-            Math.round(
-              screen.width / 2,
-            ),
-          ),
-        );
-
       await this.appium
-        .tap(tapX, y);
+        .tap(x, y);
+    }
 
     await wait(1800);
 
@@ -1482,23 +1428,12 @@ export class MobileAgent {
     }
 
     if (
-      !new RegExp(
-        `(^|[^a-z0-9._])@?${normalizedUsername
+      !profileLower.includes(
+        normalizedUsername
           .toLocaleLowerCase(
             'pt-BR',
           )
-          .replace(
-            /[.*+?^${}()|[\]\\]/g,
-            '\\$&',
-          )}([^a-z0-9._]|$)`,
-        'i',
       )
-        .test(
-          profileLower.replace(
-            /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
-            '',
-          ),
-        )
     ) {
       throw new Error(
         `TikTok profile identity could not be confirmed: @${normalizedUsername}`,
