@@ -848,6 +848,8 @@ export async function claimDueTikTokScheduledAction(
       const [current] =
         await tx
           .select({
+            type:
+              tiktokActions.type,
             attempts:
               tiktokActions.attempts,
           })
@@ -866,6 +868,11 @@ export async function claimDueTikTokScheduledAction(
                 'scheduled',
               ),
 
+              eq(
+                tiktokActions.type,
+                TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
+              ),
+
               lte(
                 tiktokActions.executeAt,
                 now,
@@ -876,6 +883,15 @@ export async function claimDueTikTokScheduledAction(
 
       if (!current) {
         return null;
+      }
+
+      if (
+        current.type !==
+        TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK
+      ) {
+        throw new Error(
+          'Only CHECK_FOLLOW_BACK may be claimed by the automatic TikTok scheduler.',
+        );
       }
 
       const nextAttempts =
@@ -910,6 +926,11 @@ export async function claimDueTikTokScheduledAction(
               eq(
                 tiktokActions.status,
                 'scheduled',
+              ),
+
+              eq(
+                tiktokActions.type,
+                TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
               ),
 
               lte(
@@ -980,6 +1001,48 @@ export async function deferDueTikTokScheduledAction(
   return db.transaction(
     async tx => {
 
+      const [current] =
+        await tx
+          .select({
+            type:
+              tiktokActions.type,
+          })
+          .from(
+            tiktokActions,
+          )
+          .where(
+            and(
+              eq(
+                tiktokActions.id,
+                id,
+              ),
+
+              eq(
+                tiktokActions.status,
+                'scheduled',
+              ),
+
+              lte(
+                tiktokActions.executeAt,
+                dueAt,
+              ),
+            ),
+          )
+          .limit(1);
+
+      if (!current) {
+        return null;
+      }
+
+      if (
+        current.type !==
+        TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK
+      ) {
+        throw new Error(
+          'Only CHECK_FOLLOW_BACK may be deferred by the automatic TikTok scheduler.',
+        );
+      }
+
       const [row] =
         await tx
           .update(
@@ -1008,6 +1071,11 @@ export async function deferDueTikTokScheduledAction(
               eq(
                 tiktokActions.status,
                 'scheduled',
+              ),
+
+              eq(
+                tiktokActions.type,
+                TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
               ),
 
               lte(
@@ -1074,6 +1142,15 @@ export async function recoverStaleTikTokRunningActions(
   retryDelaySeconds = 60,
   limit = 50,
 ): Promise<RecoverStaleTikTokRunningActionsResult> {
+
+  if (
+    type !==
+    TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK
+  ) {
+    throw new Error(
+      'Only CHECK_FOLLOW_BACK may be recovered by the automatic TikTok scheduler.',
+    );
+  }
 
   const db = getDb();
 
