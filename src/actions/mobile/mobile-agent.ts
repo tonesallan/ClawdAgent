@@ -11,6 +11,9 @@ import {
   getTikTokProfileTapPoint,
   tikTokProfileSourceMatchesUsername,
 } from '../../tiktok/android-profile-navigation.js';
+import {
+  classifyTikTokRelationshipFromXml,
+} from '../../tiktok/android-relationship.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -828,91 +831,9 @@ export class MobileAgent {
     const source =
       await this.appium.getPageSource();
 
-    const normalized =
-      source.toLocaleLowerCase('pt-BR');
-
-    /*
-     * TikTok following-list relationship button.
-     * Known mapped resource id:
-     *   com.zhiliaoapp.musically:id/u68
-     *
-     * We inspect only the XML. No element is clicked.
-     */
-    const relationshipLines =
-      source
-        .split(/\r?\n/)
-        .filter(line =>
-          line.includes(
-            'com.zhiliaoapp.musically:id/u68'
-          ) ||
-          line.includes(
-            'com.zhiliaoapp.musically:id/fm9'
-          )
-        );
-
-    for (
-      const line of relationshipLines
-    ) {
-      const value =
-        line.toLocaleLowerCase('pt-BR');
-
-      if (
-        value.includes('amigos') ||
-        value.includes('friends')
-      ) {
-        return 'friends';
-      }
-
-      if (
-        value.includes('seguindo') ||
-        value.includes('following')
-      ) {
-        return 'following';
-      }
-
-      if (
-        value.includes('seguir de volta') ||
-        value.includes('follow back')
-      ) {
-        return 'follows_us';
-      }
-
-      if (
-        /text="seguir"/i.test(line) ||
-        /text="follow"/i.test(line)
-      ) {
-        return 'not_following';
-      }
-    }
-
-    /*
-     * Fallback for profile pages.
-     *
-     * A visible "Seguir/Follow" control means we are not
-     * currently following the displayed profile.
-     *
-     * We deliberately require accessibility-description
-     * evidence rather than a generic text match to avoid
-     * classifying unrelated labels.
-     */
-    if (
-      normalized.includes(
-        'content-desc="seguir '
-      ) ||
-      normalized.includes(
-        'content-desc="follow '
-      )
-    ) {
-      return 'not_following';
-    }
-
-    /*
-     * UNKNOWN is intentional.
-     *
-     * The scheduler already treats UNKNOWN as unsafe and
-     * will retry instead of producing an UNFOLLOW candidate.
-     */
-    return 'unknown';
+    return classifyTikTokRelationshipFromXml(
+      source,
+    );
   }
 
   /**
