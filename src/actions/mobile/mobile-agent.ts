@@ -6,6 +6,10 @@
 import { AppiumClient } from './appium-client.js';
 import { AIClient } from '../../core/ai-client.js';
 import logger from '../../utils/logger.js';
+import {
+  findTikTokProfileSearchCandidate,
+  tikTokProfileSourceMatchesUsername,
+} from '../../tiktok/android-profile-navigation.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -1206,252 +1210,72 @@ export class MobileAgent {
       }
     }
 
-      /*
-       * Fallback robusto:
-       * le o XML da tela e encontra a linha que realmente
-       * contem o username.
-       *
-       * Ignora o proprio campo de pesquisa.
-       */
-      const resultsSource =
-        await this.appium
-          .getPageSource();
-
-      const wanted =
-        normalizedUsername
-          .toLocaleLowerCase('pt-BR');
-
-      const lines =
-        resultsSource
-          .split(/\r?\n/);
-
-      const getAttribute =
-        (
-          line: string,
-          attribute: string,
-        ): string => {
-
-          const match =
-            line.match(
-              new RegExp(
-                `${attribute}="([^"]*)"`,
-                'i',
-              ),
-            );
-
-          return match?.[1] ?? '';
-        };
-
-      const normalizeXmlText =
-        (value: string): string =>
-          value
-            .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-            .trim()
-            .replace(/^@/, '')
-            .toLocaleLowerCase(
-              'pt-BR',
-            );
-
-      const usernameInDescription =
-        (value: string): boolean => {
-
-          const escaped =
-            wanted.replace(
-              /[.*+?^${}()|[\]\\]/g,
-              '\\$&',
-            );
-
-          return new RegExp(
-            `(^|[^a-z0-9._])@?${escaped}([^a-z0-9._]|$)`,
-            'i',
-          )
-            .test(
-              value
-                .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, '')
-                .toLocaleLowerCase(
-                  'pt-BR',
-                ),
-            );
-        };
-
-      const candidates =
-        lines
-          .filter(line => {
-
-            const lower =
-              line.toLocaleLowerCase(
-                'pt-BR',
-              );
-
-            if (
-              lower.includes(
-                'com.zhiliaoapp.musically:id/htb',
-              ) ||
-              lower.includes(
-                'android.widget.edittext',
-              )
-            ) {
-              return false;
-            }
-
-            const text =
-              normalizeXmlText(
-                getAttribute(
-                  line,
-                  'text',
-                ),
-              );
-
-            const desc =
-              normalizeXmlText(
-                getAttribute(
-                  line,
-                  'content-desc',
-                ),
-              );
-
-            if (
-              text === wanted ||
-              desc === wanted
-            ) {
-              return true;
-            }
-
-            /*
-             * Alguns layouts colocam mais informacao
-             * no content-desc.
-             */
-            if (
-              usernameInDescription(
-                getAttribute(
-                  line,
-                  'content-desc',
-                ),
-              )
-            ) {
-              return true;
-            }
-
-            return false;
-          })
-          .sort((a, b) => {
-
-            const score =
-              (line: string): number => {
-
-                let value = 0;
-
-                if (
-                  line.includes(
-                    'txt_desc',
-                  )
-                ) {
-                  value += 10;
-                }
-
-                if (
-                  line.includes(
-                    `@${normalizedUsername}`,
-                  )
-                ) {
-                  value += 5;
-                }
-
-                if (
-                  line.includes(
-                    'clickable="true"',
-                  )
-                ) {
-                  value += 3;
-                }
-
-                return value;
-              };
-
-            return score(b) - score(a);
-          });
-
-      const candidate =
-        candidates[0];
-
-      if (!candidate) {
-
-        const mentions =
-          lines
-            .filter(line =>
-              line
-                .toLocaleLowerCase(
-                  'pt-BR',
-                )
-                .includes(wanted)
-            )
-            .filter(line =>
-              !line.includes(
-                'com.zhiliaoapp.musically:id/htb',
-              )
-            )
-            .slice(0, 5)
-            .map(line =>
-              line.trim()
-            );
-
-        throw new Error(
-          `Exact TikTok username not found: @${normalizedUsername}. XML matches: ${JSON.stringify(mentions)}`,
-        );
-      }
-
-      const bounds =
-        candidate.match(
-          /bounds="\[(\d+),(\d+)\]\[(\d+),(\d+)\]"/,
-        );
-
-      if (!bounds) {
-        throw new Error(
-          `TikTok username found but bounds unavailable: @${normalizedUsername}`,
-        );
-      }
-
-      const x1 =
-        Number(bounds[1]);
-
-      const y1 =
-        Number(bounds[2]);
-
-      const x2 =
-        Number(bounds[3]);
-
-      const y2 =
-        Number(bounds[4]);
-
-      const x =
-        Math.round(
-          (x1 + x2) / 2,
-        );
-
-      const y =
-        Math.round(
-          (y1 + y2) / 2,
-        );
-
-      /*
-       * O TextView do username nem sempre e o elemento clicavel.
-       * Tocamos no centro horizontal do username, na mesma linha
-       * do resultado, evitando o botao de relacionamento a direita.
-       */
-      const screen =
-        await this.getScreenSize();
-
-      const tapX =
-        Math.max(
-          120,
-          Math.min(
-            screen.width - 120,
-            x,
-          ),
-        );
-
+    /*
+     * Usa o parser XML compartilhado e coberto por testes.
+     * Ele ignora o campo de pesquisa, exige o username exato
+     * e preserva os mesmos sinais de prioridade do fluxo anterior.
+     */
+    const resultsSource =
       await this.appium
-        .tap(tapX, y);
+        .getPageSource();
+
+    const {
+      candidate,
+      mentions,
+    } =
+      findTikTokProfileSearchCandidate(
+        resultsSource,
+        normalizedUsername,
+      );
+
+    if (!candidate) {
+      throw new Error(
+        `Exact TikTok username not found: @${normalizedUsername}. XML matches: ${JSON.stringify(mentions)}`,
+      );
+    }
+
+    if (!candidate.bounds) {
+      throw new Error(
+        `TikTok username found but bounds unavailable: @${normalizedUsername}`,
+      );
+    }
+
+    const {
+      x1,
+      y1,
+      x2,
+      y2,
+    } = candidate.bounds;
+
+    const x =
+      Math.round(
+        (x1 + x2) / 2,
+      );
+
+    const y =
+      Math.round(
+        (y1 + y2) / 2,
+      );
+
+    /*
+     * O TextView do username nem sempre e o elemento clicavel.
+     * Tocamos no centro horizontal do username, na mesma linha
+     * do resultado, evitando o botao de relacionamento a direita.
+     */
+    const screen =
+      await this.getScreenSize();
+
+    const tapX =
+      Math.max(
+        120,
+        Math.min(
+          screen.width - 120,
+          x,
+        ),
+      );
+
+    await this.appium
+      .tap(tapX, y);
 
     await wait(1800);
 
@@ -1480,23 +1304,10 @@ export class MobileAgent {
     }
 
     if (
-      !new RegExp(
-        `(^|[^a-z0-9._])@?${normalizedUsername
-          .toLocaleLowerCase(
-            'pt-BR',
-          )
-          .replace(
-            /[.*+?^${}()|[\]\\]/g,
-            '\\$&',
-          )}([^a-z0-9._]|$)`,
-        'i',
+      !tikTokProfileSourceMatchesUsername(
+        profileSource,
+        normalizedUsername,
       )
-        .test(
-          profileLower.replace(
-            /[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g,
-            '',
-          ),
-        )
     ) {
       throw new Error(
         `TikTok profile identity could not be confirmed: @${normalizedUsername}`,
