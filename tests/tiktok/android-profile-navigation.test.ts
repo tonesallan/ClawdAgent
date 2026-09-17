@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import {
   containsExactTikTokUsername,
   findTikTokProfileSearchCandidate,
+  getTikTokProfileTapPoint,
   normalizeTikTokXmlText,
   parseTikTokXmlBounds,
   tikTokProfileSourceMatchesUsername,
@@ -90,6 +91,56 @@ describe('TikTok Android profile navigation XML helpers', () => {
     });
 
     expect(parseTikTokXmlBounds('text="no bounds"')).toBeNull();
+  });
+
+  it('uses the exact username bounds instead of the screen center for the tap', () => {
+    const tapPoint = getTikTokProfileTapPoint(
+      {
+        x1: 236,
+        y1: 400,
+        x2: 351,
+        y2: 452,
+      },
+      1080,
+    );
+
+    expect(tapPoint).toEqual({
+      x: 294,
+      y: 426,
+    });
+    expect(tapPoint.x).not.toBe(540);
+  });
+
+  it('keeps the username tap inside the configured horizontal safety margin', () => {
+    expect(
+      getTikTokProfileTapPoint(
+        {
+          x1: 0,
+          y1: 400,
+          x2: 80,
+          y2: 452,
+        },
+        1080,
+      ),
+    ).toEqual({
+      x: 120,
+      y: 426,
+    });
+
+    expect(
+      getTikTokProfileTapPoint(
+        {
+          x1: 1030,
+          y1: 400,
+          x2: 1080,
+          y2: 452,
+        },
+        1080,
+      ),
+    ).toEqual({
+      x: 960,
+      y: 426,
+    });
   });
 
   it('confirms exact profile identity without matching similar usernames', () => {
