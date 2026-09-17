@@ -21,25 +21,31 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           path = Path('src/actions/mobile/mobile-agent.ts')
           source = path.read_text(encoding='utf-8')
 
-          old_x = '''            Math.round(
-              screen.width / 2,
-            ),'''
-          new_x = '''            x,'''
+          pattern = re.compile(
+              r'Math\.round\(\s*screen\.width / 2,\s*\),'
+          )
+          matches = pattern.findall(source)
 
-          old_comment = '       * Tocamos no centro horizontal real da tela, na mesma linha'
-          new_comment = '       * Tocamos no centro horizontal do username, na mesma linha'
+          if len(matches) != 1:
+              raise SystemExit(
+                  f'expected one screen-center expression, found {len(matches)}'
+              )
 
-          if source.count(old_x) != 1:
-              raise SystemExit(f'expected one screen-center expression, found {source.count(old_x)}')
+          old_comment = 'Tocamos no centro horizontal real da tela, na mesma linha'
+          new_comment = 'Tocamos no centro horizontal do username, na mesma linha'
+
           if source.count(old_comment) != 1:
-              raise SystemExit(f'expected one navigation comment, found {source.count(old_comment)}')
+              raise SystemExit(
+                  f'expected one navigation comment, found {source.count(old_comment)}'
+              )
 
-          source = source.replace(old_x, new_x)
-          source = source.replace(old_comment, new_comment)
+          source = pattern.sub('x,', source, count=1)
+          source = source.replace(old_comment, new_comment, 1)
           path.write_text(source, encoding='utf-8')
           PY
 
@@ -48,7 +54,11 @@ jobs:
           set -euo pipefail
           git diff --check
           git diff -- src/actions/mobile/mobile-agent.ts
-          grep -F '            x,' src/actions/mobile/mobile-agent.ts
+          grep -A8 -B8 'const tapX' src/actions/mobile/mobile-agent.ts
+          if grep -A8 -B8 'const tapX' src/actions/mobile/mobile-agent.ts | grep -F 'screen.width / 2'; then
+            echo 'old screen-center expression is still present'
+            exit 1
+          fi
           rm .github/workflows/apply-tiktok-exact-result-tap.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
