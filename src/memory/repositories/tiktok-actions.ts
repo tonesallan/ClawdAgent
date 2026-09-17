@@ -41,25 +41,41 @@ export interface CreateTikTokActionInput {
 function assertTikTokActionCreationSafety(
   input: CreateTikTokActionInput,
 ): void {
-  if (
-    input.type !==
-    TIKTOK_ACTION_TYPES.UNFOLLOW
-  ) {
-    return;
-  }
-
   const requiresReview =
     input.payload?.requiresReview === true;
 
   if (
-    input.status !==
-      TIKTOK_ACTION_STATUSES.PENDING ||
-    input.executeAt != null ||
-    !requiresReview
+    input.type ===
+    TIKTOK_ACTION_TYPES.UNFOLLOW
   ) {
-    throw new Error(
-      'TikTok UNFOLLOW must remain a pending manual review with executeAt=null and requiresReview=true.',
-    );
+    if (
+      input.status !==
+        TIKTOK_ACTION_STATUSES.PENDING ||
+      input.executeAt != null ||
+      !requiresReview
+    ) {
+      throw new Error(
+        'TikTok UNFOLLOW must remain a pending manual review with executeAt=null and requiresReview=true.',
+      );
+    }
+
+    return;
+  }
+
+  if (
+    input.type ===
+    TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW
+  ) {
+    if (
+      input.status !==
+        TIKTOK_ACTION_STATUSES.PENDING ||
+      input.executeAt != null ||
+      !requiresReview
+    ) {
+      throw new Error(
+        'TikTok DISCOVERY_REVIEW must remain a pending manual review with executeAt=null and requiresReview=true.',
+      );
+    }
   }
 }
 
@@ -370,6 +386,15 @@ export async function rescheduleTikTokAction(
       );
     }
 
+    if (
+      current.type ===
+      TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW
+    ) {
+      throw new Error(
+        'TikTok DISCOVERY_REVIEW cannot be rescheduled or given executeAt.',
+      );
+    }
+
     const [row] =
       await tx
         .update(tiktokActions)
@@ -487,6 +512,21 @@ export async function transitionTikTokAction(
     ) {
       throw new Error(
         'TikTok UNFOLLOW review may only remain pending or be cancelled manually.',
+      );
+    }
+
+    if (
+      current.type ===
+        TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW &&
+      input.status !==
+        TIKTOK_ACTION_STATUSES.PENDING &&
+      input.status !==
+        TIKTOK_ACTION_STATUSES.SUCCESS &&
+      input.status !==
+        TIKTOK_ACTION_STATUSES.CANCELLED
+    ) {
+      throw new Error(
+        'TikTok DISCOVERY_REVIEW may only remain pending or resolve to success/cancelled.',
       );
     }
 
