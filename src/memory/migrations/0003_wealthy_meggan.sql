@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "uq_tiktok_actions_open_account_type_target" ON "tiktok_actions" USING btree ("account_key","type","target_key") WHERE "tiktok_actions"."status" in ('pending', 'scheduled', 'running');

@@ -8,7 +8,7 @@ import {
 } from './domain.js';
 
 import {
-  createTikTokAction,
+  createOrReuseOpenTikTokAction,
   findOpenTikTokAction,
   getTikTokAction,
   listPendingTikTokActionsByType,
@@ -150,8 +150,8 @@ export async function enqueueTikTokDiscoveryReview(
     input.discoveredAt ??
     new Date();
 
-  const action =
-    await createTikTokAction({
+  const { action, created } =
+    await createOrReuseOpenTikTokAction({
       accountKey:
         input.accountKey,
 
@@ -207,8 +207,7 @@ export async function enqueueTikTokDiscoveryReview(
     action,
     candidate:
       input.candidate,
-    created:
-      true,
+    created,
   };
 }
 

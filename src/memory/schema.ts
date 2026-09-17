@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 ﻿import { pgTable, text, timestamp, integer, boolean, jsonb, uuid, varchar, index, serial, real, doublePrecision, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
@@ -460,6 +461,23 @@ export const tiktokActions = pgTable('tiktok_actions', {
 
   index('idx_tiktok_actions_target')
     .on(table.targetKey),
+
+  /*
+   * At most one logically equivalent OPEN action may exist.
+   *
+   * Terminal rows remain outside this index so historical
+   * SUCCESS / FAILED / CANCELLED actions never block a future
+   * legitimate occurrence.
+   */
+  uniqueIndex('uq_tiktok_actions_open_account_type_target')
+    .on(
+      table.accountKey,
+      table.type,
+      table.targetKey,
+    )
+    .where(
+      sql`${table.status} in ('pending', 'scheduled', 'running')`,
+    ),
 ]);
 
 

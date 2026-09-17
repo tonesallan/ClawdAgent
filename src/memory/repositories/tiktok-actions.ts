@@ -76,6 +76,162 @@ export async function createTikTokAction(
   });
 }
 
+const OPEN_TIKTOK_ACTION_STATUSES:
+  readonly TikTokActionStatus[] = [
+    'pending',
+    'scheduled',
+    'running',
+  ];
+
+export interface CreateOrReuseOpenTikTokActionResult {
+  action: TikTokAction;
+  created: boolean;
+}
+
+/**
+ * Atomically creates or reuses one logically equivalent OPEN
+ * TikTok action.
+ *
+ * Correctness is enforced by the PostgreSQL partial UNIQUE
+ * index:
+ *
+ * account_key + type + target_key
+ *
+ * only while status is pending/scheduled/running.
+ *
+ * ON CONFLICT DO NOTHING lets concurrent creators race safely:
+ * exactly one INSERT wins and every loser reads the winner.
+ */
+export async function createOrReuseOpenTikTokAction(
+  input:
+    CreateTikTokActionInput & {
+      targetKey: string;
+    },
+): Promise<CreateOrReuseOpenTikTokActionResult> {
+
+  if (
+    !OPEN_TIKTOK_ACTION_STATUSES.includes(
+      input.status,
+    )
+  ) {
+    throw new Error(
+      'createOrReuseOpenTikTokAction requires an open status.',
+    );
+  }
+
+  if (!input.targetKey) {
+    throw new Error(
+      'createOrReuseOpenTikTokAction requires targetKey.',
+    );
+  }
+
+  const db = getDb();
+
+  return db.transaction(async (tx) => {
+    const [created] = await tx
+      .insert(tiktokActions)
+      .values({
+        accountKey: input.accountKey,
+        type: input.type,
+        targetKey: input.targetKey,
+        targetUsername:
+          input.targetUsername ?? null,
+        targetDisplayName:
+          input.targetDisplayName ?? null,
+        status: input.status,
+        executeAt: input.executeAt ?? null,
+        priority: input.priority ?? 5,
+        attempts: 0,
+        maxAttempts:
+          input.maxAttempts ?? 3,
+        provider:
+          input.provider ?? 'android',
+        payload:
+          input.payload ?? {},
+        updatedAt:
+          new Date(),
+      })
+      .onConflictDoNothing()
+      .returning();
+
+    if (created) {
+      await tx
+        .insert(tiktokActionHistory)
+        .values({
+          actionId:
+            created.id,
+          status:
+            created.status,
+          provider:
+            created.provider,
+          metadata: {
+            event:
+              'created',
+          },
+        });
+
+      return {
+        action:
+          created,
+        created:
+          true,
+      };
+    }
+
+    /*
+     * PostgreSQL waits for the winning concurrent INSERT to
+     * finish before ON CONFLICT returns. Under READ COMMITTED
+     * this following statement then sees the committed winner.
+     */
+    const [existing] = await tx
+      .select()
+      .from(tiktokActions)
+      .where(
+        and(
+          eq(
+            tiktokActions.accountKey,
+            input.accountKey,
+          ),
+          eq(
+            tiktokActions.type,
+            input.type,
+          ),
+          eq(
+            tiktokActions.targetKey,
+            input.targetKey,
+          ),
+          inArray(
+            tiktokActions.status,
+            [
+              'pending',
+              'scheduled',
+              'running',
+            ],
+          ),
+        ),
+      )
+      .orderBy(
+        asc(
+          tiktokActions.createdAt,
+        ),
+      )
+      .limit(1);
+
+    if (!existing) {
+      throw new Error(
+        'Open TikTok action conflict occurred but the winning row could not be loaded.',
+      );
+    }
+
+    return {
+      action:
+        existing,
+      created:
+        false,
+    };
+  });
+}
+
 export async function getTikTokAction(
   id: string,
 ): Promise<TikTokAction | null> {

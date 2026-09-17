@@ -14,8 +14,7 @@ import {
 } from '../memory/repositories/tiktok-relationships.js';
 
 import {
-  createTikTokAction,
-  findOpenTikTokAction,
+  createOrReuseOpenTikTokAction,
   rescheduleTikTokAction,
   transitionTikTokAction,
 } from '../memory/repositories/tiktok-actions.js';
@@ -73,13 +72,6 @@ export async function registerSuccessfulTikTokFollow(
       },
     });
 
-  const existingCheck =
-    await findOpenTikTokAction(
-      accountKey,
-      TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
-      input.targetKey,
-    );
-
   const payload = {
     relationshipId: relationship.id,
     reason: 'follow_back_wait_elapsed',
@@ -87,24 +79,35 @@ export async function registerSuccessfulTikTokFollow(
     waitHours,
   };
 
+  const {
+    action: openCheckAction,
+    created: checkCreated,
+  } =
+    await createOrReuseOpenTikTokAction({
+      accountKey,
+      type: TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
+      targetKey: input.targetKey,
+      targetUsername: input.username,
+      targetDisplayName: input.displayName,
+      status: TIKTOK_ACTION_STATUSES.SCHEDULED,
+      executeAt: followBackCheckAt,
+      provider: input.provider ?? 'android',
+      payload,
+    });
+
+  /*
+   * Existing behaviour is preserved:
+   * a repeated successful follow refreshes/reschedules the
+   * already-open follow-back check instead of creating another.
+   */
   const checkAction =
-    existingCheck
-      ? await rescheduleTikTokAction(
-          existingCheck.id,
+    checkCreated
+      ? openCheckAction
+      : await rescheduleTikTokAction(
+          openCheckAction.id,
           followBackCheckAt,
           payload,
-        )
-      : await createTikTokAction({
-          accountKey,
-          type: TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
-          targetKey: input.targetKey,
-          targetUsername: input.username,
-          targetDisplayName: input.displayName,
-          status: TIKTOK_ACTION_STATUSES.SCHEDULED,
-          executeAt: followBackCheckAt,
-          provider: input.provider ?? 'android',
-          payload,
-        });
+        );
 
   if (!checkAction) {
     throw new Error(
@@ -266,22 +269,10 @@ export async function recordTikTokFollowBackCheckResult(
     };
   }
 
-  const existingUnfollow =
-    await findOpenTikTokAction(
-      accountKey,
-      TIKTOK_ACTION_TYPES.UNFOLLOW,
-      input.targetKey,
-    );
-
-  if (existingUnfollow) {
-    return {
-      relationship,
-      unfollowReviewAction: existingUnfollow,
-    };
-  }
-
-  const unfollowReviewAction =
-    await createTikTokAction({
+  const {
+    action: unfollowReviewAction,
+  } =
+    await createOrReuseOpenTikTokAction({
       accountKey,
       type: TIKTOK_ACTION_TYPES.UNFOLLOW,
       targetKey: input.targetKey,
