@@ -23,6 +23,35 @@ export interface TikTokProfileSearchResult {
   mentions: string[];
 }
 
+export interface TikTokProfileTapPoint {
+  x: number;
+  y: number;
+}
+
+export function getTikTokProfileTapPoint(
+  bounds: TikTokXmlBounds,
+  screenWidth: number,
+  horizontalMargin = 120,
+): TikTokProfileTapPoint {
+  const candidateX = Math.round(
+    (bounds.x1 + bounds.x2) / 2,
+  );
+  const candidateY = Math.round(
+    (bounds.y1 + bounds.y2) / 2,
+  );
+
+  return {
+    x: Math.max(
+      horizontalMargin,
+      Math.min(
+        screenWidth - horizontalMargin,
+        candidateX,
+      ),
+    ),
+    y: candidateY,
+  };
+}
+
 export function getTikTokXmlAttribute(
   line: string,
   attribute: string,
