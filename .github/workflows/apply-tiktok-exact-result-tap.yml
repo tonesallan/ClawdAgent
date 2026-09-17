@@ -1,114 +1,54 @@
-name: Apply TikTok exact-result tap fix
+name: Apply TikTok exact result tap fix
 
 on:
   push:
-    branches:
-      - feature/android-tiktok-local
+    branches: [feature/android-tiktok-local]
 
 permissions:
   contents: write
 
 jobs:
-  apply-fix:
+  patch:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout branch
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: feature/android-tiktok-local
           fetch-depth: 0
 
-      - name: Apply exact username tap patch
-        shell: python
+      - name: Apply minimal navigation fix
         run: |
+          python3 - <<'PY'
           from pathlib import Path
 
           path = Path('src/actions/mobile/mobile-agent.ts')
           source = path.read_text(encoding='utf-8')
 
-          old = '''      /*
-       * O TextView do username nem sempre e o elemento clicavel.
-       * Tocamos no centro horizontal real da tela, na mesma linha
-       * do resultado, evitando o botao de relacionamento a direita.
-       */
-      const screen =
-        await this.getScreenSize();
-
-      const tapX =
-        Math.max(
-          120,
-          Math.min(
-            screen.width - 120,
-            Math.round(
+          old_x = '''            Math.round(
               screen.width / 2,
-            ),
-          ),
-        );
+            ),'''
+          new_x = '''            x,'''
 
-      await this.appium
-        .tap(tapX, y);
-'''
+          old_comment = '       * Tocamos no centro horizontal real da tela, na mesma linha'
+          new_comment = '       * Tocamos no centro horizontal do username, na mesma linha'
 
-          new = '''      /*
-       * O TextView do username nao e clicavel na UI real mapeada.
-       * O toque precisa permanecer na linha do resultado exato e,
-       * principalmente, sobre a area horizontal do username encontrado.
-       *
-       * Antes usavamos o centro da tela, ignorando o `x` calculado a
-       * partir dos bounds do candidato. Em layouts com botao de relacao
-       * a direita, isso pode acertar outra area da linha e nao abrir o
-       * perfil. Mantemos margens de seguranca apenas como clamp.
-       */
-      const screen =
-        await this.getScreenSize();
+          if source.count(old_x) != 1:
+              raise SystemExit(f'expected one screen-center expression, found {source.count(old_x)}')
+          if source.count(old_comment) != 1:
+              raise SystemExit(f'expected one navigation comment, found {source.count(old_comment)}')
 
-      const tapX =
-        Math.max(
-          120,
-          Math.min(
-            screen.width - 120,
-            x,
-          ),
-        );
+          source = source.replace(old_x, new_x)
+          source = source.replace(old_comment, new_comment)
+          path.write_text(source, encoding='utf-8')
+          PY
 
-      const tapY =
-        Math.max(
-          120,
-          Math.min(
-            screen.height - 120,
-            y,
-          ),
-        );
-
-      await this.appium
-        .tap(tapX, tapY);
-'''
-
-          occurrences = source.count(old)
-          if occurrences != 1:
-              raise SystemExit(
-                  f'expected exactly one navigation tap block, found {occurrences}'
-              )
-
-          path.write_text(source.replace(old, new), encoding='utf-8')
-
-      - name: Validate patch shape
-        shell: bash
+      - name: Validate and commit
         run: |
           set -euo pipefail
           git diff --check
           git diff -- src/actions/mobile/mobile-agent.ts
-          grep -F '.tap(tapX, tapY);' src/actions/mobile/mobile-agent.ts
-          if grep -A12 -B12 'const tapX' src/actions/mobile/mobile-agent.ts | grep -F 'screen.width / 2'; then
-            echo 'old screen-center tap still present in navigation block'
-            exit 1
-          fi
-
-      - name: Commit source patch and remove temporary workflow
-        shell: bash
-        run: |
-          set -euo pipefail
+          grep -F '            x,' src/actions/mobile/mobile-agent.ts
           rm .github/workflows/apply-tiktok-exact-result-tap.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
