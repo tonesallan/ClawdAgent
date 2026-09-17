@@ -868,11 +868,6 @@ export async function claimDueTikTokScheduledAction(
                 'scheduled',
               ),
 
-              eq(
-                tiktokActions.type,
-                TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
-              ),
-
               lte(
                 tiktokActions.executeAt,
                 now,
