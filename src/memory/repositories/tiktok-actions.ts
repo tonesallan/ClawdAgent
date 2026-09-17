@@ -13,6 +13,10 @@ import {
   tiktokActionHistory,
   tiktokActions,
 } from '../schema.js';
+import {
+  TIKTOK_ACTION_STATUSES,
+  TIKTOK_ACTION_TYPES,
+} from '../../tiktok/domain.js';
 import type {
   TikTokActionStatus,
   TikTokActionType,
@@ -34,9 +38,39 @@ export interface CreateTikTokActionInput {
   payload?: Record<string, unknown>;
 }
 
+function assertTikTokActionCreationSafety(
+  input: CreateTikTokActionInput,
+): void {
+  if (
+    input.type !==
+    TIKTOK_ACTION_TYPES.UNFOLLOW
+  ) {
+    return;
+  }
+
+  const requiresReview =
+    input.payload?.requiresReview === true;
+
+  if (
+    input.status !==
+      TIKTOK_ACTION_STATUSES.PENDING ||
+    input.executeAt != null ||
+    !requiresReview
+  ) {
+    throw new Error(
+      'TikTok UNFOLLOW must remain a pending manual review with executeAt=null and requiresReview=true.',
+    );
+  }
+}
+
+
 export async function createTikTokAction(
   input: CreateTikTokActionInput,
 ): Promise<TikTokAction> {
+  assertTikTokActionCreationSafety(
+    input,
+  );
+
   const db = getDb();
 
   return db.transaction(async (tx) => {
@@ -108,6 +142,10 @@ export async function createOrReuseOpenTikTokAction(
       targetKey: string;
     },
 ): Promise<CreateOrReuseOpenTikTokActionResult> {
+
+  assertTikTokActionCreationSafety(
+    input,
+  );
 
   if (
     !OPEN_TIKTOK_ACTION_STATUSES.includes(
@@ -301,6 +339,36 @@ export async function rescheduleTikTokAction(
   const db = getDb();
 
   return db.transaction(async (tx) => {
+
+    const [current] =
+      await tx
+        .select({
+          type:
+            tiktokActions.type,
+        })
+        .from(
+          tiktokActions,
+        )
+        .where(
+          eq(
+            tiktokActions.id,
+            id,
+          ),
+        )
+        .limit(1);
+
+    if (!current) {
+      return null;
+    }
+
+    if (
+      current.type ===
+      TIKTOK_ACTION_TYPES.UNFOLLOW
+    ) {
+      throw new Error(
+        'TikTok UNFOLLOW review cannot be rescheduled or given executeAt.',
+      );
+    }
 
     const [row] =
       await tx
