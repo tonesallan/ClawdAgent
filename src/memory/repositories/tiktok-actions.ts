@@ -560,11 +560,13 @@ export async function transitionTikTokAction(
 }
 
 /**
- * Only SCHEDULED actions are returned here.
+ * Only due SCHEDULED CHECK_FOLLOW_BACK actions are returned here.
  *
  * PENDING actions are intentionally excluded because they can represent
- * actions waiting for manual review. This prevents a queued UNFOLLOW
- * from becoming automatically executable merely because it exists.
+ * actions waiting for manual review. Non-automated scheduled action
+ * types are also excluded at the query level so legacy/invalid rows
+ * cannot consume the scheduler batch limit and starve legitimate
+ * CHECK_FOLLOW_BACK work.
  */
 export async function listDueScheduledTikTokActions(
   now = new Date(),
@@ -577,6 +579,10 @@ export async function listDueScheduledTikTokActions(
     .from(tiktokActions)
     .where(
       and(
+        eq(
+          tiktokActions.type,
+          TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
+        ),
         eq(tiktokActions.status, 'scheduled'),
         lte(tiktokActions.executeAt, now),
       ),
