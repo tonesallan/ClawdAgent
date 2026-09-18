@@ -380,6 +380,130 @@ try {
           normalizedUrlHandle ===
           normalizedExpectedUsername;
 
+        const directSelectors = {
+          followButton:
+            document.querySelectorAll(
+              '[data-e2e="follow-button"]',
+            ).length,
+          followLikeDataE2e:
+            document.querySelectorAll(
+              '[data-e2e*="follow" i]',
+            ).length,
+          messageLikeDataE2e:
+            document.querySelectorAll(
+              '[data-e2e*="message" i]',
+            ).length,
+          friendLikeDataE2e:
+            document.querySelectorAll(
+              '[data-e2e*="friend" i]',
+            ).length,
+        };
+
+        const globalButtons =
+          Array.from(
+            document.querySelectorAll(
+              'button, [role="button"]',
+            ),
+          )
+            .map(
+              element => {
+                const htmlElement =
+                  element as HTMLElement;
+
+                const text =
+                  (
+                    htmlElement.innerText ||
+                    htmlElement.textContent ||
+                    ''
+                  )
+                    .replace(
+                      /\s+/g,
+                      ' ',
+                    )
+                    .trim();
+
+                const rect =
+                  htmlElement.getBoundingClientRect();
+
+                const style =
+                  window.getComputedStyle(
+                    htmlElement,
+                  );
+
+                const visible =
+                  rect.width > 0 &&
+                  rect.height > 0 &&
+                  style.display !==
+                    'none' &&
+                  style.visibility !==
+                    'hidden';
+
+                return {
+                  tag:
+                    element.tagName.toLowerCase(),
+                  dataE2e:
+                    element.getAttribute(
+                      'data-e2e',
+                    ),
+                  role:
+                    element.getAttribute(
+                      'role',
+                    ),
+                  ariaLabel:
+                    element.getAttribute(
+                      'aria-label',
+                    ),
+                  title:
+                    element.getAttribute(
+                      'title',
+                    ),
+                  className:
+                    typeof htmlElement.className ===
+                    'string'
+                      ? htmlElement.className.slice(
+                          0,
+                          220,
+                        )
+                      : null,
+                  text:
+                    text.slice(
+                      0,
+                      160,
+                    ),
+                  visible,
+                  parentDataE2e:
+                    element.parentElement
+                      ?.getAttribute(
+                        'data-e2e',
+                      ) ??
+                    null,
+                  parentText:
+                    (
+                      element.parentElement
+                        ?.innerText ??
+                      ''
+                    )
+                      .replace(
+                        /\s+/g,
+                        ' ',
+                      )
+                      .trim()
+                      .slice(
+                        0,
+                        220,
+                      ),
+                };
+              },
+            )
+            .filter(
+              element =>
+                element.visible,
+            )
+            .slice(
+              0,
+              120,
+            );
+
         return {
           url:
             currentUrl
@@ -401,8 +525,12 @@ try {
               element =>
                 element.relationshipTextMatch,
             ).length,
+          directSelectors,
+          globalButtonCount:
+            globalButtons.length,
           candidates:
             elements,
+          globalButtons,
         };
       },
       targetUsername,
@@ -503,6 +631,12 @@ try {
     `RELATIONSHIP_TEXT_MATCHES=${diagnostic.relationshipTextMatches}`,
   );
   console.log(
+    `DIRECT_SELECTORS=${JSON.stringify(diagnostic.directSelectors)}`,
+  );
+  console.log(
+    `GLOBAL_VISIBLE_BUTTONS=${diagnostic.globalButtonCount}`,
+  );
+  console.log(
     'MUTATIONS_PERFORMED=false',
   );
   console.log(
@@ -520,6 +654,19 @@ try {
   );
   console.log(
     'CANDIDATES_JSON_END',
+  );
+  console.log(
+    'GLOBAL_BUTTONS_JSON_BEGIN',
+  );
+  console.log(
+    JSON.stringify(
+      diagnostic.globalButtons,
+      null,
+      2,
+    ),
+  );
+  console.log(
+    'GLOBAL_BUTTONS_JSON_END',
   );
 }
 finally {
