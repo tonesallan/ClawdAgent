@@ -173,6 +173,10 @@ export function setupMobileAgentRoutes(): Router {
           pauseDurationMinutes: 120,
         },
         testMode: config?.testMode ?? false,
+        warmupSeconds:
+          typeof config?.warmupSeconds === 'number'
+            ? config.warmupSeconds
+            : undefined,
       };
 
       const agent = MobileAgent.createAgent(agentConfig);
