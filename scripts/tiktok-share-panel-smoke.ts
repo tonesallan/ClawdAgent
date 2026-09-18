@@ -85,7 +85,7 @@ const agent =
     config,
   );
 
-type ShareCapableMobileAgent = MobileAgent & {
+type ShareCapableMobileAgent = {
   executeTikTokAction(
     action: MobileActionType,
   ): Promise<void>;
@@ -157,8 +157,4 @@ try {
 }
 finally {
   await agent.stop();
-
-  MobileAgent.removeAgent(
-    agentId,
-  );
 }
