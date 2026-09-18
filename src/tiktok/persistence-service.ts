@@ -236,20 +236,27 @@ export async function recordTikTokFollowBackCheckResult(
       processed: true,
     });
 
-  await transitionTikTokAction(
-    input.checkActionId,
-    {
-      status: TIKTOK_ACTION_STATUSES.SUCCESS,
-      result: {
-        followedBack,
-        relationshipState,
-        checkedAt: checkedAt.toISOString(),
+  const completedCheck =
+    await transitionTikTokAction(
+      input.checkActionId,
+      {
+        status: TIKTOK_ACTION_STATUSES.SUCCESS,
+        result: {
+          followedBack,
+          relationshipState,
+          checkedAt: checkedAt.toISOString(),
+        },
+        metadata: {
+          event: 'follow_back_checked',
+        },
       },
-      metadata: {
-        event: 'follow_back_checked',
-      },
-    },
-  );
+    );
+
+  if (!completedCheck) {
+    throw new Error(
+      `CHECK_FOLLOW_BACK is no longer running: ${input.checkActionId}`,
+    );
+  }
 
   /*
    * Only FOLLOWING may generate an UNFOLLOW review candidate.
