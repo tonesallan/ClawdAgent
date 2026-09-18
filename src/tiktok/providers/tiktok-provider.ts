@@ -1,5 +1,6 @@
 export type TikTokProviderName =
   | 'android'
+  | 'web'
   | 'dry-run';
 
 export type TikTokObservedRelationship =
@@ -11,6 +12,7 @@ export type TikTokObservedRelationship =
 
 export interface TikTokTarget {
   targetKey: string;
+  accountKey?: string | null;
   username?: string | null;
   displayName?: string | null;
 }
