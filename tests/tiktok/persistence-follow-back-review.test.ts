@@ -287,26 +287,53 @@ describe(
       ).toBeNull();
     });
 
-    it('does not create an UNFOLLOW review for a protected FOLLOWING relationship', async () => {
-      relationshipMocks
-        .getTikTokRelationship
-        .mockResolvedValue(
-          currentRelationship(true),
-        );
+    it('uses the committed protected state and does not create UNFOLLOW', async () => {
+      followBackMocks
+        .completeTikTokFollowBackCheck
+        .mockResolvedValue({
+          action: {
+            id:
+              'check-1',
+            type:
+              'CHECK_FOLLOW_BACK',
+            status:
+              'success',
+          },
+          relationship: {
+            ...currentRelationship(true),
+            processed:
+              true,
+            lastCheckedAt:
+              checkedAt,
+          },
+        });
 
       const result =
         await recordTikTokFollowBackCheckResult({
-          checkActionId: 'check-1',
-          targetKey: 'username:tiktok',
+          checkActionId:
+            'check-1',
+          targetKey:
+            'username:tiktok',
           relationshipState:
             'following',
           checkedAt,
         });
 
       expect(
+        relationshipMocks
+          .getTikTokRelationship,
+      ).not.toHaveBeenCalled();
+
+      expect(
         actionMocks
           .createOrReuseOpenTikTokAction,
       ).not.toHaveBeenCalled();
+
+      expect(
+        result.relationship.protected,
+      ).toBe(
+        true,
+      );
 
       expect(
         result.unfollowReviewAction,
