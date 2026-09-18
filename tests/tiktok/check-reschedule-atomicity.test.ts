@@ -177,7 +177,7 @@ describe(
           ),
         ),
       ).rejects.toThrow(
-        'TikTok CHECK_FOLLOW_BACK reschedule requires expectedStatus.',
+        'TikTok CHECK_FOLLOW_BACK reschedule requires expectedStatus=scheduled or running.',
       );
 
       expect(
