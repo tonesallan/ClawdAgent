@@ -359,12 +359,6 @@ try {
                 };
               },
             )
-            .filter(
-              (
-                value,
-              value =>
-                value !== null,
-            )
             .slice(
               0,
               80,
