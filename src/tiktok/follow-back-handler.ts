@@ -52,6 +52,7 @@ function parseProviderName(
 
   if (
     provider === 'android' ||
+    provider === 'web' ||
     provider === 'dry-run'
   ) {
     return provider;
@@ -93,6 +94,8 @@ export function createFollowBackSchedulerHandler(
 
     const target: TikTokTarget = {
       targetKey: action.targetKey,
+      accountKey:
+        action.accountKey,
       username:
         action.targetUsername ?? null,
       displayName:
