@@ -173,6 +173,8 @@ describe(
         ),
         undefined,
         {
+          expectedStatus:
+            'running',
           error:
             'Relationship state is not safe to classify: unknown',
           attempts: 1,
