@@ -275,7 +275,11 @@ export class TikTokAccountManager {
     }
   }
 
-  async launchSession(id: string, withVnc = true): Promise<{ sessionId: string; url: string }> {
+  async launchSession(
+    id: string,
+    withVnc = true,
+    contextOptions: Record<string, unknown> = {},
+  ): Promise<{ sessionId: string; url: string }> {
     const account = this.getAccount(id);
     if (!account) throw new Error(`Account ${id} not found`);
 
@@ -285,7 +289,11 @@ export class TikTokAccountManager {
     }
 
     const mgr = BrowserSessionManager.getInstance();
-    const session = await mgr.createSession(undefined, withVnc);
+    const session = await mgr.createSession(
+      undefined,
+      withVnc,
+      contextOptions,
+    );
 
     try {
       const page = mgr.getPage(session.id);
