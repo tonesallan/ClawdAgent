@@ -434,6 +434,8 @@ describe(
         {
           expectedStatus:
             'scheduled',
+          attempts:
+            0,
         },
       );
 
@@ -475,7 +477,7 @@ describe(
               '2026-09-19T20:00:00.000Z',
             ),
           attempts:
-            1,
+            0,
         });
 
       actionMocks
@@ -523,6 +525,8 @@ describe(
         {
           expectedStatus:
             'running',
+          attempts:
+            0,
         },
       );
 
