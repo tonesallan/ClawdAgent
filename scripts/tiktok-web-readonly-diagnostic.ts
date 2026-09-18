@@ -116,7 +116,7 @@ const account =
   resolveAccount();
 
 console.log(
-  '[1/5] TikTok Web account selected.',
+  '[1/6] TikTok Web account selected.',
 );
 
 console.log(
@@ -127,13 +127,36 @@ console.log(
   `TARGET=@${targetUsername}`,
 );
 
+console.log(
+  '[2/6] Verifying imported TikTok authentication...',
+);
+
+const verification =
+  await accountManager.verifyAccount(
+    account.id,
+  );
+
+if (!verification.success) {
+  throw new Error(
+    `Imported TikTok Web session is not authenticated: ${verification.error ?? 'unknown verification failure'}`,
+  );
+}
+
+console.log(
+  'AUTHENTICATED_SESSION=PASS',
+);
+
+console.log(
+  `AUTHENTICATED_HANDLE=${verification.handle ?? ''}`,
+);
+
 let sessionId:
   string | null =
     null;
 
 try {
   console.log(
-    '[2/5] Launching authenticated headless TikTok session...',
+    '[3/6] Launching authenticated headless TikTok session...',
   );
 
   const session =
@@ -157,7 +180,7 @@ try {
   }
 
   console.log(
-    '[3/5] Opening exact profile in read-only mode...',
+    '[4/6] Opening exact profile in read-only mode...',
   );
 
   const targetUrl =
@@ -186,7 +209,7 @@ try {
   );
 
   console.log(
-    '[4/5] Inspecting relationship-related DOM without clicking...',
+    '[5/6] Inspecting profile action DOM without clicking...',
   );
 
   const diagnostic =
@@ -238,9 +261,15 @@ try {
         const relationshipText =
           /follow|following|friends|message|seguir|seguindo|amigos|mensagem/i;
 
+        const profileRoot =
+          document.querySelector(
+            '[data-e2e="user-page"]',
+          ) ??
+          document.body;
+
         const elements =
           Array.from(
-            document.querySelectorAll(
+            profileRoot.querySelectorAll(
               'button, [role="button"], a, [data-e2e]',
             ),
           )
@@ -284,7 +313,7 @@ try {
                     ? element.href
                     : null;
 
-                const relevant =
+                const relevantText =
                   relationshipText.test(
                     [
                       text,
@@ -298,19 +327,11 @@ try {
                       .join(
                         ' ',
                       ),
-                  ) ||
-                  (
-                    dataE2e !== null &&
-                    /user|profile/i.test(
-                      dataE2e,
-                    )
                   );
 
-                if (!relevant) {
-                  return null;
-                }
-
                 return {
+                  relationshipTextMatch:
+                    relevantText,
                   tag:
                     element.tagName.toLowerCase(),
                   dataE2e:
@@ -341,14 +362,7 @@ try {
             .filter(
               (
                 value,
-              ): value is {
-                tag: string;
-                dataE2e: string | null;
-                role: string | null;
-                ariaLabel: string | null;
-                text: string;
-                href: string | null;
-              } =>
+              value =>
                 value !== null,
             )
             .slice(
@@ -388,6 +402,11 @@ try {
           loginDetected,
           candidateCount:
             elements.length,
+          relationshipTextMatches:
+            elements.filter(
+              element =>
+                element.relationshipTextMatch,
+            ).length,
           candidates:
             elements,
         };
@@ -464,7 +483,7 @@ try {
   );
 
   console.log(
-    '[5/5] Read-only diagnostic captured.',
+    '[6/6] Read-only diagnostic captured.',
   );
 
   console.log('');
@@ -484,7 +503,10 @@ try {
     `PROFILE_SUBTITLE=${diagnostic.profileSubtitle ?? ''}`,
   );
   console.log(
-    `RELATIONSHIP_CANDIDATES=${diagnostic.candidateCount}`,
+    `PROFILE_ACTION_CANDIDATES=${diagnostic.candidateCount}`,
+  );
+  console.log(
+    `RELATIONSHIP_TEXT_MATCHES=${diagnostic.relationshipTextMatches}`,
   );
   console.log(
     'MUTATIONS_PERFORMED=false',
