@@ -101,18 +101,35 @@ export async function registerSuccessfulTikTokFollow(
    * a repeated successful follow refreshes/reschedules the
    * already-open follow-back check instead of creating another.
    */
-  const checkAction =
-    checkCreated
-      ? openCheckAction
-      : await rescheduleTikTokAction(
-          openCheckAction.id,
-          followBackCheckAt,
-          payload,
-          {
-            expectedStatus:
-              TIKTOK_ACTION_STATUSES.SCHEDULED,
-          },
-        );
+  let checkAction =
+    openCheckAction;
+
+  if (!checkCreated) {
+    const openStatus =
+      openCheckAction.status;
+
+    if (
+      openStatus !==
+        TIKTOK_ACTION_STATUSES.SCHEDULED &&
+      openStatus !==
+        TIKTOK_ACTION_STATUSES.RUNNING
+    ) {
+      throw new Error(
+        `Cannot refresh CHECK_FOLLOW_BACK from open status: ${openStatus}`,
+      );
+    }
+
+    checkAction =
+      await rescheduleTikTokAction(
+        openCheckAction.id,
+        followBackCheckAt,
+        payload,
+        {
+          expectedStatus:
+            openStatus,
+        },
+      );
+  }
 
   if (!checkAction) {
     throw new Error(
