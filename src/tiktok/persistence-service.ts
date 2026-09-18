@@ -110,7 +110,7 @@ export async function registerSuccessfulTikTokFollow(
           payload,
           {
             expectedStatus:
-              openCheckAction.status,
+              TIKTOK_ACTION_STATUSES.SCHEDULED,
           },
         );
 
