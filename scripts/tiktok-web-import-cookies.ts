@@ -13,6 +13,11 @@ import {
   TikTokAccountManager,
 } from '../src/actions/browser/tiktok-manager.js';
 
+import {
+  parseTikTokCookies,
+  validateTikTokCookies,
+} from '../src/actions/browser/tiktok-cookies.js';
+
 const accountManager =
   TikTokAccountManager.getInstance();
 
@@ -80,6 +85,37 @@ console.log(
 console.log(
   'COOKIE_VALUES_PRINTED=false',
 );
+
+const parsed =
+  parseTikTokCookies(
+    cookieInput,
+  );
+
+if (parsed.error) {
+  throw new Error(
+    `Cookie parse error: ${parsed.error}`,
+  );
+}
+
+if (
+  parsed.cookies.length ===
+    0
+) {
+  throw new Error(
+    'No TikTok cookies were found in the file.',
+  );
+}
+
+const preValidation =
+  validateTikTokCookies(
+    parsed.cookies,
+  );
+
+if (!preValidation.valid) {
+  throw new Error(
+    `Imported TikTok cookies are missing required cookies: ${preValidation.missing.join(', ')}`,
+  );
+}
 
 const existingAccounts =
   accountManager.listAccounts();
