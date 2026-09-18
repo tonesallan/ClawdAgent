@@ -4,6 +4,10 @@ import {
   AndroidTikTokProvider,
 } from '../../src/tiktok/providers/android-tiktok-provider.js';
 
+import type {
+  TikTokAutomationProvider,
+} from '../../src/tiktok/providers/tiktok-provider.js';
+
 import {
   TikTokProviderRegistry,
 } from '../../src/tiktok/provider-registry.js';
@@ -206,6 +210,100 @@ describe(
       expect(
         unfollow,
       ).not.toHaveBeenCalled();
+    });
+
+    it('routes Web CHECK_FOLLOW_BACK with the action accountKey', async () => {
+      const checkRelationship =
+        vi.fn().mockResolvedValue({
+          provider:
+            'web' as const,
+          targetKey:
+            'username:tiktok',
+          relationship:
+            'not_following' as const,
+          observedAt:
+            new Date(
+              '2026-09-17T20:00:00.000Z',
+            ),
+        });
+
+      const webProvider: TikTokAutomationProvider = {
+        name:
+          'web',
+        checkRelationship,
+        follow:
+          vi.fn(),
+        unfollow:
+          vi.fn(),
+      };
+
+      const registry =
+        new TikTokProviderRegistry();
+
+      registry.register(
+        webProvider,
+      );
+
+      const recordRelationshipCheck =
+        vi.fn().mockResolvedValue({
+          relationship: {
+            targetKey:
+              'username:tiktok',
+          },
+          unfollowReviewAction:
+            null,
+        });
+
+      const relationshipManager = {
+        recordRelationshipCheck,
+      } as unknown as TikTokRelationshipManager;
+
+      const handler =
+        createFollowBackSchedulerHandler(
+          registry,
+          relationshipManager,
+        );
+
+      await handler(
+        createAction({
+          provider:
+            'web',
+          accountKey:
+            'web-account-1',
+        }),
+      );
+
+      expect(
+        checkRelationship,
+      ).toHaveBeenCalledWith({
+        targetKey:
+          'username:tiktok',
+        accountKey:
+          'web-account-1',
+        username:
+          'tiktok',
+        displayName:
+          'TikTok',
+      });
+
+      expect(
+        recordRelationshipCheck,
+      ).toHaveBeenCalledWith({
+        checkActionId:
+          'check-1',
+        accountKey:
+          'web-account-1',
+        targetKey:
+          'username:tiktok',
+        relationshipState:
+          'not_following',
+        provider:
+          'web',
+        checkedAt:
+          new Date(
+            '2026-09-17T20:00:00.000Z',
+          ),
+      });
     });
 
     it('rejects action types other than CHECK_FOLLOW_BACK', async () => {
