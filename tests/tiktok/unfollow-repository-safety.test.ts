@@ -270,6 +270,10 @@ describe(
             reason:
               'retry',
           },
+          {
+            expectedStatus:
+              'scheduled',
+          },
         );
 
       expect(result).toBe(
