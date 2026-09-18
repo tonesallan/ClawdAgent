@@ -405,13 +405,18 @@ export async function rescheduleTikTokAction(
 
     if (
       current.type ===
-        TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK &&
-      options.expectedStatus ===
-        undefined
+        TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK
     ) {
-      throw new Error(
-        'TikTok CHECK_FOLLOW_BACK reschedule requires expectedStatus.',
-      );
+      if (
+        options.expectedStatus !==
+          TIKTOK_ACTION_STATUSES.SCHEDULED &&
+        options.expectedStatus !==
+          TIKTOK_ACTION_STATUSES.RUNNING
+      ) {
+        throw new Error(
+          'TikTok CHECK_FOLLOW_BACK reschedule requires expectedStatus=scheduled or running.',
+        );
+      }
     }
 
     const [row] =
