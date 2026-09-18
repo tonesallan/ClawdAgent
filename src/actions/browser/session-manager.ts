@@ -174,8 +174,13 @@ export class BrowserSessionManager {
 
   /**
    * Create a new browser session.
-   * Launches headless by default — call attachVnc() to start VNC streaming.
-   * If `withVnc` is true, VNC is attached immediately (for BrowserView page).
+   *
+   * withVnc=false:
+   * - cross-platform headless browser.
+   *
+   * withVnc=true:
+   * - Linux: headed browser through the existing VNC stack;
+   * - Windows/macOS: native visible headed browser (no VNC layer).
    */
   async createSession(url?: string, withVnc = true): Promise<BrowserSession> {
     if (this.sessions.size >= MAX_SESSIONS) {
@@ -209,12 +214,27 @@ export class BrowserSessionManager {
 
     try {
       if (withVnc) {
-        // Headed mode: start VNC stack + visible browser
-        await this.startVncStack(session);
-        await this.launchBrowser(session, false); // headed
+        if (process.platform === 'linux') {
+          // Linux: headed browser is exposed through the existing VNC stack.
+          await this.startVncStack(session);
+          await this.launchBrowser(session, false);
+        } else {
+          /*
+           * Windows/macOS: launch a native visible browser.
+           * There is no VNC layer on these platforms, so vncEnabled remains false.
+           */
+          await this.launchBrowser(session, false);
+          logger.info(
+            'Native headed browser session started',
+            {
+              id: session.id,
+              platform: process.platform,
+            },
+          );
+        }
       } else {
-        // Headless mode: just the browser, no VNC
-        await this.launchBrowser(session, true); // headless
+        // Cross-platform headless mode: browser only, no VNC.
+        await this.launchBrowser(session, true);
       }
 
       // Navigate to initial URL
@@ -609,9 +629,15 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
     const args = [...STEALTH_ARGS];
     const env = { ...process.env };
 
-    if (!headless) {
-      args.push(`--display=:${session.displayNumber}`);
-      env.DISPLAY = `:${session.displayNumber}`;
+    if (
+      !headless &&
+      process.platform === 'linux'
+    ) {
+      args.push(
+        `--display=:${session.displayNumber}`,
+      );
+      env.DISPLAY =
+        `:${session.displayNumber}`;
     }
 
     session.browser = await pw.chromium.launch({
