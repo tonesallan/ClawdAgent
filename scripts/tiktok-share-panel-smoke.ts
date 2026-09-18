@@ -78,6 +78,8 @@ const config: MobileAgentConfig = {
   },
   testMode:
     false,
+  warmupSeconds:
+    0,
 };
 
 const agent =
