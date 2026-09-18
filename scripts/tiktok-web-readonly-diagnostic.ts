@@ -194,13 +194,6 @@ try {
       (
         expectedUsername: string,
       ) => {
-        const normalize =
-          (value: string | null | undefined) =>
-            (value ?? '')
-              .trim()
-              .replace(/^@/, '')
-              .toLowerCase();
-
         const currentUrl =
           window.location.href;
 
@@ -363,13 +356,21 @@ try {
               80,
             );
 
+        const normalizedUrlHandle =
+          (urlHandle ?? '')
+            .trim()
+            .replace(/^@/, '')
+            .toLowerCase();
+
+        const normalizedExpectedUsername =
+          expectedUsername
+            .trim()
+            .replace(/^@/, '')
+            .toLowerCase();
+
         const exactProfile =
-          normalize(
-            urlHandle,
-          ) ===
-          normalize(
-            expectedUsername,
-          );
+          normalizedUrlHandle ===
+          normalizedExpectedUsername;
 
         return {
           url:
