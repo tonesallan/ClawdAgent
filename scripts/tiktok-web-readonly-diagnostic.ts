@@ -37,6 +37,12 @@ const targetUsername =
     .trim()
     .replace(/^@/, '');
 
+const headedDiagnostic =
+  /^(1|true|yes)$/i.test(
+    process.env.TIKTOK_WEB_DIAGNOSTIC_HEADED?.trim() ??
+    '',
+  );
+
 if (!targetUsername) {
   throw new Error(
     'TIKTOK_WEB_DIAGNOSTIC_USERNAME resolved to an empty username.',
@@ -60,6 +66,122 @@ function safeAccountSummary(
     lastVerified:
       account.lastVerified ?? null,
   };
+}
+
+async function hasVisibleTikTokChallenge(
+  page: any,
+): Promise<boolean> {
+  const selectors = [
+    '.secsdk-captcha-drag-icon',
+    '[class*="secsdk-captcha"]',
+    '[class*="captcha" i]',
+    '[id*="captcha" i]',
+    'iframe[src*="captcha" i]',
+  ];
+
+  for (const selector of selectors) {
+    const locator =
+      page.locator(selector);
+
+    const count =
+      await locator.count();
+
+    for (
+      let index = 0;
+      index < count;
+      index += 1
+    ) {
+      if (
+        await locator
+          .nth(index)
+          .isVisible()
+          .catch(
+            () => false,
+          )
+      ) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+async function waitForManualTikTokChallenge(
+  page: any,
+): Promise<void> {
+  const challengeDetected =
+    await hasVisibleTikTokChallenge(
+      page,
+    );
+
+  if (!challengeDetected) {
+    console.log(
+      'TIKTOK_CHALLENGE=NOT_DETECTED',
+    );
+
+    return;
+  }
+
+  console.log(
+    'TIKTOK_CHALLENGE=DETECTED',
+  );
+
+  if (!headedDiagnostic) {
+    throw new Error(
+      'TikTok challenge detected in headless mode. No bypass was attempted. Re-run with TIKTOK_WEB_DIAGNOSTIC_HEADED=1 and solve the challenge manually in the visible browser.',
+    );
+  }
+
+  console.log(
+    'Resolve the TikTok challenge manually in the visible browser window.',
+  );
+
+  console.log(
+    'The diagnostic will continue automatically after the challenge disappears.',
+  );
+
+  const deadline =
+    Date.now() +
+    5 * 60_000;
+
+  while (
+    Date.now() <
+      deadline
+  ) {
+    if (
+      page.isClosed()
+    ) {
+      throw new Error(
+        'Visible TikTok browser was closed before the challenge was resolved.',
+      );
+    }
+
+    const stillVisible =
+      await hasVisibleTikTokChallenge(
+        page,
+      );
+
+    if (!stillVisible) {
+      await page.waitForTimeout(
+        2_000,
+      );
+
+      console.log(
+        'TIKTOK_CHALLENGE=MANUALLY_RESOLVED',
+      );
+
+      return;
+    }
+
+    await page.waitForTimeout(
+      1_000,
+    );
+  }
+
+  throw new Error(
+    'TikTok challenge was not resolved within 5 minutes. No bypass was attempted.',
+  );
 }
 
 function resolveAccount(): TikTokAccount {
@@ -127,28 +249,41 @@ console.log(
   `TARGET=@${targetUsername}`,
 );
 
-console.log(
-  '[2/6] Verifying imported TikTok authentication...',
-);
+let verifiedHandle =
+  account.handle ?? null;
 
-const verification =
-  await accountManager.verifyAccount(
-    account.id,
+if (!headedDiagnostic) {
+  console.log(
+    '[2/6] Verifying imported TikTok authentication...',
   );
 
-if (!verification.success) {
-  throw new Error(
-    `Imported TikTok Web session is not authenticated: ${verification.error ?? 'unknown verification failure'}`,
+  const verification =
+    await accountManager.verifyAccount(
+      account.id,
+    );
+
+  if (!verification.success) {
+    throw new Error(
+      `Imported TikTok Web session is not authenticated: ${verification.error ?? 'unknown verification failure'}`,
+    );
+  }
+
+  verifiedHandle =
+    verification.handle ??
+    verifiedHandle;
+
+  console.log(
+    'AUTHENTICATED_SESSION=PASS',
+  );
+
+  console.log(
+    `AUTHENTICATED_HANDLE=${verifiedHandle ?? ''}`,
+  );
+} else {
+  console.log(
+    '[2/6] Authentication will be confirmed in the visible browser session.',
   );
 }
-
-console.log(
-  'AUTHENTICATED_SESSION=PASS',
-);
-
-console.log(
-  `AUTHENTICATED_HANDLE=${verification.handle ?? ''}`,
-);
 
 let sessionId:
   string | null =
@@ -162,7 +297,7 @@ try {
   const session =
     await accountManager.launchSession(
       account.id,
-      false,
+      headedDiagnostic,
     );
 
   sessionId =
@@ -176,6 +311,61 @@ try {
   if (!page) {
     throw new Error(
       'TikTok browser session has no Playwright page.',
+    );
+  }
+
+  await waitForManualTikTokChallenge(
+    page,
+  );
+
+  if (headedDiagnostic) {
+    console.log(
+      '[3.5/6] Confirming authentication in visible session...',
+    );
+
+    await page.goto(
+      'https://www.tiktok.com/profile',
+      {
+        waitUntil:
+          'domcontentloaded',
+        timeout:
+          30_000,
+      },
+    );
+
+    await page.waitForTimeout(
+      3_000,
+    );
+
+    await waitForManualTikTokChallenge(
+      page,
+    );
+
+    const profileUrl =
+      page.url();
+
+    const profileMatch =
+      profileUrl.match(
+        /tiktok\.com\/@([^/?#]+)/i,
+      );
+
+    if (!profileMatch) {
+      throw new Error(
+        `Visible TikTok session did not resolve to an authenticated profile. Current URL: ${profileUrl}`,
+      );
+    }
+
+    verifiedHandle =
+      decodeURIComponent(
+        profileMatch[1],
+      );
+
+    console.log(
+      'AUTHENTICATED_SESSION=PASS',
+    );
+
+    console.log(
+      `AUTHENTICATED_HANDLE=${verifiedHandle}`,
     );
   }
 
@@ -198,6 +388,10 @@ try {
 
   await page.waitForTimeout(
     4_000,
+  );
+
+  await waitForManualTikTokChallenge(
+    page,
   );
 
   await dismissTikTokBanners(
@@ -518,6 +712,10 @@ try {
           profileTitle,
           profileSubtitle,
           loginDetected,
+          challengeDetected:
+            document.querySelector(
+              '.secsdk-captcha-drag-icon, [class*="secsdk-captcha"], [class*="captcha" i], [id*="captcha" i], iframe[src*="captcha" i]',
+            ) !== null,
           candidateCount:
             elements.length,
           relationshipTextMatches:
@@ -535,6 +733,14 @@ try {
       },
       targetUsername,
     );
+
+  if (
+    diagnostic.challengeDetected
+  ) {
+    throw new Error(
+      'TikTok challenge is still present after the manual-wait step. No relationship classification is safe.',
+    );
+  }
 
   if (
     diagnostic.loginDetected
@@ -629,6 +835,9 @@ try {
   );
   console.log(
     `RELATIONSHIP_TEXT_MATCHES=${diagnostic.relationshipTextMatches}`,
+  );
+  console.log(
+    `DIAGNOSTIC_MODE=${headedDiagnostic ? 'headed' : 'headless'}`,
   );
   console.log(
     `DIRECT_SELECTORS=${JSON.stringify(diagnostic.directSelectors)}`,
