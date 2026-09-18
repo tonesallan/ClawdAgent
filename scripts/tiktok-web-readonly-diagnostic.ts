@@ -291,7 +291,9 @@ let sessionId:
 
 try {
   console.log(
-    '[3/6] Launching authenticated headless TikTok session...',
+    headedDiagnostic
+      ? '[3/6] Launching authenticated visible TikTok session...'
+      : '[3/6] Launching authenticated headless TikTok session...',
   );
 
   const session =
