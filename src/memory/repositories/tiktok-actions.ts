@@ -403,6 +403,17 @@ export async function rescheduleTikTokAction(
       );
     }
 
+    if (
+      current.type ===
+        TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK &&
+      options.expectedStatus ===
+        undefined
+    ) {
+      throw new Error(
+        'TikTok CHECK_FOLLOW_BACK reschedule requires expectedStatus.',
+      );
+    }
+
     const [row] =
       await tx
         .update(tiktokActions)
