@@ -367,6 +367,113 @@ describe(
       });
     });
 
+    it('lists only resolved DISCOVERY_REVIEW actions in TikTok approval history', async () => {
+      const approved =
+        createDiscoveryAction({
+          id:
+            'review-approved',
+          status:
+            'success',
+          result: {
+            reviewDecision:
+              'approved',
+            reviewedAt:
+              '2026-09-17T21:00:00.000Z',
+          },
+        });
+
+      const denied =
+        createDiscoveryAction({
+          id:
+            'review-denied',
+          status:
+            'cancelled',
+          result: {
+            reviewDecision:
+              'rejected',
+            reviewedAt:
+              '2026-09-17T20:30:00.000Z',
+          },
+        });
+
+      actionMocks
+        .listTikTokActionsByTypeAcrossAccounts
+        .mockResolvedValue([
+          approved,
+          denied,
+        ]);
+
+      const app =
+        createApp();
+
+      const started =
+        await listen(app);
+
+      server =
+        started.server;
+
+      const response =
+        await fetch(
+          `${started.baseUrl}/approvals/history`,
+        );
+
+      expect(
+        response.status,
+      ).toBe(200);
+
+      expect(
+        actionMocks
+          .listTikTokActionsByTypeAcrossAccounts,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+
+      expect(
+        actionMocks
+          .listTikTokActionsByTypeAcrossAccounts,
+      ).toHaveBeenCalledWith(
+        'DISCOVERY_REVIEW',
+        [
+          'success',
+          'cancelled',
+        ],
+        100,
+      );
+
+      const body =
+        await response.json() as any[];
+
+      expect(body).toHaveLength(2);
+
+      expect(
+        body.map(
+          item =>
+            item.action,
+        ),
+      ).toEqual([
+        'DISCOVERY_REVIEW',
+        'DISCOVERY_REVIEW',
+      ]);
+
+      expect(
+        body.map(
+          item =>
+            item.id,
+        ),
+      ).toEqual([
+        'tiktok-review:review-approved',
+        'tiktok-review:review-denied',
+      ]);
+
+      expect(
+        body.some(
+          item =>
+            item.action ===
+            'UNFOLLOW',
+        ),
+      ).toBe(false);
+    });
+
     it('approves a TikTok discovery review as decision-only', async () => {
       const app =
         createApp();
