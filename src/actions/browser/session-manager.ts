@@ -39,6 +39,8 @@ interface InternalSession {
   browser: any; // playwright Browser
   page: any;    // playwright Page
   context: any; // playwright BrowserContext
+  /** Optional Playwright BrowserContext options, preserved across relaunches. */
+  contextOptions: Record<string, unknown>;
   /** Auto-detach VNC after inactivity */
   vncIdleTimer: ReturnType<typeof setTimeout> | null;
   /** True when browser is being intentionally relaunched (attach/detach VNC) — suppresses disconnect watchdog */
@@ -182,7 +184,11 @@ export class BrowserSessionManager {
    * - Linux: headed browser through the existing VNC stack;
    * - Windows/macOS: native visible headed browser (no VNC layer).
    */
-  async createSession(url?: string, withVnc = true): Promise<BrowserSession> {
+  async createSession(
+    url?: string,
+    withVnc = true,
+    contextOptions: Record<string, unknown> = {},
+  ): Promise<BrowserSession> {
     if (this.sessions.size >= MAX_SESSIONS) {
       throw new Error(`Maximum ${MAX_SESSIONS} concurrent sessions allowed. Close an existing session first.`);
     }
@@ -206,6 +212,7 @@ export class BrowserSessionManager {
       createdAt: new Date(),
       xvfbProcess: null, vncProcess: null, wsProcess: null,
       browser: null, page: null, context: null,
+      contextOptions,
       vncIdleTimer: null, relaunching: false,
     };
 
@@ -646,7 +653,10 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
       env,
     });
 
-    session.context = await session.browser.newContext(getStealthContextOptions());
+    session.context = await session.browser.newContext({
+      ...getStealthContextOptions(),
+      ...session.contextOptions,
+    });
     session.page = await session.context.newPage();
     await session.page.addInitScript(STEALTH_INIT_SCRIPT);
 
