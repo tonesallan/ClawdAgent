@@ -333,6 +333,9 @@ export async function runTikTokScheduler(
             retryAt,
             undefined,
             {
+              expectedStatus:
+                TIKTOK_ACTION_STATUSES.RUNNING,
+
               error:
                 message,
 
