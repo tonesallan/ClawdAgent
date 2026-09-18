@@ -119,7 +119,7 @@ export async function registerSuccessfulTikTokFollow(
       );
     }
 
-    checkAction =
+    const refreshedCheck =
       await rescheduleTikTokAction(
         openCheckAction.id,
         followBackCheckAt,
@@ -129,12 +129,15 @@ export async function registerSuccessfulTikTokFollow(
             openStatus,
         },
       );
-  }
 
-  if (!checkAction) {
-    throw new Error(
-      'Failed to schedule CHECK_FOLLOW_BACK.',
-    );
+    if (!refreshedCheck) {
+      throw new Error(
+        'Failed to schedule CHECK_FOLLOW_BACK.',
+      );
+    }
+
+    checkAction =
+      refreshedCheck;
   }
 
   return {
