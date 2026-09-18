@@ -73,7 +73,7 @@ export interface MobileAgentLogEntry {
 // ── App Definitions ──────────────────────────────────────────────────
 
 const APP_DEFS: Record<MobileApp, { pkg: string; activity: string; actions: MobileActionType[] }> = {
-  tiktok:   { pkg: 'com.zhiliaoapp.musically', activity: 'com.ss.android.ugc.aweme.splash.SplashActivity', actions: ['like', 'comment', 'follow', 'scroll'] },
+  tiktok:   { pkg: 'com.zhiliaoapp.musically', activity: 'com.ss.android.ugc.aweme.splash.SplashActivity', actions: ['like', 'comment', 'follow', 'share', 'scroll'] },
   twitter:  { pkg: 'com.twitter.android',      activity: 'com.twitter.android.StartActivity',              actions: ['like', 'reply', 'retweet', 'follow', 'scroll'] },
   facebook: { pkg: 'com.facebook.katana',       activity: 'com.facebook.katana.LoginActivity',              actions: ['like', 'comment', 'share', 'scroll'] },
 };
@@ -567,10 +567,13 @@ export class MobileAgent {
           this.log(
             'share',
             'success',
-            '[TEST] Would open TikTok share panel'
+            '[TEST] Would open TikTok share panel and close it without sharing'
           );
           return;
         }
+
+        let shareButtonClicked =
+          false;
 
         try {
           let shareButton;
@@ -591,18 +594,36 @@ export class MobileAgent {
             shareButton.elementId
           );
 
+          shareButtonClicked =
+            true;
+
           await this.sleep(1200);
+
+          const shareSource =
+            await this.appium.getPageSource();
+
+          const sharePanelOpen =
+            shareSource.includes(
+              'com.zhiliaoapp.musically:id/g1i'
+            ) ||
+            shareSource.includes(
+              'text="Enviar para"'
+            ) ||
+            shareSource.includes(
+              'text="Send to"'
+            );
+
+          if (!sharePanelOpen) {
+            throw new Error(
+              'TikTok share panel did not open after clicking share.'
+            );
+          }
 
           this.log(
             'share',
             'success',
-            'Opened TikTok share panel'
+            'Opened TikTok share panel without sharing'
           );
-
-          // Fecha o painel sem compartilhar com ninguém.
-          await this.appium.pressKey(4);
-          await this.sleep(500);
-
         } catch (err: unknown) {
           const msg =
             err instanceof Error
@@ -617,6 +638,20 @@ export class MobileAgent {
           );
 
           throw err;
+        } finally {
+          /*
+           * Safety invariant:
+           * after clicking Share we only close the panel.
+           * No recipient/action inside the panel is ever clicked.
+           */
+          if (shareButtonClicked) {
+            try {
+              await this.appium.pressKey(4);
+              await this.sleep(500);
+            } catch {
+              // Best effort: never replace the original share result.
+            }
+          }
         }
 
         break;
