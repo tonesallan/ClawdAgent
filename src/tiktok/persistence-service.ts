@@ -9,14 +9,16 @@ import {
 
 import {
   getTikTokRelationship,
-  recordTikTokRelationshipCheck,
   registerTikTokSystemFollow,
 } from '../memory/repositories/tiktok-relationships.js';
 
 import {
+  completeTikTokFollowBackCheck,
+} from '../memory/repositories/tiktok-follow-back.js';
+
+import {
   createOrReuseOpenTikTokAction,
   rescheduleTikTokAction,
-  transitionTikTokAction,
 } from '../memory/repositories/tiktok-actions.js';
 
 import {
@@ -226,37 +228,27 @@ export async function recordTikTokFollowBackCheckResult(
         ? false
         : null;
 
-  const relationship =
-    await recordTikTokRelationshipCheck({
+  const completedCheck =
+    await completeTikTokFollowBackCheck({
+      checkActionId:
+        input.checkActionId,
       accountKey,
-      targetKey: input.targetKey,
+      targetKey:
+        input.targetKey,
       relationshipState,
       followsUs,
+      followedBack,
       checkedAt,
-      processed: true,
     });
-
-  const completedCheck =
-    await transitionTikTokAction(
-      input.checkActionId,
-      {
-        status: TIKTOK_ACTION_STATUSES.SUCCESS,
-        result: {
-          followedBack,
-          relationshipState,
-          checkedAt: checkedAt.toISOString(),
-        },
-        metadata: {
-          event: 'follow_back_checked',
-        },
-      },
-    );
 
   if (!completedCheck) {
     throw new Error(
       `CHECK_FOLLOW_BACK is no longer running: ${input.checkActionId}`,
     );
   }
+
+  const relationship =
+    completedCheck.relationship;
 
   /*
    * Only FOLLOWING may generate an UNFOLLOW review candidate.
