@@ -5,6 +5,7 @@
  */
 import { spawn, ChildProcess, execSync } from 'child_process';
 import { readFileSync } from 'fs';
+import { freemem, totalmem } from 'os';
 import logger from '../../utils/logger.js';
 import { STEALTH_ARGS, STEALTH_INIT_SCRIPT, getStealthContextOptions } from './stealth-config.js';
 
@@ -60,21 +61,50 @@ async function getPlaywright() {
 }
 
 function getAvailableRamMB(): number {
-  try {
-    const meminfo = readFileSync('/proc/meminfo', 'utf-8');
-    const match = meminfo.match(/MemAvailable:\s+(\d+)/);
-    if (match) return Math.round(parseInt(match[1], 10) / 1024);
-  } catch { /* fallback */ }
-  return 0;
+  /*
+   * Linux exposes MemAvailable, which accounts for reclaimable cache
+   * and is a better signal than os.freemem() for capacity checks.
+   *
+   * Windows/macOS do not expose /proc/meminfo, so fall back to the
+   * cross-platform Node OS API instead of reporting 0 MB.
+   */
+  if (process.platform === 'linux') {
+    try {
+      const meminfo = readFileSync('/proc/meminfo', 'utf-8');
+      const match = meminfo.match(/MemAvailable:\s+(\d+)/);
+      if (match) {
+        return Math.round(
+          parseInt(match[1], 10) / 1024,
+        );
+      }
+    } catch {
+      // Fall through to the cross-platform OS API.
+    }
+  }
+
+  return Math.round(
+    freemem() / 1024 / 1024,
+  );
 }
 
 function getTotalRamMB(): number {
-  try {
-    const meminfo = readFileSync('/proc/meminfo', 'utf-8');
-    const match = meminfo.match(/MemTotal:\s+(\d+)/);
-    if (match) return Math.round(parseInt(match[1], 10) / 1024);
-  } catch { /* fallback */ }
-  return 0;
+  if (process.platform === 'linux') {
+    try {
+      const meminfo = readFileSync('/proc/meminfo', 'utf-8');
+      const match = meminfo.match(/MemTotal:\s+(\d+)/);
+      if (match) {
+        return Math.round(
+          parseInt(match[1], 10) / 1024,
+        );
+      }
+    } catch {
+      // Fall through to the cross-platform OS API.
+    }
+  }
+
+  return Math.round(
+    totalmem() / 1024 / 1024,
+  );
 }
 
 function killProcess(proc: ChildProcess | null) {
@@ -123,6 +153,14 @@ export class BrowserSessionManager {
    * Safe to call at startup.
    */
   static cleanupOrphans(): void {
+    if (process.platform !== 'linux') {
+      logger.info(
+        'Browser orphan cleanup skipped on non-Linux platform',
+        { platform: process.platform },
+      );
+      return;
+    }
+
     const cmds = [
       `pkill -f "Xvfb :20[0-2]" 2>/dev/null || true`,
       `pkill -f "x11vnc.*-rfbport 6[12]0[0-2]" 2>/dev/null || true`,
@@ -509,6 +547,12 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
 
   /** Start VNC stack: Xvfb + x11vnc + websockify */
   private async startVncStack(session: InternalSession): Promise<void> {
+    if (process.platform !== 'linux') {
+      throw new Error(
+        `VNC browser sessions currently require Linux (current platform: ${process.platform}). Use withVnc=false for cross-platform headless sessions.`,
+      );
+    }
+
     const { id, displayNumber, vncPort, wsPort } = session;
 
     // 1. Xvfb
