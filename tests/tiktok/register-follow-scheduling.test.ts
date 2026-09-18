@@ -431,6 +431,10 @@ describe(
           waitHours:
             48,
         },
+        {
+          expectedStatus:
+            'scheduled',
+        },
       );
 
       expect(
