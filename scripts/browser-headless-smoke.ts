@@ -106,7 +106,7 @@ try {
 
   const observed =
     await page.evaluate(
-      `() => ({
+      () => ({
         title: document.title,
         text:
           document
@@ -118,7 +118,7 @@ try {
             .querySelector('#smoke-root')
             ?.getAttribute('data-status') ??
           null,
-      })`,
+      }),
     );
 
   if (
