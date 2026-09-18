@@ -212,6 +212,44 @@ describe(
       });
     });
 
+    it('stops before creating UNFOLLOW when another worker already completed the check', async () => {
+      actionMocks
+        .transitionTikTokAction
+        .mockResolvedValue(
+          null,
+        );
+
+      await expect(
+        recordTikTokFollowBackCheckResult({
+          checkActionId:
+            'check-1',
+          accountKey:
+            'default',
+          targetKey:
+            'username:tiktok',
+          relationshipState:
+            'following',
+          checkedAt,
+          provider:
+            'android',
+        }),
+      ).rejects.toThrow(
+        'CHECK_FOLLOW_BACK is no longer running: check-1',
+      );
+
+      expect(
+        actionMocks
+          .transitionTikTokAction,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+
+      expect(
+        actionMocks
+          .createOrReuseOpenTikTokAction,
+      ).not.toHaveBeenCalled();
+    });
+
     it('does not create an UNFOLLOW review for NOT_FOLLOWING', async () => {
       const result =
         await recordTikTokFollowBackCheckResult({
