@@ -545,10 +545,28 @@ export async function transitionTikTokAction(
               TIKTOK_ACTION_STATUSES.PENDING,
             ),
           )
-        : eq(
-            tiktokActions.id,
-            id,
-          );
+        : current.type ===
+              TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK &&
+            (
+              input.status ===
+                TIKTOK_ACTION_STATUSES.SUCCESS ||
+              input.status ===
+                TIKTOK_ACTION_STATUSES.FAILED
+            )
+          ? and(
+              eq(
+                tiktokActions.id,
+                id,
+              ),
+              eq(
+                tiktokActions.status,
+                TIKTOK_ACTION_STATUSES.RUNNING,
+              ),
+            )
+          : eq(
+              tiktokActions.id,
+              id,
+            );
 
     const [row] = await tx
       .update(tiktokActions)
