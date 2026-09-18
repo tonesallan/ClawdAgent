@@ -127,6 +127,8 @@ export async function registerSuccessfulTikTokFollow(
         {
           expectedStatus:
             openStatus,
+          attempts:
+            0,
         },
       );
 
