@@ -329,6 +329,14 @@ export async function findOpenTikTokAction(
 
 export interface RescheduleTikTokActionOptions {
   /**
+   * Optimistic concurrency guard.
+   *
+   * When provided, the reschedule only succeeds if the action
+   * is still in this status at UPDATE time.
+   */
+  expectedStatus?: TikTokActionStatus;
+
+  /**
    * Optional execution error preserved while the action
    * waits for another attempt.
    */
@@ -424,10 +432,21 @@ export async function rescheduleTikTokAction(
             new Date(),
         })
         .where(
-          eq(
-            tiktokActions.id,
-            id,
-          ),
+          options.expectedStatus !== undefined
+            ? and(
+                eq(
+                  tiktokActions.id,
+                  id,
+                ),
+                eq(
+                  tiktokActions.status,
+                  options.expectedStatus,
+                ),
+              )
+            : eq(
+                tiktokActions.id,
+                id,
+              ),
         )
         .returning();
 
