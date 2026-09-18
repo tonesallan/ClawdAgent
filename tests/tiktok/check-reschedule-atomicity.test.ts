@@ -185,6 +185,40 @@ describe(
       ).not.toHaveBeenCalled();
     });
 
+    it.each([
+      'pending',
+      'success',
+      'failed',
+      'cancelled',
+    ] as const)(
+      'rejects CHECK_FOLLOW_BACK reschedule from non-refreshable status %s',
+      async expectedStatus => {
+        const {
+          update,
+        } =
+          setupHarness([]);
+
+        await expect(
+          rescheduleTikTokAction(
+            'check-1',
+            new Date(
+              '2026-09-17T20:05:00.000Z',
+            ),
+            undefined,
+            {
+              expectedStatus,
+            },
+          ),
+        ).rejects.toThrow(
+          'TikTok CHECK_FOLLOW_BACK reschedule requires expectedStatus=scheduled or running.',
+        );
+
+        expect(
+          update,
+        ).not.toHaveBeenCalled();
+      },
+    );
+
     it('guards retry reschedule by id and expected running status', async () => {
       const {
         updateWhere,
