@@ -22,7 +22,9 @@ import {
 } from '../src/tiktok/persistence-service.js';
 
 import {
+  closeDatabase,
   getDb,
+  initDatabase,
 } from '../src/memory/database.js';
 
 import {
@@ -117,6 +119,8 @@ const agent =
   MobileAgent.createAgent(
     config,
   );
+
+await initDatabase();
 
 const db =
   getDb();
@@ -411,4 +415,6 @@ finally {
   MobileAgent.removeAgent(
     agentId,
   );
+
+  await closeDatabase();
 }
