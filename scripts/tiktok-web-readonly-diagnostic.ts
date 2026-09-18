@@ -10,6 +10,10 @@ import {
 } from 'path';
 
 import {
+  devices,
+} from 'playwright';
+
+import {
   BrowserSessionManager,
 } from '../src/actions/browser/session-manager.js';
 
@@ -42,6 +46,44 @@ const headedDiagnostic =
     process.env.TIKTOK_WEB_DIAGNOSTIC_HEADED?.trim() ??
     '',
   );
+
+const mobileDiagnostic =
+  /^(1|true|yes)$/i.test(
+    process.env.TIKTOK_WEB_DIAGNOSTIC_MOBILE?.trim() ??
+    '',
+  );
+
+const mobileDeviceName =
+  process.env.TIKTOK_WEB_DIAGNOSTIC_DEVICE?.trim() ||
+  'Pixel 5';
+
+const mobileDevice =
+  mobileDiagnostic
+    ? devices[mobileDeviceName]
+    : null;
+
+if (
+  mobileDiagnostic &&
+  !mobileDevice
+) {
+  throw new Error(
+    `Unknown Playwright mobile device profile: ${mobileDeviceName}`,
+  );
+}
+
+const mobileContextOptions:
+  Record<string, unknown> =
+    mobileDevice
+      ? Object.fromEntries(
+          Object.entries(
+            mobileDevice,
+          ).filter(
+            ([key]) =>
+              key !==
+              'defaultBrowserType',
+          ),
+        )
+      : {};
 
 if (!targetUsername) {
   throw new Error(
@@ -300,10 +342,21 @@ try {
     await accountManager.launchSession(
       account.id,
       headedDiagnostic,
+      mobileContextOptions,
     );
 
   sessionId =
     session.sessionId;
+
+  console.log(
+    `MOBILE_EMULATION=${mobileDiagnostic ? 'ENABLED' : 'DISABLED'}`,
+  );
+
+  if (mobileDiagnostic) {
+    console.log(
+      `MOBILE_DEVICE=${mobileDeviceName}`,
+    );
+  }
 
   const page =
     browserManager.getPage(
@@ -718,6 +771,18 @@ try {
             document.querySelector(
               '.secsdk-captcha-drag-icon, [class*="secsdk-captcha"], [class*="captcha" i], [id*="captcha" i], iframe[src*="captcha" i]',
             ) !== null,
+          browserEnvironment: {
+            userAgent:
+              navigator.userAgent,
+            viewportWidth:
+              window.innerWidth,
+            viewportHeight:
+              window.innerHeight,
+            devicePixelRatio:
+              window.devicePixelRatio,
+            touchPoints:
+              navigator.maxTouchPoints,
+          },
           candidateCount:
             elements.length,
           relationshipTextMatches:
@@ -840,6 +905,17 @@ try {
   );
   console.log(
     `DIAGNOSTIC_MODE=${headedDiagnostic ? 'headed' : 'headless'}`,
+  );
+  console.log(
+    `MOBILE_EMULATION=${mobileDiagnostic ? 'ENABLED' : 'DISABLED'}`,
+  );
+  if (mobileDiagnostic) {
+    console.log(
+      `MOBILE_DEVICE=${mobileDeviceName}`,
+    );
+  }
+  console.log(
+    `BROWSER_ENVIRONMENT=${JSON.stringify(diagnostic.browserEnvironment)}`,
   );
   console.log(
     `DIRECT_SELECTORS=${JSON.stringify(diagnostic.directSelectors)}`,
