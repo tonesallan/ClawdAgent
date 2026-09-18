@@ -80,31 +80,57 @@ export async function registerSuccessfulTikTokFollow(
     waitHours,
   };
 
-  const {
-    action: openCheckAction,
-    created: checkCreated,
-  } =
-    await createOrReuseOpenTikTokAction({
-      accountKey,
-      type: TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
-      targetKey: input.targetKey,
-      targetUsername: input.username,
-      targetDisplayName: input.displayName,
-      status: TIKTOK_ACTION_STATUSES.SCHEDULED,
-      executeAt: followBackCheckAt,
-      provider: input.provider ?? 'android',
-      payload,
-    });
-
   /*
-   * Existing behaviour is preserved:
-   * a repeated successful follow refreshes/reschedules the
-   * already-open follow-back check instead of creating another.
+   * A concurrent scheduler may complete/recover the currently
+   * open check between create-or-reuse and reschedule.
+   *
+   * Retry a small bounded number of times so a new follow is not
+   * left persisted without a matching fresh follow-back check.
+   * If the old action became terminal, the next create-or-reuse
+   * iteration creates a new SCHEDULED action.
    */
-  let checkAction =
-    openCheckAction;
+  const maxScheduleAttempts =
+    3;
 
-  if (!checkCreated) {
+  let checkAction =
+    null;
+
+  for (
+    let scheduleAttempt = 0;
+    scheduleAttempt <
+      maxScheduleAttempts;
+    scheduleAttempt += 1
+  ) {
+    const {
+      action: openCheckAction,
+      created: checkCreated,
+    } =
+      await createOrReuseOpenTikTokAction({
+        accountKey,
+        type:
+          TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
+        targetKey:
+          input.targetKey,
+        targetUsername:
+          input.username,
+        targetDisplayName:
+          input.displayName,
+        status:
+          TIKTOK_ACTION_STATUSES.SCHEDULED,
+        executeAt:
+          followBackCheckAt,
+        provider:
+          input.provider ?? 'android',
+        payload,
+      });
+
+    if (checkCreated) {
+      checkAction =
+        openCheckAction;
+
+      break;
+    }
+
     const openStatus =
       openCheckAction.status;
 
@@ -114,9 +140,7 @@ export async function registerSuccessfulTikTokFollow(
       openStatus !==
         TIKTOK_ACTION_STATUSES.RUNNING
     ) {
-      throw new Error(
-        `Cannot refresh CHECK_FOLLOW_BACK from open status: ${openStatus}`,
-      );
+      continue;
     }
 
     const refreshedCheck =
@@ -132,14 +156,18 @@ export async function registerSuccessfulTikTokFollow(
         },
       );
 
-    if (!refreshedCheck) {
-      throw new Error(
-        'Failed to schedule CHECK_FOLLOW_BACK.',
-      );
-    }
+    if (refreshedCheck) {
+      checkAction =
+        refreshedCheck;
 
-    checkAction =
-      refreshedCheck;
+      break;
+    }
+  }
+
+  if (!checkAction) {
+    throw new Error(
+      'Failed to schedule CHECK_FOLLOW_BACK after concurrent state changes.',
+    );
   }
 
   return {
