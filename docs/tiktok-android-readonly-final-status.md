@@ -152,3 +152,42 @@ Validated implementation HEAD before recording this result:
 
 `63434d4fdb1cac77174503275c0d2c4f013aca7f`
 
+
+## MobileAgent integrated validation
+
+Status: **PASS**
+
+Validated on the real Android/Appium path using the normal `MobileAgent` scheduler loop in `testMode`.
+
+Observed result:
+
+```text
+MOBILE_AGENT_INTEGRATED_SMOKE=PASS
+WARMUP=SKIPPED
+TEST_MODE_MUTATIONS=false
+ACTIONS=like,comment,follow,share,scroll
+TOTAL_ACTIONS=5
+STATS={"likes":1,"comments":1,"follows":1,"scrolls":1,"shares":1,"retweets":0,"replies":0,"errors":0,"totalActions":5,"actionsThisHour":5}
+```
+
+Validated behaviors:
+
+- configurable warm-up works;
+- test/development warm-up can be set to zero;
+- production default warm-up remains 300 seconds when no override is provided;
+- the normal scheduler loop executed all configured TikTok actions;
+- like/comment/follow/share/scroll each executed exactly once in test mode;
+- no real TikTok mutation was performed;
+- no action errors were logged;
+- Appium session was closed cleanly;
+- working tree remained clean except for the known Phase 13 backup.
+
+The two previously pending items are now closed:
+
+1. development/test warm-up adjustment;
+2. integrated normal MobileAgent flow validation.
+
+Validated implementation HEAD before recording this result:
+
+`d5d81e9d5ce9cedba45211b2c83f44091bdfd387`
+
