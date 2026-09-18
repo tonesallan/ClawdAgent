@@ -78,14 +78,47 @@ The relationship value must be one of:
 
 `unknown` is considered a failed live smoke because the UI could not be classified safely.
 
+## Final live validation result
+
+Status: **PASS**
+
+Validated on the real Android/Appium path after the smoke harness database initialization fix.
+
+Observed result:
+
+```text
+SMOKE_RESULT=PASS
+USERNAME=@tiktok
+RELATIONSHIP=not_following
+ANDROID_PROVIDER=READ_ONLY
+PERSISTENCE=PASS
+```
+
+Additional closure checks:
+
+- exact profile navigation completed successfully;
+- relationship classification returned a concrete state, not `unknown`;
+- persistence completed successfully;
+- no UNFOLLOW review was created;
+- temporary smoke persistence rows were cleaned;
+- Appium session was deleted;
+- database connection was closed;
+- working tree remained clean except for the previously known untracked Phase 13 backup.
+
+A non-fatal warmup scroll warning was emitted after the agent was paused. It did not interrupt profile navigation, relationship inspection, persistence, cleanup or the final PASS result.
+
+Final validated smoke HEAD:
+
+`a5eeef2faf391c91835123e256ae0f828ba2aec9`
+
 ## Closure criteria
 
-The Android read-only hardening work is considered closed when:
+The Android read-only hardening work is **closed**. The following criteria were satisfied:
 
-- the smoke script returns `SMOKE_RESULT=PASS`;
-- no unexpected local source modifications are present;
-- no TikTok mutation is performed;
-- temporary smoke database records are cleaned;
-- the branch remains green on the established automated baseline.
+- the smoke script returned `SMOKE_RESULT=PASS`;
+- no unexpected local source modifications were present;
+- no TikTok mutation was performed;
+- temporary smoke database records were cleaned;
+- the branch remained green on the established automated baseline.
 
 After that, further work should be treated as a new planned feature or a separately identified defect, not indefinite hardening of the completed scope.
