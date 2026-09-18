@@ -530,6 +530,26 @@ export async function transitionTikTokAction(
       );
     }
 
+    const transitionWhere =
+      current.type ===
+        TIKTOK_ACTION_TYPES.UNFOLLOW ||
+      current.type ===
+        TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW
+        ? and(
+            eq(
+              tiktokActions.id,
+              id,
+            ),
+            eq(
+              tiktokActions.status,
+              TIKTOK_ACTION_STATUSES.PENDING,
+            ),
+          )
+        : eq(
+            tiktokActions.id,
+            id,
+          );
+
     const [row] = await tx
       .update(tiktokActions)
       .set({
@@ -539,7 +559,9 @@ export async function transitionTikTokAction(
         attempts: input.attempts,
         updatedAt: new Date(),
       })
-      .where(eq(tiktokActions.id, id))
+      .where(
+        transitionWhere,
+      )
       .returning();
 
     if (!row) {
