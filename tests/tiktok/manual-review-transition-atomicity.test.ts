@@ -292,7 +292,7 @@ describe(
       },
     );
 
-    it('keeps non-review CHECK_FOLLOW_BACK transition scoped by id only', async () => {
+    it('requires CHECK_FOLLOW_BACK success transition to still be running', async () => {
       const {
         updateWhere,
       } =
@@ -319,20 +319,28 @@ describe(
         updateWhere.mock
           .calls[0][0] as {
             op: string;
-            value: unknown;
+            conditions:
+              Array<{
+                op: string;
+                value: unknown;
+              }>;
           };
 
       expect(
         expression.op,
       ).toBe(
-        'eq',
+        'and',
       );
 
       expect(
-        expression.value,
-      ).toBe(
+        expression.conditions.map(
+          condition =>
+            condition.value,
+        ),
+      ).toEqual([
         'action-1',
-      );
+        'running',
+      ]);
     });
 
     it('returns null when a concurrent manual-review resolution wins first', async () => {
