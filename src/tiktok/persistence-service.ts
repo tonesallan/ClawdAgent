@@ -108,6 +108,10 @@ export async function registerSuccessfulTikTokFollow(
           openCheckAction.id,
           followBackCheckAt,
           payload,
+          {
+            expectedStatus:
+              openCheckAction.status,
+          },
         );
 
   if (!checkAction) {
