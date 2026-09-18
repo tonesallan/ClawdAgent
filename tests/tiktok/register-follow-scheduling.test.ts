@@ -444,6 +444,101 @@ describe(
       );
     });
 
+    it('reschedules a running CHECK_FOLLOW_BACK when a newer follow resets the wait window', async () => {
+      const followedAt =
+        new Date(
+          '2026-09-17T20:00:00.000Z',
+        );
+
+      const running =
+        checkAction({
+          id:
+            'running-check',
+          status:
+            'running',
+          executeAt:
+            new Date(
+              '2026-09-17T19:59:00.000Z',
+            ),
+          attempts:
+            1,
+        });
+
+      const rescheduled =
+        checkAction({
+          id:
+            'running-check',
+          status:
+            'scheduled',
+          executeAt:
+            new Date(
+              '2026-09-19T20:00:00.000Z',
+            ),
+          attempts:
+            1,
+        });
+
+      actionMocks
+        .createOrReuseOpenTikTokAction
+        .mockResolvedValue({
+          action:
+            running,
+          created:
+            false,
+        });
+
+      actionMocks
+        .rescheduleTikTokAction
+        .mockResolvedValue(
+          rescheduled,
+        );
+
+      const result =
+        await registerSuccessfulTikTokFollow({
+          targetKey:
+            'username:tiktok',
+          username:
+            'tiktok',
+          followedAt,
+        });
+
+      expect(
+        actionMocks
+          .rescheduleTikTokAction,
+      ).toHaveBeenCalledWith(
+        'running-check',
+        new Date(
+          '2026-09-19T20:00:00.000Z',
+        ),
+        {
+          relationshipId:
+            'relationship-1',
+          reason:
+            'follow_back_wait_elapsed',
+          followedAt:
+            followedAt.toISOString(),
+          waitHours:
+            48,
+        },
+        {
+          expectedStatus:
+            'running',
+        },
+      );
+
+      expect(
+        result.checkAction,
+      ).toBe(
+        rescheduled,
+      );
+
+      expect(
+        result.checkAction.status,
+      ).toBe(
+        'scheduled',
+      );
+    });
+
     it('never creates UNFOLLOW while registering the successful follow', async () => {
       await registerSuccessfulTikTokFollow({
         targetKey:
