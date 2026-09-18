@@ -598,6 +598,99 @@ describe(
       ).not.toHaveBeenCalled();
     });
 
+    it('recovers when a concurrent completion wins the first reschedule race', async () => {
+      const followedAt =
+        new Date(
+          '2026-09-17T20:00:00.000Z',
+        );
+
+      const running =
+        checkAction({
+          id:
+            'old-running-check',
+          status:
+            'running',
+          attempts:
+            1,
+        });
+
+      const replacement =
+        checkAction({
+          id:
+            'new-check',
+          status:
+            'scheduled',
+          attempts:
+            0,
+          executeAt:
+            new Date(
+              '2026-09-19T20:00:00.000Z',
+            ),
+        });
+
+      actionMocks
+        .createOrReuseOpenTikTokAction
+        .mockResolvedValueOnce({
+          action:
+            running,
+          created:
+            false,
+        })
+        .mockResolvedValueOnce({
+          action:
+            replacement,
+          created:
+            true,
+        });
+
+      actionMocks
+        .rescheduleTikTokAction
+        .mockResolvedValueOnce(
+          null,
+        );
+
+      const result =
+        await registerSuccessfulTikTokFollow({
+          targetKey:
+            'username:tiktok',
+          username:
+            'tiktok',
+          followedAt,
+        });
+
+      expect(
+        actionMocks
+          .createOrReuseOpenTikTokAction,
+      ).toHaveBeenCalledTimes(
+        2,
+      );
+
+      expect(
+        actionMocks
+          .rescheduleTikTokAction,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+
+      expect(
+        result.checkAction,
+      ).toBe(
+        replacement,
+      );
+
+      expect(
+        result.checkAction.status,
+      ).toBe(
+        'scheduled',
+      );
+
+      expect(
+        result.checkAction.attempts,
+      ).toBe(
+        0,
+      );
+    });
+
     it('fails loudly if an existing open check cannot be rescheduled', async () => {
       actionMocks
         .createOrReuseOpenTikTokAction
@@ -629,7 +722,21 @@ describe(
             ),
         }),
       ).rejects.toThrow(
-        'Failed to schedule CHECK_FOLLOW_BACK.',
+        'Failed to schedule CHECK_FOLLOW_BACK after concurrent state changes.',
+      );
+
+      expect(
+        actionMocks
+          .createOrReuseOpenTikTokAction,
+      ).toHaveBeenCalledTimes(
+        3,
+      );
+
+      expect(
+        actionMocks
+          .rescheduleTikTokAction,
+      ).toHaveBeenCalledTimes(
+        3,
       );
     });
   },
