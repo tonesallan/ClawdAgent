@@ -31,6 +31,14 @@ export interface MobileAgentConfig {
   content: { tone: string; language: string; topics: string[]; maxLength: number };
   safety: { minDelaySeconds: number; maxActionsPerHour: number; pauseOnErrorCount: number; pauseDurationMinutes: number };
   testMode: boolean;
+  /**
+   * Warm-up duration before the autonomous action loop starts.
+   *
+   * Default:
+   * - production: 300 seconds
+   * - testMode: 0 seconds
+   */
+  warmupSeconds?: number;
 }
 
 export interface MobileAgentStatus {
@@ -236,13 +244,55 @@ export class MobileAgent {
 
   // ── Warmup ─────────────────────────────────────────────────────────
 
-  private startWarmup(): void {
-    this.log('system', 'info', 'Starting 5-minute warmup (scroll only)');
-    this.performWarmup();
+  private getWarmupDurationMs(): number {
+    const configured =
+      this.config.warmupSeconds;
+
+    if (
+      typeof configured === 'number' &&
+      Number.isFinite(configured)
+    ) {
+      return Math.max(
+        0,
+        configured,
+      ) * 1000;
+    }
+
+    return this.config.testMode
+      ? 0
+      : 5 * 60_000;
   }
 
-  private async performWarmup(): Promise<void> {
+  private startWarmup(): void {
+    const warmupDurationMs =
+      this.getWarmupDurationMs();
+
+    if (warmupDurationMs <= 0) {
+      this.log(
+        'system',
+        'info',
+        'Warmup skipped — beginning action loop'
+      );
+      this.scheduleNextAction();
+      return;
+    }
+
+    this.log(
+      'system',
+      'info',
+      `Starting ${Math.round(warmupDurationMs / 1000)}s warmup (scroll only)`
+    );
+
+    this.performWarmup(
+      warmupDurationMs,
+    );
+  }
+
+  private async performWarmup(
+    warmupDurationMs: number,
+  ): Promise<void> {
     if (this.state !== 'running') return;
+
     try {
       await this.swipeRelative(0.5, 2 / 3, 1 / 6, 600);
       await this.sleep(4000 + Math.random() * 8000);
@@ -252,12 +302,18 @@ export class MobileAgent {
     }
 
     const elapsedMs = Date.now() - new Date(this.startedAt!).getTime();
-    if (elapsedMs >= 5 * 60_000) {
+    if (elapsedMs >= warmupDurationMs) {
       this.log('system', 'info', 'Warmup complete — beginning action loop');
       this.scheduleNextAction();
     } else {
       const nextDelay = 8000 + Math.floor(Math.random() * 12000);
-      this.loopTimer = setTimeout(() => this.performWarmup(), nextDelay);
+      this.loopTimer = setTimeout(
+        () =>
+          this.performWarmup(
+            warmupDurationMs,
+          ),
+        nextDelay,
+      );
     }
   }
 
@@ -295,8 +351,8 @@ export class MobileAgent {
         return;
       }
 
-      // Random scroll before action (human-like)
-      if (Math.random() < 0.4) {
+      // Random pre-action navigation is disabled in testMode.
+      if (!this.config.testMode && Math.random() < 0.4) {
         const scrolls = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < scrolls; i++) {
           await this.swipeRelative(0.5, 0.625, 5 / 24, 400 + Math.floor(Math.random() * 400));
@@ -657,6 +713,15 @@ export class MobileAgent {
         break;
       }
       case 'scroll': {
+        if (this.config.testMode) {
+          this.log(
+            'scroll',
+            'success',
+            '[TEST] Would scroll TikTok feed'
+          );
+          return;
+        }
+
         const count = 2 + Math.floor(Math.random() * 4);
         for (let i = 0; i < count; i++) {
           await this.swipeRelative(0.5, 0.625, 1 / 6, 400 + Math.floor(Math.random() * 400));
