@@ -8,7 +8,6 @@ import {
 } from './domain.js';
 
 import {
-  getTikTokRelationship,
   registerTikTokSystemFollow,
 } from '../memory/repositories/tiktok-relationships.js';
 
@@ -165,18 +164,6 @@ export async function recordTikTokFollowBackCheckResult(
   const checkedAt =
     input.checkedAt ?? new Date();
 
-  const currentRelationship =
-    await getTikTokRelationship(
-      accountKey,
-      input.targetKey,
-    );
-
-  if (!currentRelationship) {
-    throw new Error(
-      `TikTok relationship not found: ${input.targetKey}`,
-    );
-  }
-
   /*
    * Preserve the complete observed state.
    *
@@ -260,7 +247,7 @@ export async function recordTikTokFollowBackCheckResult(
   if (
     relationshipState !==
       TIKTOK_RELATIONSHIP_STATES.FOLLOWING ||
-    currentRelationship.protected
+    relationship.protected
   ) {
     return {
       relationship,
@@ -277,10 +264,10 @@ export async function recordTikTokFollowBackCheckResult(
       targetKey: input.targetKey,
       targetUsername:
         input.username ??
-        currentRelationship.username,
+        relationship.username,
       targetDisplayName:
         input.displayName ??
-        currentRelationship.displayName,
+        relationship.displayName,
       status: TIKTOK_ACTION_STATUSES.PENDING,
       executeAt: null,
       provider: input.provider ?? 'android',
