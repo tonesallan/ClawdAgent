@@ -367,6 +367,8 @@ describe(
             new Date(
               '2026-09-18T20:00:00.000Z',
             ),
+          attempts:
+            2,
         });
 
       const rescheduled =
@@ -377,6 +379,8 @@ describe(
             new Date(
               '2026-09-19T20:00:00.000Z',
             ),
+          attempts:
+            0,
         });
 
       actionMocks
@@ -443,6 +447,12 @@ describe(
         result.checkAction,
       ).toBe(
         rescheduled,
+      );
+
+      expect(
+        result.checkAction.attempts,
+      ).toBe(
+        0,
       );
     });
 
@@ -540,6 +550,12 @@ describe(
         result.checkAction.status,
       ).toBe(
         'scheduled',
+      );
+
+      expect(
+        result.checkAction.attempts,
+      ).toBe(
+        0,
       );
     });
 
