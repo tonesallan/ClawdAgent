@@ -26,6 +26,13 @@ const actionMocks =
       vi.fn(),
   }));
 
+const followBackMocks =
+  vi.hoisted(() => ({
+    completeTikTokFollowBackCheck:
+      vi.fn(),
+  }));
+
+
 const configurationMocks =
   vi.hoisted(() => ({
     getTikTokNumberConfiguration:
@@ -41,6 +48,12 @@ vi.mock(
   '../../src/memory/repositories/tiktok-actions.js',
   () => actionMocks,
 );
+
+vi.mock(
+  '../../src/memory/repositories/tiktok-follow-back.js',
+  () => followBackMocks,
+);
+
 
 vi.mock(
   '../../src/memory/repositories/tiktok-configuration.js',
@@ -97,19 +110,24 @@ describe(
           currentRelationship(false),
         );
 
-      relationshipMocks
-        .recordTikTokRelationshipCheck
+      followBackMocks
+        .completeTikTokFollowBackCheck
         .mockResolvedValue({
-          ...currentRelationship(false),
-          processed: true,
-          lastCheckedAt: checkedAt,
-        });
-
-      actionMocks
-        .transitionTikTokAction
-        .mockResolvedValue({
-          id: 'check-1',
-          status: 'success',
+          action: {
+            id:
+              'check-1',
+            type:
+              'CHECK_FOLLOW_BACK',
+            status:
+              'success',
+          },
+          relationship: {
+            ...currentRelationship(false),
+            processed:
+              true,
+            lastCheckedAt:
+              checkedAt,
+          },
         });
 
       actionMocks
@@ -138,38 +156,23 @@ describe(
         });
 
       expect(
-        relationshipMocks
-          .recordTikTokRelationshipCheck,
+        followBackMocks
+          .completeTikTokFollowBackCheck,
       ).toHaveBeenCalledWith({
-        accountKey: 'default',
-        targetKey: 'username:tiktok',
+        checkActionId:
+          'check-1',
+        accountKey:
+          'default',
+        targetKey:
+          'username:tiktok',
         relationshipState:
           'following',
-        followsUs: false,
+        followsUs:
+          false,
+        followedBack:
+          false,
         checkedAt,
-        processed: true,
       });
-
-      expect(
-        actionMocks
-          .transitionTikTokAction,
-      ).toHaveBeenCalledWith(
-        'check-1',
-        {
-          status: 'success',
-          result: {
-            followedBack: false,
-            relationshipState:
-              'following',
-            checkedAt:
-              checkedAt.toISOString(),
-          },
-          metadata: {
-            event:
-              'follow_back_checked',
-          },
-        },
-      );
 
       expect(
         actionMocks
@@ -213,8 +216,8 @@ describe(
     });
 
     it('stops before creating UNFOLLOW when another worker already completed the check', async () => {
-      actionMocks
-        .transitionTikTokAction
+      followBackMocks
+        .completeTikTokFollowBackCheck
         .mockResolvedValue(
           null,
         );
@@ -238,8 +241,8 @@ describe(
       );
 
       expect(
-        actionMocks
-          .transitionTikTokAction,
+        followBackMocks
+          .completeTikTokFollowBackCheck,
       ).toHaveBeenCalledTimes(
         1,
       );
@@ -261,13 +264,16 @@ describe(
         });
 
       expect(
-        relationshipMocks
-          .recordTikTokRelationshipCheck,
+        followBackMocks
+          .completeTikTokFollowBackCheck,
       ).toHaveBeenCalledWith(
         expect.objectContaining({
           relationshipState:
             'not_following',
-          followsUs: false,
+          followsUs:
+            false,
+          followedBack:
+            false,
         }),
       );
 
@@ -321,13 +327,8 @@ describe(
       );
 
       expect(
-        relationshipMocks
-          .recordTikTokRelationshipCheck,
-      ).not.toHaveBeenCalled();
-
-      expect(
-        actionMocks
-          .transitionTikTokAction,
+        followBackMocks
+          .completeTikTokFollowBackCheck,
       ).not.toHaveBeenCalled();
 
       expect(
@@ -353,12 +354,15 @@ describe(
           });
 
         expect(
-          relationshipMocks
-            .recordTikTokRelationshipCheck,
+          followBackMocks
+            .completeTikTokFollowBackCheck,
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             relationshipState,
-            followsUs: true,
+            followsUs:
+              true,
+            followedBack:
+              true,
           }),
         );
 
