@@ -300,21 +300,33 @@ The automation core remains responsible for business state and persistence.
 
 ### Step 1 — Windows-safe headless browser sessions
 
-Goal:
+Status: **PASS**
 
-`BrowserSessionManager.createSession(undefined, false)`
+Validated on Windows (`win32`) with Playwright 1.58.2 / Chromium headless.
 
-must work on the local Windows development machine.
+Observed result:
 
-Changes should be limited to cross-platform system/resource detection.
+```text
+BROWSER_HEADLESS_SMOKE=PASS
+PLATFORM=win32
+PLAYWRIGHT_SESSION=PASS
+DOM_RENDER=PASS
+VNC_ENABLED=false
+SESSION_CLEANUP=PASS
+```
 
-Validation:
+Implementation:
 
-- type-check;
-- create headless session;
-- navigate to a harmless page;
-- close session cleanly;
-- no Android changes.
+- Linux still prefers `/proc/meminfo` for `MemAvailable`;
+- Windows/macOS use Node `os.freemem()` / `os.totalmem()`;
+- Linux-only orphan cleanup is skipped on non-Linux systems;
+- VNC remains explicitly Linux-only;
+- cross-platform Web provider work uses `withVnc=false`.
+
+Validated implementation HEAD:
+
+`aab669e50758a70c64922dd3c4275dfb2d9c8933`
+
 
 ### Step 2 — Web provider contract
 
@@ -390,13 +402,11 @@ After provider integration is stable:
 
 ## 7. Current decision
 
-The immediate next implementation should be **Step 1: make headless BrowserSessionManager cross-platform on Windows**.
+Step 1 is complete.
 
-Reason:
+The immediate next milestone is a **read-only authenticated TikTok Web diagnostic** to capture the real profile relationship DOM before implementing `WebTikTokProvider.checkRelationship()`.
 
-the Web provider cannot be tested locally until a Playwright session can be created.
-
-After that, the next safe milestone is a **read-only authenticated TikTok Web diagnostic**, not browser follow/comment automation.
+No browser follow/comment/like/save action should be enabled during this diagnostic.
 
 ---
 
