@@ -179,75 +179,163 @@ const provider =
       },
   });
 
-const observation =
-  await provider.checkRelationship({
-    targetKey:
-      `username:${targetUsername}`,
-    accountKey:
-      accountId,
-    username:
-      targetUsername,
-  });
+function assertObservation(
+  label: string,
+  observation:
+    Awaited<
+      ReturnType<
+        WebTikTokProvider['checkRelationship']
+      >
+    >,
+): void {
 
-console.log(
-  `PROVIDER=${observation.provider}`,
-);
-
-console.log(
-  `RELATIONSHIP=${observation.relationship}`,
-);
-
-console.log(
-  `OBSERVED_AT=${observation.observedAt.toISOString()}`,
-);
-
-console.log(
-  `DETAILS=${JSON.stringify(observation.details ?? {})}`,
-);
-
-if (
-  observation.provider !==
-    'web'
-) {
-  throw new Error(
-    `Unexpected provider: ${observation.provider}`,
+  console.log(
+    `${label}_PROVIDER=${observation.provider}`,
   );
+
+  console.log(
+    `${label}_RELATIONSHIP=${observation.relationship}`,
+  );
+
+  console.log(
+    `${label}_OBSERVED_AT=${observation.observedAt.toISOString()}`,
+  );
+
+  console.log(
+    `${label}_DETAILS=${JSON.stringify(observation.details ?? {})}`,
+  );
+
+  if (
+    observation.provider !==
+      'web'
+  ) {
+    throw new Error(
+      `Unexpected provider: ${observation.provider}`,
+    );
+  }
+
+  if (
+    observation.targetKey !==
+      `username:${targetUsername}`
+  ) {
+    throw new Error(
+      `Unexpected targetKey: ${observation.targetKey}`,
+    );
+  }
+
+  if (
+    observation.relationship !==
+      expectedRelationship
+  ) {
+    throw new Error(
+      `Unexpected relationship. Expected ${expectedRelationship}, got ${observation.relationship}.`,
+    );
+  }
 }
 
-if (
-  observation.targetKey !==
-    `username:${targetUsername}`
-) {
-  throw new Error(
-    `Unexpected targetKey: ${observation.targetKey}`,
+try {
+  console.log('');
+  console.log(
+    '[1/2] First relationship check...',
+  );
+
+  const firstObservation =
+    await provider.checkRelationship({
+      targetKey:
+        `username:${targetUsername}`,
+      accountKey:
+        accountId,
+      username:
+        targetUsername,
+    });
+
+  assertObservation(
+    'FIRST',
+    firstObservation,
+  );
+
+  console.log('');
+  console.log(
+    '[2/2] Second relationship check using the same provider...',
+  );
+
+  const secondObservation =
+    await provider.checkRelationship({
+      targetKey:
+        `username:${targetUsername}`,
+      accountKey:
+        accountId,
+      username:
+        targetUsername,
+    });
+
+  assertObservation(
+    'SECOND',
+    secondObservation,
+  );
+
+  const firstDetails =
+    firstObservation.details ??
+    {};
+
+  const secondDetails =
+    secondObservation.details ??
+    {};
+
+  console.log(
+    `FIRST_SESSION_REUSED=${String(firstDetails.sessionReused ?? false)}`,
+  );
+
+  console.log(
+    `FIRST_COOKIE_BOOTSTRAP_APPLIED=${String(firstDetails.cookieBootstrapApplied ?? false)}`,
+  );
+
+  console.log(
+    `SECOND_SESSION_REUSED=${String(secondDetails.sessionReused ?? false)}`,
+  );
+
+  console.log(
+    `SECOND_COOKIE_BOOTSTRAP_APPLIED=${String(secondDetails.cookieBootstrapApplied ?? false)}`,
+  );
+
+  if (
+    secondDetails.sessionReused !==
+      true
+  ) {
+    throw new Error(
+      'Second Web relationship check did not reuse the active persistent session.',
+    );
+  }
+
+  console.log('');
+  console.log(
+    'TIKTOK_WEB_PROVIDER_SMOKE=PASS',
+  );
+
+  console.log(
+    `EXPECTED_RELATIONSHIP=${expectedRelationship}`,
+  );
+
+  console.log(
+    'PERSISTENT_PROFILE=PASS',
+  );
+
+  console.log(
+    'ACTIVE_SESSION_REUSE=PASS',
+  );
+
+  console.log(
+    'READ_ONLY=PASS',
+  );
+
+  console.log(
+    'MUTATIONS_PERFORMED=false',
   );
 }
+finally {
+  await provider.close();
 
-if (
-  observation.relationship !==
-    expectedRelationship
-) {
-  throw new Error(
-    `Unexpected relationship. Expected ${expectedRelationship}, got ${observation.relationship}.`,
+  console.log(
+    'SESSION_POOL_CLOSED=PASS',
   );
 }
-
-console.log(
-  '',
-);
-
-console.log(
-  'TIKTOK_WEB_PROVIDER_SMOKE=PASS',
-);
-
-console.log(
-  `EXPECTED_RELATIONSHIP=${expectedRelationship}`,
-);
-
-console.log(
-  'READ_ONLY=PASS',
-);
-
-console.log(
-  'MUTATIONS_PERFORMED=false',
-);
