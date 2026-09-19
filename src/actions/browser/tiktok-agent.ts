@@ -14,6 +14,13 @@ import { TikTokAccountManager, type TikTokAccount, dismissTikTokBanners } from '
 import { toPlaywrightCookies, validateTikTokCookies } from './tiktok-cookies.js';
 import { AIClient } from '../../core/ai-client.js';
 import logger from '../../utils/logger.js';
+import {
+  classifyWebTikTokRelationship,
+} from '../../tiktok/providers/web-tiktok-provider.js';
+import {
+  registerConfirmedWebFollow,
+  normalizeTikTokUsername,
+} from '../../tiktok/web-follow-registration.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -681,7 +688,7 @@ export class TikTokAgent {
     if (targetAccounts.length > 0 && Math.random() < 0.6) {
       // Visit a target account's profile to follow them or their followers
       const handle = targetAccounts[Math.floor(Math.random() * targetAccounts.length)];
-      const cleanHandle = handle.replace(/^@/, '');
+      const cleanHandle = normalizeTikTokUsername(handle);
       targetUrl = `https://www.tiktok.com/@${cleanHandle}`;
     } else {
       // Browse For You page and follow interesting creators
@@ -701,7 +708,7 @@ export class TikTokAgent {
     }
 
     // Find follow buttons
-    const followButtons = await p.$$(SELECTORS.followButton);
+    const followButtons = await p.$(SELECTORS.followButton);
     if (followButtons.length === 0) {
       this.log('follow', 'skipped', 'No follow buttons found');
       return;
@@ -712,37 +719,262 @@ export class TikTokAgent {
     const btn = followButtons[Math.min(idx, followButtons.length - 1)];
 
     try {
-      // Try to get the creator handle
-      let handle = '';
-      try {
-        const authorEl = await p.$(SELECTORS.authorName);
-        if (authorEl) {
-          handle = await authorEl.evaluate((el: any) => el.textContent || '');
-        }
-      } catch { /* non-critical */ }
+      const handle =
+        await this.resolveFollowTargetHandle(
+          p,
+          btn,
+          targetUrl,
+        );
 
-      if (handle && this.followedHandles.has(handle)) {
+      if (!handle) {
+        this.log(
+          'follow',
+          'skipped',
+          'Exact creator username could not be resolved; Follow was not executed',
+        );
+        return;
+      }
+
+      if (
+        this.followedHandles.has(
+          handle.toLowerCase(),
+        )
+      ) {
         this.log('follow', 'skipped', `Already followed @${handle} this session`);
         return;
       }
 
-      // Check if already following
-      const btnText = await btn.evaluate((el: any) => el.textContent || '');
-      if (btnText.toLowerCase().includes('following')) {
-        this.log('follow', 'skipped', 'Already following this user');
+      const before =
+        await this.readFollowRelationshipControl(
+          btn,
+        );
+
+      if (
+        before === 'following' ||
+        before === 'friends'
+      ) {
+        this.log('follow', 'skipped', `Already following @${handle}`);
         return;
       }
 
       await btn.click();
+
+      const followedAt =
+        new Date();
+
       await this.randomDelay(1500, 3000);
 
-      if (handle) this.followedHandles.add(handle);
-      this.log('follow', 'success', `Followed${handle ? ` @${handle}` : ' a creator'}`);
+      const confirmedRelationship =
+        await this.confirmFollowRelationship(
+          p,
+          btn,
+          handle,
+        );
+
+      if (
+        confirmedRelationship !== 'following' &&
+        confirmedRelationship !== 'friends'
+      ) {
+        throw new Error(
+          `Follow click was not confirmed for @${handle}: ${confirmedRelationship}`,
+        );
+      }
+
+      await registerConfirmedWebFollow({
+        accountKey:
+          this.config.accountId,
+        username:
+          handle,
+        observedRelationship:
+          confirmedRelationship,
+        followedAt,
+      });
+
+      this.followedHandles.add(
+        handle.toLowerCase(),
+      );
+
+      this.log(
+        'follow',
+        'success',
+        `Followed @${handle}; persistent follow-back check registered`,
+      );
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       this.log('follow', 'error', `Failed to follow: ${msg}`);
       throw err;
     }
+  }
+
+  private async resolveFollowTargetHandle(
+    page: any,
+    button: any,
+    targetUrl: string,
+  ): Promise<string | null> {
+
+    const profileMatch =
+      targetUrl.match(
+        /tiktok\.com\/@([^/?#]+)/i,
+      );
+
+    if (profileMatch) {
+      return normalizeTikTokUsername(
+        decodeURIComponent(
+          profileMatch[1],
+        ),
+      ) || null;
+    }
+
+    try {
+      const handle =
+        await button.evaluate(
+          (element: any) => {
+            const container =
+              element.closest(
+                '[data-e2e="recommend-list-item-container"]',
+              ) ||
+              element.closest(
+                'div[class*="DivItemContainer"]',
+              );
+
+            const author =
+              container?.querySelector(
+                '[data-e2e="video-author-uniqueid"]',
+              );
+
+            return author?.textContent || '';
+          },
+        );
+
+      const normalized =
+        normalizeTikTokUsername(
+          String(handle),
+        );
+
+      if (normalized) {
+        return normalized;
+      }
+    }
+    catch {
+      // Fall back to the page-level author selector below.
+    }
+
+    try {
+      const authorEl =
+        await page.$(
+          SELECTORS.authorName,
+        );
+
+      if (!authorEl) {
+        return null;
+      }
+
+      const handle =
+        await authorEl.evaluate(
+          (element: any) =>
+            element.textContent || '',
+        );
+
+      const normalized =
+        normalizeTikTokUsername(
+          String(handle),
+        );
+
+      return normalized || null;
+    }
+    catch {
+      return null;
+    }
+  }
+
+  private async readFollowRelationshipControl(
+    button: any,
+  ) {
+
+    const text =
+      await button
+        .innerText()
+        .catch(
+          async () =>
+            await button.evaluate(
+              (element: any) =>
+                element.textContent || '',
+            ),
+        );
+
+    const ariaLabel =
+      await button
+        .getAttribute(
+          'aria-label',
+        )
+        .catch(
+          () => null,
+        );
+
+    return classifyWebTikTokRelationship({
+      text:
+        String(text ?? ''),
+      ariaLabel:
+        ariaLabel ??
+        null,
+    });
+  }
+
+  private async confirmFollowRelationship(
+    page: any,
+    button: any,
+    username: string,
+  ) {
+
+    const current =
+      await this
+        .readFollowRelationshipControl(
+          button,
+        )
+        .catch(
+          () =>
+            'unknown' as const,
+        );
+
+    if (
+      current === 'following' ||
+      current === 'friends'
+    ) {
+      return current;
+    }
+
+    await page.goto(
+      `https://www.tiktok.com/@${encodeURIComponent(username)}`,
+      {
+        waitUntil:
+          'domcontentloaded',
+        timeout:
+          30_000,
+      },
+    );
+
+    await this.randomDelay(
+      1500,
+      2500,
+    );
+
+    await dismissTikTokBanners(
+      page,
+    );
+
+    const profileButton =
+      await page.$(
+        SELECTORS.followButton,
+      );
+
+    if (!profileButton) {
+      return 'unknown' as const;
+    }
+
+    return this
+      .readFollowRelationshipControl(
+        profileButton,
+      );
   }
 
   // ── Save / Bookmark Action ──────────────────────────────────────────
