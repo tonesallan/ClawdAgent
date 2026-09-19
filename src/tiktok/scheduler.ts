@@ -135,6 +135,10 @@ export async function runTikTokScheduler(
   await recoverStaleTikTokRunningActions(
     TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
     now,
+    undefined,
+    undefined,
+    undefined,
+    options.providerNames,
   );
   const actions =
     await listDueScheduledTikTokActions(
