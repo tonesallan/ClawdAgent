@@ -205,10 +205,22 @@ function createPage(
       vi.fn().mockResolvedValue(
         undefined,
       ),
-    $$:
-      vi.fn().mockResolvedValue([
-        button,
-      ]),
+    locator:
+      vi.fn().mockImplementation(
+        (
+          selector: string,
+        ) => ({
+          all:
+            vi.fn().mockResolvedValue(
+              selector ===
+                '[data-e2e="follow-button"]'
+                ? [
+                    button,
+                  ]
+                : [],
+            ),
+        }),
+      ),
     $:
       vi.fn().mockImplementation(
         async (
