@@ -16,6 +16,10 @@ import {
   DEFAULT_TIKTOK_ACCOUNT_KEY,
 } from '../domain.js';
 
+import {
+  TikTokWebSessionPool,
+} from '../web-session-pool.js';
+
 import type {
   TikTokAutomationProvider,
   TikTokObservedRelationship,
@@ -99,6 +103,7 @@ export interface WebTikTokChallengeContext {
 export interface WebTikTokProviderOptions {
   accountManager?: TikTokAccountManager;
   browserManager?: BrowserSessionManager;
+  sessionPool?: TikTokWebSessionPool;
   mobileDeviceName?: string;
   headed?: boolean;
   navigationWaitMs?: number;
@@ -129,6 +134,9 @@ implements TikTokAutomationProvider {
   private readonly browserManager:
     BrowserSessionManager;
 
+  private readonly sessionPool:
+    TikTokWebSessionPool;
+
   private readonly mobileDeviceName:
     string;
 
@@ -152,6 +160,15 @@ implements TikTokAutomationProvider {
     this.browserManager =
       options.browserManager ??
       BrowserSessionManager.getInstance();
+
+    this.sessionPool =
+      options.sessionPool ??
+      new TikTokWebSessionPool({
+        accountManager:
+          this.accountManager,
+        browserManager:
+          this.browserManager,
+      });
 
     this.mobileDeviceName =
       options.mobileDeviceName ??
@@ -208,27 +225,37 @@ implements TikTokAutomationProvider {
         ),
       );
 
-    let sessionId:
-      string | null =
-        null;
+    let sessionAcquired =
+      false;
+
+    let sessionReused =
+      false;
+
+    let cookieBootstrapApplied =
+      false;
 
     try {
-      const session =
-        await this.accountManager
-          .launchSession(
-            account.id,
-            this.headed,
+      const lease =
+        await this.sessionPool
+          .acquire({
+            accountId:
+              account.id,
+            headed:
+              this.headed,
             contextOptions,
-          );
+          });
 
-      sessionId =
-        session.sessionId;
+      sessionAcquired =
+        true;
+
+      sessionReused =
+        lease.reused;
+
+      cookieBootstrapApplied =
+        lease.cookieBootstrapApplied;
 
       const page =
-        this.browserManager
-          .getPage(
-            sessionId,
-          );
+        lease.page;
 
       if (!page) {
         return this.unknown(
@@ -473,6 +500,10 @@ implements TikTokAutomationProvider {
             username,
           mobileDevice:
             this.mobileDeviceName,
+          persistentProfile:
+            true,
+          sessionReused,
+          cookieBootstrapApplied,
           visibleFollowButtonCount:
             buttonCount,
           relationshipControl: {
@@ -506,16 +537,18 @@ implements TikTokAutomationProvider {
       );
     }
     finally {
-      if (sessionId) {
-        await this.browserManager
-          .closeSession(
-            sessionId,
-          )
-          .catch(
-            () => {},
+      if (sessionAcquired) {
+        this.sessionPool
+          .release(
+            account.id,
           );
       }
     }
+  }
+
+  async close(): Promise<void> {
+    await this.sessionPool
+      .closeAll();
   }
 
   async follow(
