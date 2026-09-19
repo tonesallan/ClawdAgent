@@ -31,6 +31,15 @@ export interface RunTikTokSchedulerOptions {
   limit?: number;
 
   /**
+   * Restrict this scheduler run to providers that are actually
+   * registered in the current runtime composition.
+   *
+   * Undefined preserves the previous behavior (all providers).
+   * An empty array processes no actions.
+   */
+  providerNames?: readonly string[];
+
+  /**
    * Policy is injectable for tests/composition.
    *
    * By default the persistent TikTokLimitPolicy is used.
@@ -131,6 +140,7 @@ export async function runTikTokScheduler(
     await listDueScheduledTikTokActions(
       now,
       limit,
+      options.providerNames,
     );
 
   const summary: TikTokSchedulerRunResult = {
