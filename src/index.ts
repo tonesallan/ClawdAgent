@@ -19,6 +19,7 @@ import { initDatabase, closeDatabase } from './memory/database.js';
 import { initCache, closeCache } from './memory/cache.js';
 import { startWorker } from './queue/worker.js';
 import { startScheduler } from './queue/scheduler.js';
+import { createTikTokRuntime } from './tiktok/runtime.js';
 import { startInterfaces, stopInterfaces } from './interfaces/index.js';
 import { findOrCreateUser, autoLinkUsers } from './memory/repositories/users.js';
 import { getOrCreateConversation, getCrossPlatformSummary } from './memory/repositories/conversations.js';
@@ -773,6 +774,18 @@ Rules:
   // 6. Interfaces
   const interfaces = await startInterfaces(engine);
 
+  /*
+   * TikTok automation core runtime.
+   *
+   * The runtime currently registers only the read-only Web provider.
+   * Provider-scoped queue filtering prevents Android actions from being
+   * claimed until an Android runtime dependency is explicitly registered.
+   */
+  const tikTokRuntime =
+    createTikTokRuntime();
+
+  tikTokRuntime.start();
+
   // 7. Wire heartbeat alert sender to Telegram (now that interfaces are started)
   const telegramInterface = interfaces.find(i => i.name === 'Telegram') as TelegramBot | undefined;
   heartbeat.setAlertSender(async (alert) => {
@@ -1101,6 +1114,7 @@ Rules:
     await agentQueue.shutdown();
     await mcpManager.shutdown();
     await pluginLoader.shutdown();
+    await tikTokRuntime.stop();
     await stopInterfaces(interfaces);
     await closeCache();
     await closeDatabase();
