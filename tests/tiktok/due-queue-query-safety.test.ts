@@ -258,5 +258,122 @@ describe(
         1,
       );
     });
+    it('filters available providers before applying the scheduler batch limit', async () => {
+      const rows = [
+        {
+          id:
+            'web-check-1',
+          type:
+            'CHECK_FOLLOW_BACK',
+          status:
+            'scheduled',
+          provider:
+            'web',
+        },
+      ];
+
+      const limit =
+        vi.fn(
+          async () => rows,
+        );
+
+      const orderBy =
+        vi.fn(
+          () => ({
+            limit,
+          }),
+        );
+
+      const where =
+        vi.fn(
+          () => ({
+            orderBy,
+          }),
+        );
+
+      const from =
+        vi.fn(
+          () => ({
+            where,
+          }),
+        );
+
+      const select =
+        vi.fn(
+          () => ({
+            from,
+          }),
+        );
+
+      dbMocks
+        .getDb
+        .mockReturnValue({
+          select,
+        });
+
+      const now =
+        new Date(
+          '2026-09-19T00:00:00.000Z',
+        );
+
+      const result =
+        await listDueScheduledTikTokActions(
+          now,
+          5,
+          [
+            'web',
+          ],
+        );
+
+      expect(result).toBe(
+        rows,
+      );
+
+      expect(
+        limit,
+      ).toHaveBeenCalledWith(
+        5,
+      );
+
+      const expression =
+        where.mock.calls[0][0] as {
+          op: string;
+          conditions: Array<{
+            op: string;
+            value: unknown;
+          }>;
+        };
+
+      expect(
+        expression.conditions,
+      ).toHaveLength(
+        4,
+      );
+
+      expect(
+        expression.conditions.map(
+          condition =>
+            condition.op,
+        ),
+      ).toEqual([
+        'eq',
+        'eq',
+        'lte',
+        'inArray',
+      ]);
+
+      expect(
+        expression.conditions[3].value,
+      ).toEqual([
+        'web',
+      ]);
+
+      expect(
+        ormMocks.inArray,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+
   },
 );
