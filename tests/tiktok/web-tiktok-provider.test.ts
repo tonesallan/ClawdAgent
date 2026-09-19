@@ -29,6 +29,10 @@ function createPage(
   let currentUrl =
     'https://www.tiktok.com/foryou';
 
+  let challengeVisible =
+    options.challenge ??
+    false;
+
   const button = {
     innerText:
       vi.fn().mockResolvedValue(
@@ -58,10 +62,11 @@ function createPage(
 
   const challengeLocator = {
     count:
-      vi.fn().mockResolvedValue(
-        options.challenge
-          ? 1
-          : 0,
+      vi.fn().mockImplementation(
+        async () =>
+          challengeVisible
+            ? 1
+            : 0,
       ),
     nth:
       vi.fn().mockReturnValue({
@@ -125,7 +130,7 @@ function createPage(
           if (
             selector ===
               '.secsdk-captcha-drag-icon' &&
-            options.challenge
+            challengeVisible
           ) {
             return challengeLocator;
           }
@@ -138,6 +143,12 @@ function createPage(
   return {
     page,
     button,
+    setChallenge(
+      value: boolean,
+    ) {
+      challengeVisible =
+        value;
+    },
   };
 }
 
@@ -145,6 +156,16 @@ function createProvider(
   page: ReturnType<
     typeof createPage
   >['page'],
+  challengeHandler?:
+    (
+      context: {
+        page: any;
+        stage:
+          | 'session_start'
+          | 'authentication_check'
+          | 'target_profile';
+      },
+    ) => Promise<void>,
 ) {
   const account = {
     id:
@@ -200,6 +221,7 @@ function createProvider(
         'Pixel 5',
       navigationWaitMs:
         0,
+      challengeHandler,
     });
 
   return {
@@ -386,6 +408,59 @@ describe(
         closeSession,
       ).toHaveBeenCalledWith(
         'web-session-1',
+      );
+    });
+
+    it('resumes after a diagnostic-only manual challenge hook clears the challenge', async () => {
+      const {
+        page,
+        setChallenge,
+      } = createPage({
+        challenge:
+          true,
+      });
+
+      const challengeHandler =
+        vi.fn().mockImplementation(
+          async () => {
+            setChallenge(
+              false,
+            );
+          },
+        );
+
+      const {
+        provider,
+      } = createProvider(
+        page,
+        challengeHandler,
+      );
+
+      const observation =
+        await provider
+          .checkRelationship({
+            targetKey:
+              'username:tiktok',
+            accountKey:
+              'default',
+            username:
+              'tiktok',
+          });
+
+      expect(
+        challengeHandler,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          page,
+          stage:
+            'session_start',
+        }),
+      );
+
+      expect(
+        observation.relationship,
+      ).toBe(
+        'not_following',
       );
     });
 
