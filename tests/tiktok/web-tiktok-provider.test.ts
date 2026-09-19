@@ -186,18 +186,24 @@ function createProvider(
       '2026-09-18T00:00:00.000Z',
   };
 
+  const launchSession =
+    vi.fn().mockResolvedValue({
+      sessionId:
+        'web-session-1',
+      url:
+        'https://www.tiktok.com/foryou',
+      persistentProfile:
+        true,
+      cookieBootstrapApplied:
+        true,
+    });
+
   const accountManager = {
     listAccounts:
       vi.fn().mockReturnValue([
         account,
       ]),
-    launchSession:
-      vi.fn().mockResolvedValue({
-        sessionId:
-          'web-session-1',
-        url:
-          'https://www.tiktok.com/foryou',
-      }),
+    launchSession,
   } as unknown as TikTokAccountManager;
 
   const closeSession =
@@ -229,6 +235,7 @@ function createProvider(
     accountManager,
     browserManager,
     closeSession,
+    launchSession,
   };
 }
 
@@ -358,6 +365,12 @@ describe(
 
       expect(
         closeSession,
+      ).not.toHaveBeenCalled();
+
+      await provider.close();
+
+      expect(
+        closeSession,
       ).toHaveBeenCalledWith(
         'web-session-1',
       );
@@ -406,8 +419,90 @@ describe(
 
       expect(
         closeSession,
+      ).not.toHaveBeenCalled();
+
+      await provider.close();
+
+      expect(
+        closeSession,
       ).toHaveBeenCalledWith(
         'web-session-1',
+      );
+    });
+
+    it('reuses one persistent session across consecutive relationship checks', async () => {
+      const {
+        page,
+      } = createPage();
+
+      const {
+        provider,
+        launchSession,
+        closeSession,
+      } = createProvider(
+        page,
+      );
+
+      const first =
+        await provider
+          .checkRelationship({
+            targetKey:
+              'username:tiktok',
+            accountKey:
+              'default',
+            username:
+              'tiktok',
+          });
+
+      const second =
+        await provider
+          .checkRelationship({
+            targetKey:
+              'username:tiktok',
+            accountKey:
+              'default',
+            username:
+              'tiktok',
+          });
+
+      expect(
+        first.details,
+      ).toMatchObject({
+        persistentProfile:
+          true,
+        sessionReused:
+          false,
+        cookieBootstrapApplied:
+          true,
+      });
+
+      expect(
+        second.details,
+      ).toMatchObject({
+        persistentProfile:
+          true,
+        sessionReused:
+          true,
+        cookieBootstrapApplied:
+          false,
+      });
+
+      expect(
+        launchSession,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+
+      expect(
+        closeSession,
+      ).not.toHaveBeenCalled();
+
+      await provider.close();
+
+      expect(
+        closeSession,
+      ).toHaveBeenCalledTimes(
+        1,
       );
     });
 
