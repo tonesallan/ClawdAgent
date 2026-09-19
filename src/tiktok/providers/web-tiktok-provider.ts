@@ -86,12 +86,35 @@ export function classifyWebTikTokRelationship(
   return 'unknown';
 }
 
+export type WebTikTokChallengeStage =
+  | 'session_start'
+  | 'authentication_check'
+  | 'target_profile';
+
+export interface WebTikTokChallengeContext {
+  page: any;
+  stage: WebTikTokChallengeStage;
+}
+
 export interface WebTikTokProviderOptions {
   accountManager?: TikTokAccountManager;
   browserManager?: BrowserSessionManager;
   mobileDeviceName?: string;
   headed?: boolean;
   navigationWaitMs?: number;
+
+  /**
+   * Optional interactive hook for diagnostics/smokes.
+   *
+   * Production callers should normally omit this. When omitted,
+   * any visible TikTok challenge is classified as UNKNOWN.
+   *
+   * The hook must not automate or bypass the challenge. A caller
+   * may use it to wait while a human resolves the visible challenge.
+   */
+  challengeHandler?: (
+    context: WebTikTokChallengeContext,
+  ) => Promise<void>;
 }
 
 export class WebTikTokProvider
@@ -114,6 +137,9 @@ implements TikTokAutomationProvider {
 
   private readonly navigationWaitMs:
     number;
+
+  private readonly challengeHandler:
+    WebTikTokProviderOptions['challengeHandler'];
 
   constructor(
     options:
@@ -138,6 +164,9 @@ implements TikTokAutomationProvider {
     this.navigationWaitMs =
       options.navigationWaitMs ??
       2_500;
+
+    this.challengeHandler =
+      options.challengeHandler;
   }
 
   async checkRelationship(
@@ -215,9 +244,10 @@ implements TikTokAutomationProvider {
       }
 
       if (
-        await this
-          .hasVisibleChallenge(
+        !await this
+          .resolveVisibleChallenge(
             page,
+            'session_start',
           )
       ) {
         return this.unknown(
@@ -253,9 +283,10 @@ implements TikTokAutomationProvider {
       );
 
       if (
-        await this
-          .hasVisibleChallenge(
+        !await this
+          .resolveVisibleChallenge(
             page,
+            'authentication_check',
           )
       ) {
         return this.unknown(
@@ -320,9 +351,10 @@ implements TikTokAutomationProvider {
       );
 
       if (
-        await this
-          .hasVisibleChallenge(
+        !await this
+          .resolveVisibleChallenge(
             page,
+            'target_profile',
           )
       ) {
         return this.unknown(
@@ -612,6 +644,41 @@ implements TikTokAutomationProvider {
     throw new Error(
       `TikTok Web account mapping is ambiguous for accountKey=${normalizedKey || 'unset'}.`,
     );
+  }
+
+  private async resolveVisibleChallenge(
+    page: any,
+    stage: WebTikTokChallengeStage,
+  ): Promise<boolean> {
+
+    const visible =
+      await this
+        .hasVisibleChallenge(
+          page,
+        );
+
+    if (!visible) {
+      return true;
+    }
+
+    if (!this.challengeHandler) {
+      return false;
+    }
+
+    try {
+      await this.challengeHandler({
+        page,
+        stage,
+      });
+    }
+    catch {
+      return false;
+    }
+
+    return !await this
+      .hasVisibleChallenge(
+        page,
+      );
   }
 
   private async hasVisibleChallenge(
