@@ -76,6 +76,107 @@ const provider =
       'Pixel 5',
     headed:
       true,
+    challengeHandler:
+      async ({
+        page,
+        stage,
+      }) => {
+        console.log('');
+        console.log(
+          `TIKTOK_CHALLENGE=DETECTED stage=${stage}`,
+        );
+        console.log(
+          'Resolva o puzzle manualmente na janela mobile visivel.',
+        );
+        console.log(
+          'O smoke continuara automaticamente quando o desafio desaparecer.',
+        );
+
+        const selectors = [
+          '.secsdk-captcha-drag-icon',
+          '[class*="secsdk-captcha"]',
+          '[class*="captcha" i]',
+          '[id*="captcha" i]',
+          'iframe[src*="captcha" i]',
+        ];
+
+        const isVisible =
+          async () => {
+            for (
+              const selector of
+                selectors
+            ) {
+              const locator =
+                page.locator(
+                  selector,
+                );
+
+              const count =
+                await locator
+                  .count();
+
+              for (
+                let index = 0;
+                index < count;
+                index += 1
+              ) {
+                if (
+                  await locator
+                    .nth(index)
+                    .isVisible()
+                    .catch(
+                      () => false,
+                    )
+                ) {
+                  return true;
+                }
+              }
+            }
+
+            return false;
+          };
+
+        const deadline =
+          Date.now() +
+          5 * 60_000;
+
+        while (
+          Date.now() <
+            deadline
+        ) {
+          if (
+            page.isClosed()
+          ) {
+            throw new Error(
+              'A janela TikTok foi fechada antes da resolucao manual do puzzle.',
+            );
+          }
+
+          if (
+            !await isVisible()
+          ) {
+            await page
+              .waitForTimeout(
+                2_000,
+              );
+
+            console.log(
+              `TIKTOK_CHALLENGE=MANUALLY_RESOLVED stage=${stage}`,
+            );
+
+            return;
+          }
+
+          await page
+            .waitForTimeout(
+              1_000,
+            );
+        }
+
+        throw new Error(
+          `Puzzle TikTok nao foi resolvido manualmente em 5 minutos (stage=${stage}).`,
+        );
+      },
   });
 
 const observation =
