@@ -293,6 +293,112 @@ describe(
       });
     });
 
+    it('preserves Web account and provider when scheduling follow-back', async () => {
+      const followedAt =
+        new Date(
+          '2026-09-19T02:30:00.000Z',
+        );
+
+      relationshipMocks
+        .registerTikTokSystemFollow
+        .mockResolvedValue({
+          ...relationshipRow(),
+          accountKey:
+            'web-account-1',
+          targetKey:
+            'username:tiktok',
+          username:
+            'tiktok',
+          followedByUsAt:
+            followedAt,
+          followBackCheckAt:
+            new Date(
+              '2026-09-21T02:30:00.000Z',
+            ),
+        });
+
+      actionMocks
+        .createOrReuseOpenTikTokAction
+        .mockResolvedValue({
+          action:
+            checkAction({
+              accountKey:
+                'web-account-1',
+              provider:
+                'web',
+              executeAt:
+                new Date(
+                  '2026-09-21T02:30:00.000Z',
+                ),
+            }),
+          created:
+            true,
+        });
+
+      const result =
+        await registerSuccessfulTikTokFollow({
+          accountKey:
+            'web-account-1',
+          targetKey:
+            'username:tiktok',
+          username:
+            'tiktok',
+          followedAt,
+          provider:
+            'web',
+        });
+
+      expect(
+        relationshipMocks
+          .registerTikTokSystemFollow,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountKey:
+            'web-account-1',
+          targetKey:
+            'username:tiktok',
+          username:
+            'tiktok',
+          followedAt,
+          followBackCheckAt:
+            new Date(
+              '2026-09-21T02:30:00.000Z',
+            ),
+        }),
+      );
+
+      expect(
+        actionMocks
+          .createOrReuseOpenTikTokAction,
+      ).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accountKey:
+            'web-account-1',
+          type:
+            'CHECK_FOLLOW_BACK',
+          targetKey:
+            'username:tiktok',
+          status:
+            'scheduled',
+          executeAt:
+            new Date(
+              '2026-09-21T02:30:00.000Z',
+            ),
+          provider:
+            'web',
+        }),
+      );
+
+      expect(
+        result.checkAction,
+      ).toMatchObject({
+        accountKey:
+          'web-account-1',
+        provider:
+          'web',
+      });
+    });
+
     it('honors the configured follow-back wait instead of hardcoding 48 hours', async () => {
       configurationMocks
         .getTikTokNumberConfiguration
