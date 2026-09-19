@@ -646,20 +646,49 @@ export async function transitionTikTokAction(
 export async function listDueScheduledTikTokActions(
   now = new Date(),
   limit = 50,
+  providers?: readonly string[],
 ): Promise<TikTokAction[]> {
   const db = getDb();
+
+  if (
+    providers !== undefined &&
+    providers.length === 0
+  ) {
+    return [];
+  }
+
+  const conditions = [
+    eq(
+      tiktokActions.type,
+      TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
+    ),
+    eq(
+      tiktokActions.status,
+      'scheduled',
+    ),
+    lte(
+      tiktokActions.executeAt,
+      now,
+    ),
+  ];
+
+  if (
+    providers !== undefined
+  ) {
+    conditions.push(
+      inArray(
+        tiktokActions.provider,
+        [...providers],
+      ),
+    );
+  }
 
   return db
     .select()
     .from(tiktokActions)
     .where(
       and(
-        eq(
-          tiktokActions.type,
-          TIKTOK_ACTION_TYPES.CHECK_FOLLOW_BACK,
-        ),
-        eq(tiktokActions.status, 'scheduled'),
-        lte(tiktokActions.executeAt, now),
+        ...conditions,
       ),
     )
     .orderBy(
