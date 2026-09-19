@@ -859,32 +859,7 @@ export class TikTokAgent {
       // Fall back to the page-level author selector below.
     }
 
-    try {
-      const authorEl =
-        await page.$(
-          SELECTORS.authorName,
-        );
-
-      if (!authorEl) {
-        return null;
-      }
-
-      const handle =
-        await authorEl.evaluate(
-          (element: any) =>
-            element.textContent || '',
-        );
-
-      const normalized =
-        normalizeTikTokUsername(
-          String(handle),
-        );
-
-      return normalized || null;
-    }
-    catch {
-      return null;
-    }
+    return null;
   }
 
   private async readFollowRelationshipControl(
