@@ -856,7 +856,7 @@ export class TikTokAgent {
       }
     }
     catch {
-      // Fall back to the page-level author selector below.
+      // Without a button-scoped username, do not execute Follow.
     }
 
     return null;
