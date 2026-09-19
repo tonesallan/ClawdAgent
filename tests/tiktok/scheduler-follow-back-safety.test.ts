@@ -105,6 +105,62 @@ describe(
         .mockResolvedValue(null);
     });
 
+    it('scopes stale recovery and due selection to available providers', async () => {
+      const now =
+        new Date(
+          '2026-09-19T00:00:00.000Z',
+        );
+
+      repositoryMocks
+        .listDueScheduledTikTokActions
+        .mockResolvedValue([]);
+
+      const summary =
+        await runTikTokScheduler({
+          now,
+          providerNames: [
+            'web',
+          ],
+          limitPolicy:
+            allowedPolicy,
+          checkFollowBackHandler:
+            vi.fn(),
+        });
+
+      expect(summary).toEqual({
+        scanned: 0,
+        processed: 0,
+        succeeded: 0,
+        failed: 0,
+        skipped: 0,
+      });
+
+      expect(
+        repositoryMocks
+          .recoverStaleTikTokRunningActions,
+      ).toHaveBeenCalledWith(
+        'CHECK_FOLLOW_BACK',
+        now,
+        undefined,
+        undefined,
+        undefined,
+        [
+          'web',
+        ],
+      );
+
+      expect(
+        repositoryMocks
+          .listDueScheduledTikTokActions,
+      ).toHaveBeenCalledWith(
+        now,
+        50,
+        [
+          'web',
+        ],
+      );
+    });
+
     it('reschedules an unknown relationship failure with persistent backoff', async () => {
       const now =
         new Date(
