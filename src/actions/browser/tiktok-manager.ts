@@ -279,7 +279,13 @@ export class TikTokAccountManager {
     id: string,
     withVnc = true,
     contextOptions: Record<string, unknown> = {},
-  ): Promise<{ sessionId: string; url: string }> {
+    persistentProfileDir: string | null = null,
+  ): Promise<{
+    sessionId: string;
+    url: string;
+    persistentProfile: boolean;
+    cookieBootstrapApplied: boolean;
+  }> {
     const account = this.getAccount(id);
     if (!account) throw new Error(`Account ${id} not found`);
 
@@ -293,21 +299,75 @@ export class TikTokAccountManager {
       undefined,
       withVnc,
       contextOptions,
+      persistentProfileDir,
     );
 
     try {
       const page = mgr.getPage(session.id);
       if (!page) throw new Error('Failed to get page');
 
-      // Inject cookies BEFORE navigation (TikTok fingerprinting)
       const context = page.context();
-      await context.addCookies(toPlaywrightCookies(account.cookies));
+
+      let cookieBootstrapApplied =
+        false;
+
+      if (persistentProfileDir) {
+        /*
+         * Persistent profiles become the source of truth after bootstrap.
+         *
+         * Only seed the imported cookies when the persistent context does
+         * not already contain a TikTok session. This preserves cookies and
+         * browser storage updated by TikTok during later sessions.
+         */
+        const persistedCookies =
+          await context.cookies([
+            'https://www.tiktok.com',
+          ]);
+
+        const hasPersistedSession =
+          persistedCookies.some(
+            (cookie: any) =>
+              cookie.name ===
+                'sessionid' &&
+              Boolean(
+                cookie.value,
+              ),
+          );
+
+        if (!hasPersistedSession) {
+          await context.addCookies(
+            toPlaywrightCookies(
+              account.cookies,
+            ),
+          );
+
+          cookieBootstrapApplied =
+            true;
+        }
+      } else {
+        await context.addCookies(
+          toPlaywrightCookies(
+            account.cookies,
+          ),
+        );
+
+        cookieBootstrapApplied =
+          true;
+      }
 
       await page.goto('https://www.tiktok.com/foryou', { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await page.waitForTimeout(3000);
       await dismissTikTokBanners(page);
 
-      return { sessionId: session.id, url: 'https://www.tiktok.com/foryou' };
+      return {
+        sessionId:
+          session.id,
+        url:
+          'https://www.tiktok.com/foryou',
+        persistentProfile:
+          persistentProfileDir !== null,
+        cookieBootstrapApplied,
+      };
     } catch (err: unknown) {
       try { await mgr.closeSession(session.id); } catch { /* */ }
       const message = err instanceof Error ? err.message : String(err);
