@@ -66,6 +66,9 @@ export class TikTokRuntime {
   private started =
     false;
 
+  private providersRegistered =
+    false;
+
   constructor(
     options:
       TikTokRuntimeOptions = {},
@@ -99,14 +102,7 @@ export class TikTokRuntime {
       return;
     }
 
-    for (
-      const provider of
-        this.providers
-    ) {
-      this.registry.register(
-        provider,
-      );
-    }
+    this.ensureProvidersRegistered();
 
     this.started =
       true;
@@ -162,19 +158,7 @@ export class TikTokRuntime {
 
   async runOnce(): Promise<TikTokSchedulerRunResult> {
 
-    if (!this.started) {
-      for (
-        const provider of
-          this.providers
-      ) {
-        this.registry.register(
-          provider,
-        );
-      }
-
-      this.started =
-        true;
-    }
+    this.ensureProvidersRegistered();
 
     if (this.activeRun) {
       return this.activeRun;
@@ -228,6 +212,25 @@ export class TikTokRuntime {
           null;
       }
     }
+  }
+
+  private ensureProvidersRegistered(): void {
+
+    if (this.providersRegistered) {
+      return;
+    }
+
+    for (
+      const provider of
+        this.providers
+    ) {
+      this.registry.register(
+        provider,
+      );
+    }
+
+    this.providersRegistered =
+      true;
   }
 
   async stop(): Promise<void> {
