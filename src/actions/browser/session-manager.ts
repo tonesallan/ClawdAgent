@@ -41,6 +41,8 @@ interface InternalSession {
   context: any; // playwright BrowserContext
   /** Optional Playwright BrowserContext options, preserved across relaunches. */
   contextOptions: Record<string, unknown>;
+  /** Optional Chromium user data directory for a persistent browser profile. */
+  persistentProfileDir: string | null;
   /** Auto-detach VNC after inactivity */
   vncIdleTimer: ReturnType<typeof setTimeout> | null;
   /** True when browser is being intentionally relaunched (attach/detach VNC) — suppresses disconnect watchdog */
@@ -188,6 +190,7 @@ export class BrowserSessionManager {
     url?: string,
     withVnc = true,
     contextOptions: Record<string, unknown> = {},
+    persistentProfileDir: string | null = null,
   ): Promise<BrowserSession> {
     if (this.sessions.size >= MAX_SESSIONS) {
       throw new Error(`Maximum ${MAX_SESSIONS} concurrent sessions allowed. Close an existing session first.`);
@@ -213,11 +216,18 @@ export class BrowserSessionManager {
       xvfbProcess: null, vncProcess: null, wsProcess: null,
       browser: null, page: null, context: null,
       contextOptions,
+      persistentProfileDir,
       vncIdleTimer: null, relaunching: false,
     };
 
     this.sessions.set(id, session);
-    logger.info('Creating browser session', { id, display: `:${displayNumber}`, withVnc });
+    logger.info('Creating browser session', {
+      id,
+      display: `:${displayNumber}`,
+      withVnc,
+      persistentProfile:
+        persistentProfileDir !== null,
+    });
 
     try {
       if (withVnc) {
@@ -647,21 +657,50 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
         `:${session.displayNumber}`;
     }
 
-    session.browser = await pw.chromium.launch({
-      headless,
-      args,
-      env,
-    });
-
-    session.context = await session.browser.newContext({
+    const contextOptions = {
       ...getStealthContextOptions(),
       ...session.contextOptions,
-    });
-    session.page = await session.context.newPage();
+    };
+
+    if (session.persistentProfileDir) {
+      session.context =
+        await pw.chromium.launchPersistentContext(
+          session.persistentProfileDir,
+          {
+            headless,
+            args,
+            env,
+            ...contextOptions,
+          },
+        );
+
+      session.browser =
+        session.context.browser();
+
+      session.page =
+        session.context.pages()[0] ??
+        await session.context.newPage();
+    } else {
+      session.browser =
+        await pw.chromium.launch({
+          headless,
+          args,
+          env,
+        });
+
+      session.context =
+        await session.browser.newContext(
+          contextOptions,
+        );
+
+      session.page =
+        await session.context.newPage();
+    }
+
     await session.page.addInitScript(STEALTH_INIT_SCRIPT);
 
     // Watchdog: browser crash → cleanup (skip during intentional relaunch)
-    session.browser.on('disconnected', () => {
+    session.browser?.on('disconnected', () => {
       if (session.relaunching) return; // Intentional close during VNC attach/detach
       if (session.status === 'running' || session.status === 'starting') {
         logger.warn('Browser disconnected', { id: session.id });
@@ -699,6 +738,7 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
 
   private async closeSessionInternal(session: InternalSession): Promise<void> {
     try { await session.page?.close().catch(() => {}); } catch { /* */ }
+    try { await session.context?.close().catch(() => {}); } catch { /* */ }
     try { await session.browser?.close().catch(() => {}); } catch { /* */ }
     killProcess(session.wsProcess);
     killProcess(session.vncProcess);
