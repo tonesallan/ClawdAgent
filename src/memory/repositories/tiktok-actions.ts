@@ -1246,6 +1246,7 @@ export async function recoverStaleTikTokRunningActions(
   staleAfterSeconds = 15 * 60,
   retryDelaySeconds = 60,
   limit = 50,
+  providers?: readonly string[],
 ): Promise<RecoverStaleTikTokRunningActionsResult> {
 
   if (
@@ -1304,6 +1305,42 @@ export async function recoverStaleTikTokRunningActions(
       safeStaleSeconds * 1000,
     );
 
+  if (
+    providers !== undefined &&
+    providers.length === 0
+  ) {
+    return {
+      recovered: 0,
+      failed: 0,
+    };
+  }
+
+  const staleConditions = [
+    eq(
+      tiktokActions.type,
+      type,
+    ),
+    eq(
+      tiktokActions.status,
+      'running',
+    ),
+    lte(
+      tiktokActions.updatedAt,
+      staleBefore,
+    ),
+  ];
+
+  if (
+    providers !== undefined
+  ) {
+    staleConditions.push(
+      inArray(
+        tiktokActions.provider,
+        [...providers],
+      ),
+    );
+  }
+
   const rows =
     await db
       .select()
@@ -1312,20 +1349,7 @@ export async function recoverStaleTikTokRunningActions(
       )
       .where(
         and(
-          eq(
-            tiktokActions.type,
-            type,
-          ),
-
-          eq(
-            tiktokActions.status,
-            'running',
-          ),
-
-          lte(
-            tiktokActions.updatedAt,
-            staleBefore,
-          ),
+          ...staleConditions,
         ),
       )
       .orderBy(
