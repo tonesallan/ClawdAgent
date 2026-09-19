@@ -708,7 +708,12 @@ export class TikTokAgent {
     }
 
     // Find follow buttons
-    const followButtons = await p.$(SELECTORS.followButton);
+    const followButtons =
+      await p
+        .locator(
+          SELECTORS.followButton,
+        )
+        .all();
     if (followButtons.length === 0) {
       this.log('follow', 'skipped', 'No follow buttons found');
       return;
