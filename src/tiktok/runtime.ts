@@ -35,6 +35,24 @@ export interface TikTokRuntimeOptions {
   schedulerRunner?: typeof runTikTokScheduler;
 }
 
+export type TikTokRuntimeState =
+  | 'stopped'
+  | 'running'
+  | 'paused';
+
+export interface TikTokRuntimeStatus {
+  state: TikTokRuntimeState;
+  started: boolean;
+  paused: boolean;
+  tickActive: boolean;
+  intervalMs: number;
+  registeredProviders: string[];
+  lastRunStartedAt: string | null;
+  lastRunCompletedAt: string | null;
+  lastResult: TikTokSchedulerRunResult | null;
+  lastError: string | null;
+}
+
 const DEFAULT_TIKTOK_RUNTIME_INTERVAL_MS =
   60_000;
 
@@ -66,8 +84,27 @@ export class TikTokRuntime {
   private started =
     false;
 
+  private paused =
+    false;
+
   private providersRegistered =
     false;
+
+  private lastRunStartedAt:
+    Date | null =
+      null;
+
+  private lastRunCompletedAt:
+    Date | null =
+      null;
+
+  private lastResult:
+    TikTokSchedulerRunResult | null =
+      null;
+
+  private lastError:
+    string | null =
+      null;
 
   constructor(
     options:
@@ -107,6 +144,9 @@ export class TikTokRuntime {
     this.started =
       true;
 
+    this.paused =
+      false;
+
     logger.info(
       'TikTok runtime started',
       {
@@ -117,11 +157,180 @@ export class TikTokRuntime {
       },
     );
 
+    this.runInitialTick();
+
+    this.startTimer();
+  }
+
+  pause(): void {
+
+    if (
+      !this.started ||
+      this.paused
+    ) {
+      return;
+    }
+
+    this.paused =
+      true;
+
+    this.clearTimer();
+
+    logger.info(
+      'TikTok runtime paused',
+    );
+  }
+
+  resume(): void {
+
+    if (
+      !this.started ||
+      !this.paused
+    ) {
+      return;
+    }
+
+    this.paused =
+      false;
+
+    logger.info(
+      'TikTok runtime resumed',
+      {
+        providers:
+          this.registry.list(),
+        intervalMs:
+          this.intervalMs,
+      },
+    );
+
+    this.runInitialTick();
+
+    this.startTimer();
+  }
+
+  async runOnce(): Promise<TikTokSchedulerRunResult> {
+
+    this.ensureProvidersRegistered();
+
+    if (this.activeRun) {
+      return this.activeRun;
+    }
+
+    const providerNames =
+      this.registry.list();
+
+    const handler =
+      createFollowBackSchedulerHandler(
+        this.registry,
+        this.relationshipManager,
+      );
+
+    this.lastRunStartedAt =
+      new Date();
+
+    this.lastError =
+      null;
+
+    const run =
+      this.schedulerRunner({
+        providerNames,
+        checkFollowBackHandler:
+          handler,
+      });
+
+    this.activeRun =
+      run;
+
+    try {
+      const result =
+        await run;
+
+      this.lastResult =
+        result;
+
+      this.lastRunCompletedAt =
+        new Date();
+
+      if (
+        result.processed > 0 ||
+        result.failed > 0
+      ) {
+        logger.info(
+          'TikTok scheduler tick completed',
+          {
+            providers:
+              providerNames,
+            ...result,
+          },
+        );
+      }
+
+      return result;
+    }
+    catch (error) {
+      this.lastRunCompletedAt =
+        new Date();
+
+      this.lastError =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      throw error;
+    }
+    finally {
+      if (
+        this.activeRun ===
+          run
+      ) {
+        this.activeRun =
+          null;
+      }
+    }
+  }
+
+  getStatus(): TikTokRuntimeStatus {
+
+    return {
+      state:
+        !this.started
+          ? 'stopped'
+          : this.paused
+            ? 'paused'
+            : 'running',
+      started:
+        this.started,
+      paused:
+        this.paused,
+      tickActive:
+        this.activeRun !==
+        null,
+      intervalMs:
+        this.intervalMs,
+      registeredProviders:
+        this.registry.list(),
+      lastRunStartedAt:
+        this.lastRunStartedAt
+          ?.toISOString() ??
+        null,
+      lastRunCompletedAt:
+        this.lastRunCompletedAt
+          ?.toISOString() ??
+        null,
+      lastResult:
+        this.lastResult,
+      lastError:
+        this.lastError,
+    };
+  }
+
+  private runInitialTick(): void {
+
     void this.runOnce()
       .catch(
         error => {
           logger.warn(
-            'Initial TikTok scheduler tick failed',
+            'TikTok scheduler tick failed',
             {
               error:
                 error instanceof Error
@@ -131,10 +340,22 @@ export class TikTokRuntime {
           );
         },
       );
+  }
+
+  private startTimer(): void {
+
+    this.clearTimer();
 
     this.timer =
       setInterval(
         () => {
+          if (
+            !this.started ||
+            this.paused
+          ) {
+            return;
+          }
+
           void this.runOnce()
             .catch(
               error => {
@@ -156,62 +377,18 @@ export class TikTokRuntime {
     this.timer.unref?.();
   }
 
-  async runOnce(): Promise<TikTokSchedulerRunResult> {
+  private clearTimer(): void {
 
-    this.ensureProvidersRegistered();
-
-    if (this.activeRun) {
-      return this.activeRun;
+    if (!this.timer) {
+      return;
     }
 
-    const providerNames =
-      this.registry.list();
+    clearInterval(
+      this.timer,
+    );
 
-    const handler =
-      createFollowBackSchedulerHandler(
-        this.registry,
-        this.relationshipManager,
-      );
-
-    const run =
-      this.schedulerRunner({
-        providerNames,
-        checkFollowBackHandler:
-          handler,
-      });
-
-    this.activeRun =
-      run;
-
-    try {
-      const result =
-        await run;
-
-      if (
-        result.processed > 0 ||
-        result.failed > 0
-      ) {
-        logger.info(
-          'TikTok scheduler tick completed',
-          {
-            providers:
-              providerNames,
-            ...result,
-          },
-        );
-      }
-
-      return result;
-    }
-    finally {
-      if (
-        this.activeRun ===
-          run
-      ) {
-        this.activeRun =
-          null;
-      }
-    }
+    this.timer =
+      null;
   }
 
   private ensureProvidersRegistered(): void {
@@ -235,14 +412,7 @@ export class TikTokRuntime {
 
   async stop(): Promise<void> {
 
-    if (this.timer) {
-      clearInterval(
-        this.timer,
-      );
-
-      this.timer =
-        null;
-    }
+    this.clearTimer();
 
     if (this.activeRun) {
       await this.activeRun
@@ -292,6 +462,9 @@ export class TikTokRuntime {
     this.started =
       false;
 
+    this.paused =
+      false;
+
     logger.info(
       'TikTok runtime stopped',
     );
@@ -311,4 +484,18 @@ export function createTikTokRuntime(
   return new TikTokRuntime(
     options,
   );
+}
+
+let sharedTikTokRuntime:
+  TikTokRuntime | null =
+    null;
+
+export function getTikTokRuntime(): TikTokRuntime {
+
+  if (!sharedTikTokRuntime) {
+    sharedTikTokRuntime =
+      createTikTokRuntime();
+  }
+
+  return sharedTikTokRuntime;
 }
