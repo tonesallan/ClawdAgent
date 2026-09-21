@@ -3,6 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   containsExactTikTokUsername,
+  extractTikTokProfileUsername,
   findTikTokProfileSearchCandidate,
   getTikTokProfileTapPoint,
   normalizeTikTokXmlText,
@@ -141,6 +142,48 @@ describe('TikTok Android profile navigation XML helpers', () => {
       x: 960,
       y: 426,
     });
+  });
+
+  it('extracts exact username from the mapped Android profile username control', () => {
+    const profile = [
+      '<android.widget.Button text="@tonesallan" resource-id="com.zhiliaoapp.musically:id/t1b" />',
+      '<android.widget.TextView text="Tones Allan" resource-id="profile-title" />',
+    ].join('\n');
+
+    expect(
+      extractTikTokProfileUsername(
+        profile,
+      ),
+    ).toBe(
+      'tonesallan',
+    );
+  });
+
+  it('extracts username from the real opened-profile fixture', () => {
+    const profileSource =
+      readFileSync(
+        profileOpenedFixturePath,
+        'utf8',
+      );
+
+    expect(
+      extractTikTokProfileUsername(
+        profileSource,
+      ),
+    ).toBe(
+      'tiktok',
+    );
+  });
+
+  it('does not treat display names as profile usernames', () => {
+    const profile =
+      '<android.widget.Button text="TikTok" resource-id="com.zhiliaoapp.musically:id/title" />';
+
+    expect(
+      extractTikTokProfileUsername(
+        profile,
+      ),
+    ).toBeNull();
   });
 
   it('confirms exact profile identity without matching similar usernames', () => {
