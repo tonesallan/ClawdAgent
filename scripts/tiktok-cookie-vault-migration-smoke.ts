@@ -261,24 +261,101 @@ for (
       'utf-8',
     );
 
-  for (
-    const cookie of
-      secondLoad.find(
-        item =>
-          item.id ===
-            id,
-      )?.cookies ?? []
+  const allowedKeys =
+    vaultRecord.scheme ===
+      'aes-256-gcm'
+      ? new Set([
+          'version',
+          'scheme',
+          'payload',
+          'iv',
+          'authTag',
+        ])
+      : new Set([
+          'version',
+          'scheme',
+          'payload',
+        ]);
+
+  const unexpectedKeys =
+    Object.keys(
+      vaultRecord,
+    ).filter(
+      key =>
+        !allowedKeys.has(
+          key,
+        ),
+    );
+
+  if (
+    unexpectedKeys.length >
+      0
   ) {
-    if (
-      cookie.value &&
-      rawVault.includes(
-        cookie.value,
-      )
-    ) {
-      throw new Error(
-        `Plaintext cookie value detected in encrypted vault for account ${id}.`,
-      );
-    }
+    throw new Error(
+      `Unexpected plaintext-capable fields in cookie vault for account ${id}: ${unexpectedKeys.join(', ')}`,
+    );
+  }
+
+  if (
+    rawVault.includes(
+      '"cookies"',
+    ) ||
+    rawVault.includes(
+      '"value"',
+    )
+  ) {
+    throw new Error(
+      `Plaintext cookie fields detected in encrypted vault for account ${id}.`,
+    );
+  }
+
+  const payload =
+    typeof vaultRecord.payload ===
+      'string'
+      ? vaultRecord.payload
+      : '';
+
+  if (!payload) {
+    throw new Error(
+      `Encrypted cookie payload missing for account ${id}.`,
+    );
+  }
+
+  const runtimeAccount =
+    secondLoad.find(
+      item =>
+        item.id ===
+          id,
+    );
+
+  if (!runtimeAccount) {
+    throw new Error(
+      `Rehydrated TikTok account not found for ${id}.`,
+    );
+  }
+
+  const plaintextBytes =
+    Buffer.from(
+      JSON.stringify(
+        runtimeAccount.cookies,
+      ),
+      'utf-8',
+    );
+
+  const protectedBytes =
+    Buffer.from(
+      payload,
+      'base64',
+    );
+
+  if (
+    protectedBytes.equals(
+      plaintextBytes,
+    )
+  ) {
+    throw new Error(
+      `Cookie vault payload is not protected for account ${id}.`,
+    );
   }
 }
 
