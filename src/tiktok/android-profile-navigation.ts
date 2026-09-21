@@ -204,6 +204,60 @@ export function findTikTokProfileSearchCandidate(
   };
 }
 
+export function extractTikTokProfileUsername(
+  profileSource: string,
+): string | null {
+  const lines =
+    profileSource.split(
+      /\r?\n/,
+    );
+
+  for (
+    const line of
+      lines
+  ) {
+    if (
+      !line.includes(
+        'com.zhiliaoapp.musically:id/t1b',
+      )
+    ) {
+      continue;
+    }
+
+    const text =
+      getTikTokXmlAttribute(
+        line,
+        'text',
+      )
+        .trim();
+
+    if (
+      !text.startsWith(
+        '@',
+      )
+    ) {
+      continue;
+    }
+
+    const username =
+      text
+        .slice(
+          1,
+        )
+        .trim();
+
+    if (
+      /^[A-Za-z0-9._]{2,24}$/.test(
+        username,
+      )
+    ) {
+      return username;
+    }
+  }
+
+  return null;
+}
+
 export function tikTokProfileSourceMatchesUsername(
   profileSource: string,
   username: string,
