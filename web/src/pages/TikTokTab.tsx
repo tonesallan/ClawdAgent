@@ -99,6 +99,50 @@ interface TikTokProviderStatus {
   runtime: TikTokRuntimeStatus;
 }
 
+interface TikTokCoreOverview {
+  actions: {
+    total: number;
+    byStatus: Array<{ key: string; count: number }>;
+    byType: Array<{ key: string; count: number }>;
+    byProvider: Array<{ key: string; count: number }>;
+  };
+  relationships: {
+    total: number;
+    protectedCount: number;
+    processedCount: number;
+    byState: Array<{ key: string; count: number }>;
+  };
+  history: Array<{
+    id: string;
+    actionId: string;
+    accountKey: string | null;
+    actionType: string | null;
+    targetUsername: string | null;
+    targetDisplayName: string | null;
+    status: string;
+    provider: string | null;
+    error: string | null;
+    event: unknown;
+    createdAt: string;
+  }>;
+  recentRelationships: Array<{
+    id: string;
+    accountKey: string;
+    targetKey: string;
+    username: string | null;
+    displayName: string | null;
+    relationshipState: string;
+    followsUs: boolean | null;
+    followedByUs: boolean;
+    followedByUsAt: string | null;
+    followBackCheckAt: string | null;
+    lastCheckedAt: string | null;
+    protected: boolean;
+    processed: boolean;
+    updatedAt: string;
+  }>;
+}
+
 interface RelationshipObservationResult {
   provider: string;
   targetKey: string;
@@ -152,6 +196,7 @@ export default function TikTokTab() {
   const [relationshipObservation, setRelationshipObservation] = useState<RelationshipObservationResult | null>(null);
   const [relationshipChecking, setRelationshipChecking] = useState(false);
   const [runtimeLoading, setRuntimeLoading] = useState(false);
+  const [coreOverview, setCoreOverview] = useState<TikTokCoreOverview | null>(null);
   // Agent state
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [agentLogs, setAgentLogs] = useState<AgentLog[]>([]);
@@ -188,6 +233,14 @@ export default function TikTokTab() {
     } catch { /* silent */ }
   }, [token]);
 
+  const fetchCoreOverview = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tiktok/core/overview?limit=50', { headers });
+      if (!res.ok) return;
+      setCoreOverview(await res.json());
+    } catch { /* silent */ }
+  }, [token]);
+
   const fetchAgentStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/tiktok-agent/agents', { headers });
@@ -210,7 +263,8 @@ export default function TikTokTab() {
     fetchAccounts();
     fetchAgentStatus();
     fetchProviderStatus();
-  }, [fetchAccounts, fetchAgentStatus, fetchProviderStatus]);
+    fetchCoreOverview();
+  }, [fetchAccounts, fetchAgentStatus, fetchProviderStatus, fetchCoreOverview]);
 
   useEffect(() => {
     if (!selectedProvider && providerStatus?.providers.length) {
@@ -228,10 +282,11 @@ export default function TikTokTab() {
   useEffect(() => {
     const interval = setInterval(() => {
       fetchProviderStatus();
+      fetchCoreOverview();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchProviderStatus]);
+  }, [fetchProviderStatus, fetchCoreOverview]);
 
   // Auto-refresh logs every 5s when agent is running
   useEffect(() => {
@@ -668,6 +723,118 @@ export default function TikTokTab() {
             Challenge: UNKNOWN + retry
           </span>
         </div>
+
+        {coreOverview && (
+          <div className="mt-4 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="px-3 py-2 bg-zinc-800/60 border-b border-zinc-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ScrollText className="w-4 h-4 text-sky-400" />
+                <span className="text-sm font-medium text-white">Automation Core history</span>
+              </div>
+              <span className="text-xs text-zinc-500">persistent DB telemetry</span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 border-b border-zinc-800 text-center">
+              <div className="bg-zinc-950/60 rounded p-2">
+                <div className="text-lg font-bold text-white">{coreOverview.actions.total}</div>
+                <div className="text-xs text-zinc-500">Actions</div>
+              </div>
+              <div className="bg-zinc-950/60 rounded p-2">
+                <div className="text-lg font-bold text-sky-400">{coreOverview.relationships.total}</div>
+                <div className="text-xs text-zinc-500">Relationships</div>
+              </div>
+              <div className="bg-zinc-950/60 rounded p-2">
+                <div className="text-lg font-bold text-green-400">{coreOverview.relationships.processedCount}</div>
+                <div className="text-xs text-zinc-500">Processed</div>
+              </div>
+              <div className="bg-zinc-950/60 rounded p-2">
+                <div className="text-lg font-bold text-yellow-400">{coreOverview.relationships.protectedCount}</div>
+                <div className="text-xs text-zinc-500">Protected</div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2">
+              <div className="border-b lg:border-b-0 lg:border-r border-zinc-800">
+                <div className="px-3 py-2 text-xs text-zinc-400 flex items-center justify-between">
+                  <span>Recent action events</span>
+                  <span>{coreOverview.history.length}</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto bg-zinc-950/40">
+                  {coreOverview.history.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-zinc-600">No persisted core events yet.</div>
+                  ) : coreOverview.history.map(item => (
+                    <div key={item.id} className="px-3 py-2 border-t border-zinc-800/70 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className={'shrink-0 ' + (
+                            item.status === 'success' ? 'text-green-400' :
+                            item.status === 'failed' ? 'text-red-400' :
+                            item.status === 'running' ? 'text-sky-400' :
+                            item.status === 'scheduled' ? 'text-yellow-400' :
+                            'text-zinc-400'
+                          )}>
+                            {item.status}
+                          </span>
+                          <span className="text-zinc-300 truncate">{item.actionType ?? 'action'}</span>
+                          <span className="text-zinc-600">{item.provider ?? '—'}</span>
+                        </div>
+                        <span className="text-zinc-600 shrink-0">{new Date(item.createdAt).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="mt-1 text-zinc-500 truncate">
+                        {item.targetUsername ? '@' + item.targetUsername : item.targetDisplayName ?? item.actionId}
+                        {item.event ? ' — ' + String(item.event) : ''}
+                      </div>
+                      {item.error && <div className="mt-1 text-red-400 truncate">{item.error}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <div className="px-3 py-2 text-xs text-zinc-400 flex items-center justify-between">
+                  <span>Recent relationships</span>
+                  <span>{coreOverview.recentRelationships.length}</span>
+                </div>
+                <div className="max-h-64 overflow-y-auto bg-zinc-950/40">
+                  {coreOverview.recentRelationships.length === 0 ? (
+                    <div className="p-4 text-center text-xs text-zinc-600">No persisted relationships yet.</div>
+                  ) : coreOverview.recentRelationships.map(item => (
+                    <div key={item.id} className="px-3 py-2 border-t border-zinc-800/70 text-xs">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-zinc-300 truncate">
+                            {item.username ? '@' + item.username : item.displayName ?? item.targetKey}
+                          </span>
+                          <span className="ml-2 text-sky-400">{item.relationshipState}</span>
+                        </div>
+                        <span className="text-zinc-600 shrink-0">{new Date(item.updatedAt).toLocaleTimeString()}</span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap gap-2 text-zinc-600">
+                        <span>following: {item.followedByUs ? 'yes' : 'no'}</span>
+                        <span>follows us: {item.followsUs === null ? 'unknown' : item.followsUs ? 'yes' : 'no'}</span>
+                        <span>processed: {item.processed ? 'yes' : 'no'}</span>
+                        {item.protected && <span className="text-yellow-400">protected</span>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="px-3 py-2 border-t border-zinc-800 flex flex-wrap gap-2 text-xs">
+              {coreOverview.actions.byStatus.map(bucket => (
+                <span key={'status-' + bucket.key} className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+                  {bucket.key}: {bucket.count}
+                </span>
+              ))}
+              {coreOverview.actions.byProvider.map(bucket => (
+                <span key={'provider-' + bucket.key} className="px-2 py-1 rounded bg-sky-500/10 text-sky-400">
+                  {bucket.key}: {bucket.count}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         {relationshipObservation && (
           <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-950/60">
