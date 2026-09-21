@@ -63,6 +63,7 @@ export interface TikTokCookieVaultOptions {
 
 const WINDOWS_DPAPI_PROTECT_SCRIPT =
   [
+    "Add-Type -AssemblyName System.Security",
     "$inputText = [Console]::In.ReadToEnd()",
     "$bytes = [Text.Encoding]::UTF8.GetBytes($inputText)",
     "$protected = [System.Security.Cryptography.ProtectedData]::Protect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)",
@@ -71,6 +72,7 @@ const WINDOWS_DPAPI_PROTECT_SCRIPT =
 
 const WINDOWS_DPAPI_UNPROTECT_SCRIPT =
   [
+    "Add-Type -AssemblyName System.Security",
     "$inputText = [Console]::In.ReadToEnd().Trim()",
     "$bytes = [Convert]::FromBase64String($inputText)",
     "$plain = [System.Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)",
