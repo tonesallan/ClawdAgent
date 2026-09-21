@@ -23,6 +23,7 @@ import type {
 } from '../../tiktok/domain.js';
 
 export type TikTokAction = typeof tiktokActions.$inferSelect;
+export type TikTokActionHistory = typeof tiktokActionHistory.$inferSelect;
 
 export interface CreateTikTokActionInput {
   accountKey: string;
@@ -1580,4 +1581,195 @@ export async function recoverStaleTikTokRunningActions(
     recovered,
     failed,
   };
+}
+
+
+export interface TikTokActionOverviewBucket {
+  key: string;
+  count: number;
+}
+
+export interface TikTokActionOverview {
+  total: number;
+  byStatus: TikTokActionOverviewBucket[];
+  byType: TikTokActionOverviewBucket[];
+  byProvider: TikTokActionOverviewBucket[];
+}
+
+export interface TikTokActionHistoryView {
+  id: string;
+  actionId: string;
+  accountKey: string | null;
+  actionType: string | null;
+  targetUsername: string | null;
+  targetDisplayName: string | null;
+  status: string;
+  provider: string | null;
+  result: unknown;
+  error: string | null;
+  metadata: unknown;
+  createdAt: Date;
+}
+
+export async function getTikTokActionOverview(): Promise<TikTokActionOverview> {
+  const db = getDb();
+
+  const [
+    byStatusRows,
+    byTypeRows,
+    byProviderRows,
+  ] = await Promise.all([
+    db
+      .select({
+        key:
+          tiktokActions.status,
+        value:
+          count(),
+      })
+      .from(tiktokActions)
+      .groupBy(
+        tiktokActions.status,
+      ),
+
+    db
+      .select({
+        key:
+          tiktokActions.type,
+        value:
+          count(),
+      })
+      .from(tiktokActions)
+      .groupBy(
+        tiktokActions.type,
+      ),
+
+    db
+      .select({
+        key:
+          tiktokActions.provider,
+        value:
+          count(),
+      })
+      .from(tiktokActions)
+      .groupBy(
+        tiktokActions.provider,
+      ),
+  ]);
+
+  const toBuckets = (
+    rows:
+      Array<{
+        key: string;
+        value: number | bigint;
+      }>,
+  ): TikTokActionOverviewBucket[] =>
+    rows
+      .map(
+        row => ({
+          key:
+            row.key,
+          count:
+            Number(
+              row.value,
+            ),
+        }),
+      )
+      .sort(
+        (
+          left,
+          right,
+        ) =>
+          right.count -
+          left.count,
+      );
+
+  const byStatus =
+    toBuckets(
+      byStatusRows,
+    );
+
+  return {
+    total:
+      byStatus.reduce(
+        (
+          total,
+          bucket,
+        ) =>
+          total +
+          bucket.count,
+        0,
+      ),
+    byStatus,
+    byType:
+      toBuckets(
+        byTypeRows,
+      ),
+    byProvider:
+      toBuckets(
+        byProviderRows,
+      ),
+  };
+}
+
+export async function listRecentTikTokActionHistory(
+  limit = 100,
+): Promise<TikTokActionHistoryView[]> {
+  const db = getDb();
+
+  const safeLimit =
+    Math.min(
+      500,
+      Math.max(
+        1,
+        Math.floor(
+          limit,
+        ),
+      ),
+    );
+
+  return db
+    .select({
+      id:
+        tiktokActionHistory.id,
+      actionId:
+        tiktokActionHistory.actionId,
+      accountKey:
+        tiktokActions.accountKey,
+      actionType:
+        tiktokActions.type,
+      targetUsername:
+        tiktokActions.targetUsername,
+      targetDisplayName:
+        tiktokActions.targetDisplayName,
+      status:
+        tiktokActionHistory.status,
+      provider:
+        tiktokActionHistory.provider,
+      result:
+        tiktokActionHistory.result,
+      error:
+        tiktokActionHistory.error,
+      metadata:
+        tiktokActionHistory.metadata,
+      createdAt:
+        tiktokActionHistory.createdAt,
+    })
+    .from(
+      tiktokActionHistory,
+    )
+    .leftJoin(
+      tiktokActions,
+      eq(
+        tiktokActionHistory.actionId,
+        tiktokActions.id,
+      ),
+    )
+    .orderBy(
+      desc(
+        tiktokActionHistory.createdAt,
+      ),
+    )
+    .limit(
+      safeLimit,
+    );
 }
