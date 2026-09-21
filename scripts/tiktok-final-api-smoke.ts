@@ -135,6 +135,23 @@ try {
         `Sensitive cookie material appeared in ${endpoint}.`,
       );
     }
+
+    if (
+      endpoint ===
+        '/provider-status' &&
+      (
+        body.includes(
+          '"browserProvider"',
+        ) ||
+        body.includes(
+          '"accounts"',
+        )
+      )
+    ) {
+      throw new Error(
+        'Provider status still exposes legacy Web/browser controls.',
+      );
+    }
   }
 
   console.log(
@@ -151,6 +168,10 @@ try {
 
   console.log(
     'SENSITIVE_COOKIE_FIELDS=ABSENT',
+  );
+
+  console.log(
+    'LEGACY_BROWSER_PROVIDER_FIELDS=ABSENT',
   );
 
   console.log(
