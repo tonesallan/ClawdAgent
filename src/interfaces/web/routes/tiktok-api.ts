@@ -35,10 +35,7 @@ export function setupTikTokRoutes(): Router {
       getTikTokRuntime();
 
     res.json({
-      ...getTikTokProviderControlStatus(
-        undefined,
-        mgr,
-      ),
+      ...getTikTokProviderControlStatus(),
       runtime:
         runtime.getStatus(),
     });
@@ -334,6 +331,7 @@ export function setupTikTokRoutes(): Router {
     try {
       const {
         provider,
+        accountKey,
         accountId,
         username,
       } = req.body ?? {};
@@ -345,11 +343,14 @@ export function setupTikTokRoutes(): Router {
               'string'
               ? provider
               : '',
-          accountId:
-            typeof accountId ===
+          accountKey:
+            typeof accountKey ===
               'string'
-              ? accountId
-              : undefined,
+              ? accountKey
+              : typeof accountId ===
+                  'string'
+                ? accountId
+                : undefined,
           username:
             typeof username ===
               'string'
