@@ -48,6 +48,15 @@ export interface TikTokAutomationProvider {
   readonly name: TikTokProviderName;
 
   /**
+   * Runtime availability gate.
+   *
+   * When false, the scheduler must not claim provider-scoped actions.
+   * This is especially important for Android when the phone/Appium
+   * session is temporarily unavailable.
+   */
+  isAvailable?(): boolean;
+
+  /**
    * Read-only relationship inspection.
    * This is the method used by the future 48h scheduler handler.
    */
