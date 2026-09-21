@@ -336,25 +336,67 @@ export class TikTokCookieVault {
     input: string,
   ): string {
 
+    const systemRoot =
+      process.env.SystemRoot ??
+      process.env.WINDIR;
+
+    const absoluteWindowsPowerShell =
+      systemRoot
+        ? resolve(
+            systemRoot,
+            'System32',
+            'WindowsPowerShell',
+            'v1.0',
+            'powershell.exe',
+          )
+        : null;
+
     const candidates =
       [
+        absoluteWindowsPowerShell,
         'powershell.exe',
         'pwsh.exe',
-      ];
+      ].filter(
+        (
+          value,
+          index,
+          values,
+        ): value is string =>
+          Boolean(value) &&
+          values.indexOf(value) ===
+            index,
+      );
 
-    let lastError =
-      '';
+    const errors:
+      string[] = [];
 
     for (
       const executable of
         candidates
     ) {
+      if (
+        executable.includes(
+          '\\',
+        ) &&
+        !existsSync(
+          executable,
+        )
+      ) {
+        errors.push(
+          `${executable}: file not found`,
+        );
+        continue;
+      }
+
       const result =
         spawnSync(
           executable,
           [
+            '-NoLogo',
             '-NoProfile',
             '-NonInteractive',
+            '-ExecutionPolicy',
+            'Bypass',
             '-Command',
             script,
           ],
@@ -372,29 +414,37 @@ export class TikTokCookieVault {
       if (
         result.error
       ) {
-        lastError =
-          result.error.message;
+        errors.push(
+          `${executable}: ${result.error.message}`,
+        );
         continue;
       }
+
+      const stdout =
+        result.stdout
+          ?.trim() ??
+        '';
 
       if (
         result.status ===
           0 &&
-        result.stdout
-          .trim()
+        stdout
       ) {
-        return result.stdout
-          .trim();
+        return stdout;
       }
 
-      lastError =
+      const stderr =
         result.stderr
-          ?.trim() ||
-        `PowerShell exited with status ${result.status}`;
+          ?.trim() ??
+        '';
+
+      errors.push(
+        `${executable}: ${stderr || `exit status ${result.status}`}`,
+      );
     }
 
     throw new Error(
-      `Windows DPAPI operation failed: ${lastError || 'PowerShell unavailable'}`,
+      `Windows DPAPI operation failed. Attempts: ${errors.join(' | ') || 'no PowerShell candidates available'}`,
     );
   }
 
