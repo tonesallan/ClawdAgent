@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, count, desc, eq } from 'drizzle-orm';
 import { getDb } from '../database.js';
 import { tiktokUserRelationships } from '../schema.js';
 import type { TikTokRelationshipState } from '../../tiktok/domain.js';
@@ -156,4 +156,152 @@ export async function setTikTokRelationshipProtected(
     .returning();
 
   return row ?? null;
+}
+
+export interface TikTokRelationshipOverviewBucket {
+  key: string;
+  count: number;
+}
+
+export interface TikTokRelationshipOverview {
+  total: number;
+  protectedCount: number;
+  processedCount: number;
+  byState: TikTokRelationshipOverviewBucket[];
+}
+
+export async function getTikTokRelationshipOverview(): Promise<TikTokRelationshipOverview> {
+  const db = getDb();
+
+  const [
+    stateRows,
+    protectedRows,
+    processedRows,
+  ] = await Promise.all([
+    db
+      .select({
+        key:
+          tiktokUserRelationships.relationshipState,
+        value:
+          count(),
+      })
+      .from(
+        tiktokUserRelationships,
+      )
+      .groupBy(
+        tiktokUserRelationships.relationshipState,
+      ),
+
+    db
+      .select({
+        key:
+          tiktokUserRelationships.protected,
+        value:
+          count(),
+      })
+      .from(
+        tiktokUserRelationships,
+      )
+      .groupBy(
+        tiktokUserRelationships.protected,
+      ),
+
+    db
+      .select({
+        key:
+          tiktokUserRelationships.processed,
+        value:
+          count(),
+      })
+      .from(
+        tiktokUserRelationships,
+      )
+      .groupBy(
+        tiktokUserRelationships.processed,
+      ),
+  ]);
+
+  const byState =
+    stateRows
+      .map(
+        row => ({
+          key:
+            row.key,
+          count:
+            Number(
+              row.value,
+            ),
+        }),
+      )
+      .sort(
+        (
+          left,
+          right,
+        ) =>
+          right.count -
+          left.count,
+      );
+
+  return {
+    total:
+      byState.reduce(
+        (
+          total,
+          bucket,
+        ) =>
+          total +
+          bucket.count,
+        0,
+      ),
+    protectedCount:
+      Number(
+        protectedRows.find(
+          row =>
+            row.key ===
+            true,
+        )?.value ??
+        0,
+      ),
+    processedCount:
+      Number(
+        processedRows.find(
+          row =>
+            row.key ===
+            true,
+        )?.value ??
+        0,
+      ),
+    byState,
+  };
+}
+
+export async function listRecentTikTokRelationships(
+  limit = 100,
+): Promise<TikTokUserRelationship[]> {
+  const db = getDb();
+
+  const safeLimit =
+    Math.min(
+      500,
+      Math.max(
+        1,
+        Math.floor(
+          limit,
+        ),
+      ),
+    );
+
+  return db
+    .select()
+    .from(
+      tiktokUserRelationships,
+    )
+    .orderBy(
+      desc(
+        tiktokUserRelationships.updatedAt,
+      ),
+    )
+    .limit(
+      safeLimit,
+    );
 }
