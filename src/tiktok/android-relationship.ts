@@ -72,3 +72,80 @@ export function classifyTikTokRelationshipFromXml(
 
   return 'unknown';
 }
+
+
+export function hasTikTokActionableFollowControl(
+  source: string,
+): boolean {
+  return source
+    .split(/\r?\n/)
+    .filter(line =>
+      RELATIONSHIP_RESOURCE_IDS.some(
+        resourceId =>
+          line.includes(
+            resourceId,
+          ),
+      ),
+    )
+    .some(line => {
+      const lower =
+        line.toLocaleLowerCase(
+          'pt-BR',
+        );
+
+      return (
+        /text="seguir"/i.test(
+          line,
+        ) ||
+        /text="follow"/i.test(
+          line,
+        ) ||
+        lower.includes(
+          'text="seguir de volta"',
+        ) ||
+        lower.includes(
+          'text="follow back"',
+        )
+      );
+    });
+}
+
+export function confirmTikTokFollowTransition(
+  before:
+    TikTokRelationshipState,
+  afterSource:
+    string,
+): TikTokRelationshipState {
+  const classified =
+    classifyTikTokRelationshipFromXml(
+      afterSource,
+    );
+
+  if (
+    classified ===
+      'following' ||
+    classified ===
+      'friends'
+  ) {
+    return classified;
+  }
+
+  if (
+    (
+      before ===
+        'not_following' ||
+      before ===
+        'follows_us'
+    ) &&
+    !hasTikTokActionableFollowControl(
+      afterSource,
+    )
+  ) {
+    return before ===
+      'follows_us'
+      ? 'friends'
+      : 'following';
+  }
+
+  return 'unknown';
+}
