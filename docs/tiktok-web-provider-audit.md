@@ -244,15 +244,19 @@ No change is required to the already working Android/Appium path.
 
 ### GAP G — browser account cookies are stored in plaintext JSON
 
-`TikTokAccountManager` stores full cookie values in:
+Status: **CLOSED**
 
-`data/tiktok-accounts.json`
+The original plaintext storage in `data/tiktok-accounts.json` has been replaced by an encrypted cookie vault.
 
-This includes authentication session cookies.
+Current design:
 
-This should be treated as a security debt item before a production browser provider is considered complete.
-
-It is not necessary to rewrite account management for the first read-only provider proof, but the integration must not log or expose cookie values.
+- account metadata remains in `data/tiktok-accounts.json`;
+- cookie values are stored separately in `data/tiktok-cookie-vault/<accountId>.json`;
+- Windows uses DPAPI scoped to `CurrentUser`;
+- non-Windows uses AES-256-GCM and requires `TIKTOK_COOKIE_ENCRYPTION_KEY`;
+- legacy plaintext cookie fields migrate automatically on load;
+- account metadata stores only `cookieSecretRef` and `cookieCount`;
+- real Windows smoke validated `windows-dpapi`, removal of plaintext cookie fields, and active-account rehydration.
 
 ---
 
@@ -330,83 +334,128 @@ Validated implementation HEAD:
 
 ### Step 2 — Web provider contract
 
-Goal:
+Status: **PASS**
 
-- add `web` provider name;
-- make targets account-aware;
-- extend follow-back handler parser;
-- add provider-level tests;
-- no browser mutation yet.
+Completed:
+
+- added `web` to `TikTokProviderName`;
+- added optional `accountKey` to `TikTokTarget`;
+- follow-back handler now accepts `web` and forwards `action.accountKey`;
+- focused provider/follow-back tests pass;
+- no provider mutation was enabled.
 
 ### Step 3 — read-only Web TikTok diagnostic
 
-Goal:
+Status: **PASS**
 
-capture the real authenticated profile DOM for one exact username.
+Validated on Windows with a visible Playwright mobile emulation profile (`Pixel 5`):
 
-Validate:
-
-- cookie/session reuse;
-- exact profile URL/identity;
-- relevant follow relationship controls/text;
-- selectors required for classification.
-
-No follow/unfollow/like/comment/save during this diagnostic.
+- authenticated session as the imported TikTok Web account;
+- exact profile navigation;
+- exact profile relationship control;
+- `data-e2e="follow-button"` observed for the primary relationship button;
+- `Follow` classified from the real DOM;
+- no mutation performed;
+- challenge handling remained manual-only;
+- persistent profile/session reuse was validated.
 
 ### Step 4 — `WebTikTokProvider.checkRelationship()`
 
-Goal:
+Status: **PASS**
 
-implement the Web equivalent of the Android read-only relationship check.
-
-Required properties:
+Implemented and validated:
 
 - exact username required;
 - exact profile identity confirmed;
-- unknown state remains retryable;
-- browser session cleaned up;
-- no mutation.
+- `Follow` -> `not_following`;
+- `Following` -> `following`;
+- `Friends` -> `friends`;
+- `Follow back` -> `follows_us`;
+- ambiguous/challenge/invalid states -> `unknown`;
+- `unknown` remains retryable;
+- persistent mobile Web session reuse;
+- provider `follow()` and `unfollow()` remain blocked/read-only.
 
 ### Step 5 — provider runtime wiring
 
-Goal:
+Status: **PASS**
 
-register `web` and wire it to the existing follow-back scheduler.
+Completed:
 
-Validate:
-
-`CHECK_FOLLOW_BACK(provider=web) -> Web provider -> RelationshipManager -> Persistence`
-
-UNFOLLOW must remain review-only.
+- production runtime registers the Web provider;
+- scheduler ticks are provider-scoped;
+- stale-running recovery is also provider-scoped;
+- Android actions are not claimed when Android is not registered;
+- overlapping scheduler ticks are deduplicated;
+- real database smoke validated `provider=web` scope with SELECT-only behavior;
+- no action was created or executed by the database smoke;
+- UNFOLLOW remains review-only.
 
 ### Step 6 — integrate successful Web Follow
 
-Only after read-only Web checks are stable.
+Status: **PASS**
 
-When the browser agent confirms a real successful follow:
+Completed:
 
-`Web Follow -> RelationshipManager.registerFollow(provider=web) -> persistent 48h CHECK_FOLLOW_BACK`
-
-Do not introduce a second timer or follow-back implementation inside `TikTokAgent`.
+- Web Follow requires an exact username before clicking;
+- post-click relationship must confirm `following` or `friends`;
+- unconfirmed Follow is not persisted;
+- confirmed Web Follow uses the common `TikTokRelationshipManager`;
+- browser account id is preserved as `accountKey`;
+- provider is preserved as `web`;
+- the existing persistence layer creates the same `CHECK_FOLLOW_BACK`;
+- default follow-back delay remains 48 hours;
+- no second timer/scheduler was introduced;
+- no automatic UNFOLLOW is created.
 
 ### Step 7 — panel/provider controls
 
-After provider integration is stable:
+Status: **PASS**
 
-- expose provider/account selection;
-- show browser-provider status;
-- reuse existing relationship/review data;
-- keep legacy agent controls compatible while migration is incremental.
+Completed:
+
+- provider status API;
+- read-only relationship-check API;
+- provider/account selection in the TikTok dashboard;
+- persistent-profile/session-reuse status;
+- challenge policy shown as UNKNOWN + retry;
+- provider Follow/Unfollow capabilities shown as disabled;
+- cookies are not exposed through provider status;
+- dashboard production build passes;
+- legacy TikTokAgent controls remain present.
 
 ---
 
 ## 7. Current decision
 
-Step 1 is complete.
+The Web/PC provider integration sequence defined by this audit is **complete**.
 
-The immediate next milestone is a **read-only authenticated TikTok Web diagnostic** to capture the real profile relationship DOM before implementing `WebTikTokProvider.checkRelationship()`.
+Completed milestones:
 
-No browser follow/comment/like/save action should be enabled during this diagnostic.
+- Step 1 — Windows-safe browser sessions: PASS
+- Step 2 — Web provider contract: PASS
+- Step 3 — authenticated read-only Web diagnostic: PASS
+- Step 4 — `WebTikTokProvider.checkRelationship()`: PASS
+- Step 5 — provider runtime wiring: PASS
+- Step 6 — confirmed Web Follow -> common relationship/persistence core: PASS
+- Step 7 — panel/provider controls: PASS
+- GAP G — plaintext cookie storage: **CLOSED**
+
+Cookie security now uses an encrypted vault:
+
+- Windows: DPAPI `CurrentUser`;
+- non-Windows: AES-256-GCM with `TIKTOK_COOKIE_ENCRYPTION_KEY`;
+- legacy plaintext cookie fields are migrated automatically;
+- `data/tiktok-accounts.json` stores metadata + vault reference only;
+- cookie values are not exposed by the provider-status API.
+
+Current safety posture remains unchanged:
+
+- Web provider relationship checks are read-only;
+- provider Follow/Unfollow remain disabled;
+- legacy browser-agent Follow integration persists only confirmed successful follows;
+- UNFOLLOW remains manual-review only;
+- challenge/CAPTCHA handling remains manual and is never bypassed automatically.
 
 ---
 
