@@ -8,6 +8,7 @@ export type TikTokRelationshipState =
 const RELATIONSHIP_RESOURCE_IDS = [
   'com.zhiliaoapp.musically:id/u68',
   'com.zhiliaoapp.musically:id/fm9',
+  'com.zhiliaoapp.musically:id/t54',
 ];
 
 export function classifyTikTokRelationshipFromXml(
