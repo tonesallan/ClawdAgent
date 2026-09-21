@@ -22,7 +22,7 @@ const targetUsername =
 const expectedRelationship =
   (
     process.env.TIKTOK_WEB_PROVIDER_SMOKE_EXPECTED ??
-    'not_following'
+    'known'
   )
     .trim();
 
@@ -224,6 +224,19 @@ function assertObservation(
   }
 
   if (
+    expectedRelationship ===
+      'known'
+  ) {
+    if (
+      observation.relationship ===
+        'unknown'
+    ) {
+      throw new Error(
+        'Relationship remained unknown during the real read-only Web provider smoke.',
+      );
+    }
+  }
+  else if (
     observation.relationship !==
       expectedRelationship
   ) {
