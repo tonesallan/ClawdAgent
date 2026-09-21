@@ -1,9 +1,29 @@
 import {
+  beforeEach,
   describe,
   expect,
   it,
   vi,
 } from 'vitest';
+
+const mobileAgentMocks =
+  vi.hoisted(
+    () => ({
+      listAgents:
+        vi.fn(),
+    }),
+  );
+
+vi.mock(
+  '../../src/actions/mobile/mobile-agent.js',
+  () => ({
+    MobileAgent: {
+      listAgents:
+        mobileAgentMocks
+          .listAgents,
+    },
+  }),
+);
 
 import {
   TikTokProviderRegistry,
@@ -18,22 +38,24 @@ import type {
   TikTokAutomationProvider,
 } from '../../src/tiktok/providers/tiktok-provider.js';
 
-function createWebProvider() {
+function createAndroidProvider() {
   const checkRelationship =
     vi.fn().mockResolvedValue({
       provider:
-        'web' as const,
+        'android' as const,
       targetKey:
         'username:tiktok',
       relationship:
         'not_following' as const,
       observedAt:
         new Date(
-          '2026-09-20T22:00:00.000Z',
+          '2026-09-21T04:00:00.000Z',
         ),
       details: {
-        targetUsername:
-          'TikTok',
+        readOnly:
+          true,
+        deviceId:
+          'android-device-1',
       },
     });
 
@@ -46,7 +68,7 @@ function createWebProvider() {
   const provider:
     TikTokAutomationProvider = {
       name:
-        'web',
+        'android',
       checkRelationship,
       follow,
       unfollow,
@@ -61,56 +83,90 @@ function createWebProvider() {
 }
 
 describe(
-  'TikTok provider control service',
+  'TikTok provider control service — Android only',
   () => {
-    it('reports registered Web provider capabilities without exposing cookies', () => {
+    beforeEach(
+      () => {
+        vi.clearAllMocks();
+
+        mobileAgentMocks
+          .listAgents
+          .mockReturnValue([
+            {
+              id:
+                'android-device-1:tiktok',
+              app:
+                'tiktok',
+              deviceId:
+                'android-device-1',
+              state:
+                'running',
+              currentAction:
+                null,
+              stats: {
+                likes:
+                  0,
+                comments:
+                  0,
+                follows:
+                  0,
+                scrolls:
+                  0,
+                shares:
+                  0,
+                retweets:
+                  0,
+                replies:
+                  0,
+                errors:
+                  0,
+                totalActions:
+                  0,
+                actionsThisHour:
+                  0,
+                lastActionAt:
+                  null,
+              },
+              lastError:
+                null,
+              startedAt:
+                '2026-09-21T04:00:00.000Z',
+              lastAction:
+                null,
+              lastActionTime:
+                null,
+              nextActionTime:
+                null,
+              config: {
+                testMode:
+                  false,
+              },
+            },
+          ]);
+      },
+    );
+
+    it('reports registered Android provider and active mobile agent', () => {
       const registry =
         new TikTokProviderRegistry();
 
       const {
         provider,
-      } = createWebProvider();
+      } = createAndroidProvider();
 
       registry.register(
         provider,
       );
 
-      const accountManager = {
-        listAccounts:
-          vi.fn().mockReturnValue([
-            {
-              id:
-                'web-account-1',
-              name:
-                'TikTok Web Local',
-              handle:
-                'monkey.promo',
-              status:
-                'active',
-              lastVerified:
-                '2026-09-20T22:00:00.000Z',
-              cookies: [
-                {
-                  name:
-                    'sessionid',
-                  value:
-                    'secret-value-must-not-leak',
-                },
-              ],
-            },
-          ]),
-      };
-
       const status =
         getTikTokProviderControlStatus(
           registry,
-          accountManager as any,
         );
 
       expect(
         status.registeredProviders,
       ).toEqual([
-        'web',
+        'android',
       ]);
 
       expect(
@@ -118,63 +174,50 @@ describe(
       ).toEqual([
         expect.objectContaining({
           name:
-            'web',
+            'android',
           label:
-            'Web / Playwright',
+            'Android / Appium',
           mode:
             'read-only-core',
-          capabilities: {
-            checkRelationship:
-              true,
-            follow:
-              false,
-            unfollow:
-              false,
-            like:
-              false,
-            comment:
-              false,
-            dm:
-              false,
-          },
         }),
       ]);
 
       expect(
-        status.browserProvider,
+        status.mobileProvider,
       ).toEqual({
         registered:
           true,
-        persistentProfiles:
+        active:
           true,
-        sessionReuse:
-          true,
-        challengePolicy:
-          'unknown-retry',
+        agentCount:
+          1,
+        activeAgentCount:
+          1,
+        mode:
+          'android-appium',
       });
 
       expect(
-        status.accounts,
+        status.mobileAgents,
       ).toEqual([
-        {
+        expect.objectContaining({
           id:
-            'web-account-1',
-          name:
-            'TikTok Web Local',
-          handle:
-            'monkey.promo',
-          status:
-            'active',
-          lastVerified:
-            '2026-09-20T22:00:00.000Z',
-        },
+            'android-device-1:tiktok',
+          deviceId:
+            'android-device-1',
+          state:
+            'running',
+          testMode:
+            false,
+        }),
       ]);
 
       expect(
-        'cookies' in
-          status.accounts[0],
-      ).toBe(
-        false,
+        JSON.stringify(
+          status,
+        ),
+      ).not.toContain(
+        'cookie',
       );
 
       expect(
@@ -182,11 +225,11 @@ describe(
           status,
         ),
       ).not.toContain(
-        'secret-value-must-not-leak',
+        'browser',
       );
     });
 
-    it('runs only the registered provider relationship check', async () => {
+    it('runs only the registered Android relationship check', async () => {
       const registry =
         new TikTokProviderRegistry();
 
@@ -195,7 +238,7 @@ describe(
         checkRelationship,
         follow,
         unfollow,
-      } = createWebProvider();
+      } = createAndroidProvider();
 
       registry.register(
         provider,
@@ -205,9 +248,9 @@ describe(
         await checkTikTokProviderRelationship(
           {
             provider:
-              'web',
-            accountId:
-              ' web-account-1 ',
+              'android',
+            accountKey:
+              ' android-device-1:tiktok ',
             username:
               ' @TikTok ',
           },
@@ -226,7 +269,7 @@ describe(
         targetKey:
           'username:tiktok',
         accountKey:
-          'web-account-1',
+          'android-device-1:tiktok',
         username:
           'TikTok',
       });
@@ -240,10 +283,45 @@ describe(
       ).not.toHaveBeenCalled();
 
       expect(
-        observation.relationship,
+        observation.provider,
       ).toBe(
-        'not_following',
+        'android',
       );
+    });
+
+    it('allows Android relationship check without accountKey when one agent can be resolved', async () => {
+      const registry =
+        new TikTokProviderRegistry();
+
+      const {
+        provider,
+        checkRelationship,
+      } = createAndroidProvider();
+
+      registry.register(
+        provider,
+      );
+
+      await checkTikTokProviderRelationship(
+        {
+          provider:
+            'android',
+          username:
+            'tiktok',
+        },
+        registry,
+      );
+
+      expect(
+        checkRelationship,
+      ).toHaveBeenCalledWith({
+        targetKey:
+          'username:tiktok',
+        accountKey:
+          undefined,
+        username:
+          'tiktok',
+      });
     });
 
     it('rejects providers that are not registered', async () => {
@@ -254,49 +332,15 @@ describe(
         checkTikTokProviderRelationship(
           {
             provider:
-              'web',
-            accountId:
-              'web-account-1',
+              'android',
             username:
               'tiktok',
           },
           registry,
         ),
       ).rejects.toThrow(
-        'TikTok provider is not registered: web',
+        'TikTok provider is not registered: android',
       );
-    });
-
-    it('requires accountId for the Web provider', async () => {
-      const registry =
-        new TikTokProviderRegistry();
-
-      const {
-        provider,
-        checkRelationship,
-      } = createWebProvider();
-
-      registry.register(
-        provider,
-      );
-
-      await expect(
-        checkTikTokProviderRelationship(
-          {
-            provider:
-              'web',
-            username:
-              'tiktok',
-          },
-          registry,
-        ),
-      ).rejects.toThrow(
-        'accountId is required for the Web provider',
-      );
-
-      expect(
-        checkRelationship,
-      ).not.toHaveBeenCalled();
     });
   },
 );
