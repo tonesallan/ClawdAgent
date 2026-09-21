@@ -68,6 +68,25 @@ interface TikTokProviderDescriptor {
   };
 }
 
+interface TikTokRuntimeStatus {
+  state: 'stopped' | 'running' | 'paused';
+  started: boolean;
+  paused: boolean;
+  tickActive: boolean;
+  intervalMs: number;
+  registeredProviders: string[];
+  lastRunStartedAt: string | null;
+  lastRunCompletedAt: string | null;
+  lastResult: {
+    scanned: number;
+    processed: number;
+    succeeded: number;
+    failed: number;
+    skipped: number;
+  } | null;
+  lastError: string | null;
+}
+
 interface TikTokProviderStatus {
   providers: TikTokProviderDescriptor[];
   registeredProviders: string[];
@@ -77,6 +96,7 @@ interface TikTokProviderStatus {
     sessionReuse: boolean;
     challengePolicy: string;
   };
+  runtime: TikTokRuntimeStatus;
 }
 
 interface RelationshipObservationResult {
@@ -131,6 +151,7 @@ export default function TikTokTab() {
   const [relationshipUsername, setRelationshipUsername] = useState('');
   const [relationshipObservation, setRelationshipObservation] = useState<RelationshipObservationResult | null>(null);
   const [relationshipChecking, setRelationshipChecking] = useState(false);
+  const [runtimeLoading, setRuntimeLoading] = useState(false);
   // Agent state
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [agentLogs, setAgentLogs] = useState<AgentLog[]>([]);
@@ -203,6 +224,14 @@ export default function TikTokTab() {
       setSelectedAccountId(activeAccount.id);
     }
   }, [accounts, selectedAccountId]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchProviderStatus();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [fetchProviderStatus]);
 
   // Auto-refresh logs every 5s when agent is running
   useEffect(() => {
@@ -306,6 +335,37 @@ export default function TikTokTab() {
       setError('Relationship check failed');
     } finally {
       setRelationshipChecking(false);
+    }
+  };
+
+  const controlRuntime = async (
+    action: 'start' | 'pause' | 'resume' | 'stop',
+  ) => {
+    setRuntimeLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/tiktok/runtime/${action}`, {
+        method: 'POST',
+        headers,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || `Runtime ${action} failed`);
+        return;
+      }
+
+      setProviderStatus(prev => prev
+        ? { ...prev, runtime: data.runtime }
+        : prev);
+
+      await fetchProviderStatus();
+    } catch {
+      setError(`Runtime ${action} failed`);
+    } finally {
+      setRuntimeLoading(false);
     }
   };
 
@@ -415,6 +475,113 @@ export default function TikTokTab() {
             >
               <RefreshCw className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+
+        <div className="mb-4 border border-zinc-800 rounded-lg p-3 bg-zinc-950/40">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                providerStatus?.runtime.state === 'running'
+                  ? 'bg-green-500/15 text-green-400'
+                  : providerStatus?.runtime.state === 'paused'
+                    ? 'bg-yellow-500/15 text-yellow-400'
+                    : 'bg-zinc-800 text-zinc-400'
+              }`}>
+                Runtime: {providerStatus?.runtime.state ?? 'unknown'}
+              </span>
+
+              <span className="px-2 py-1 rounded bg-zinc-800 text-xs text-zinc-400">
+                Tick: {providerStatus?.runtime.tickActive ? 'active' : 'idle'}
+              </span>
+
+              <span className="px-2 py-1 rounded bg-zinc-800 text-xs text-zinc-400">
+                Interval: {providerStatus?.runtime.intervalMs ? `${Math.round(providerStatus.runtime.intervalMs / 1000)}s` : '—'}
+              </span>
+
+              <span className="px-2 py-1 rounded bg-zinc-800 text-xs text-zinc-400">
+                Providers: {providerStatus?.runtime.registeredProviders?.join(', ') || '—'}
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              {providerStatus?.runtime.state === 'stopped' && (
+                <button
+                  onClick={() => void controlRuntime('start')}
+                  disabled={runtimeLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded text-xs font-medium"
+                >
+                  {runtimeLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                  Start
+                </button>
+              )}
+
+              {providerStatus?.runtime.state === 'running' && (
+                <button
+                  onClick={() => void controlRuntime('pause')}
+                  disabled={runtimeLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 rounded text-xs font-medium"
+                >
+                  {runtimeLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Pause className="w-3 h-3" />}
+                  Pause
+                </button>
+              )}
+
+              {providerStatus?.runtime.state === 'paused' && (
+                <button
+                  onClick={() => void controlRuntime('resume')}
+                  disabled={runtimeLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded text-xs font-medium"
+                >
+                  {runtimeLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                  Resume
+                </button>
+              )}
+
+              {providerStatus?.runtime.state !== 'stopped' && (
+                <button
+                  onClick={() => void controlRuntime('stop')}
+                  disabled={runtimeLoading}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded text-xs font-medium"
+                >
+                  <Square className="w-3 h-3" />
+                  Stop
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 mt-3 text-xs">
+            <div>
+              <div className="text-zinc-600">Last tick</div>
+              <div className="text-zinc-300">
+                {providerStatus?.runtime.lastRunCompletedAt
+                  ? new Date(providerStatus.runtime.lastRunCompletedAt).toLocaleString()
+                  : '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-zinc-600">Scanned</div>
+              <div className="text-zinc-300">{providerStatus?.runtime.lastResult?.scanned ?? '—'}</div>
+            </div>
+            <div>
+              <div className="text-zinc-600">Processed</div>
+              <div className="text-zinc-300">{providerStatus?.runtime.lastResult?.processed ?? '—'}</div>
+            </div>
+            <div>
+              <div className="text-zinc-600">Succeeded / Failed</div>
+              <div className="text-zinc-300">
+                {providerStatus?.runtime.lastResult
+                  ? `${providerStatus.runtime.lastResult.succeeded} / ${providerStatus.runtime.lastResult.failed}`
+                  : '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-zinc-600">Last error</div>
+              <div className={providerStatus?.runtime.lastError ? 'text-red-400 truncate' : 'text-zinc-300'}>
+                {providerStatus?.runtime.lastError ?? 'none'}
+              </div>
+            </div>
           </div>
         </div>
 
