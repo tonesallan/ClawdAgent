@@ -15,6 +15,11 @@ import {
 import {
   getTikTokCoreOverview,
 } from '../../../tiktok/core-observability-service.js';
+import {
+  cancelTikTokUnfollowReview,
+  listPendingTikTokManualReviews,
+  resolveTikTokManualDiscoveryReview,
+} from '../../../tiktok/manual-review-service.js';
 
 export function setupTikTokRoutes(): Router {
   const router = Router();
@@ -95,6 +100,155 @@ export function setupTikTokRoutes(): Router {
       );
 
       res.status(500).json({
+        error:
+          message,
+      });
+    }
+  });
+
+  /**
+   * GET /api/tiktok/reviews
+   *
+   * Lists persistent human-review items only.
+   */
+  router.get('/reviews', async (_req: Request, res: Response) => {
+    try {
+      const reviews =
+        await listPendingTikTokManualReviews();
+
+      res.json({
+        reviews,
+        counts: {
+          total:
+            reviews.length,
+          discovery:
+            reviews.filter(
+              review =>
+                review.kind ===
+                'discovery',
+            ).length,
+          unfollow:
+            reviews.filter(
+              review =>
+                review.kind ===
+                'unfollow',
+            ).length,
+        },
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      logger.warn(
+        'TikTok review queue failed',
+        {
+          error:
+            message,
+        },
+      );
+
+      res.status(500).json({
+        error:
+          message,
+      });
+    }
+  });
+
+  /**
+   * POST /api/tiktok/reviews/:id/discovery-decision
+   *
+   * Human decision only.
+   * Approving a discovery candidate does not create or execute engagement.
+   */
+  router.post('/reviews/:id/discovery-decision', async (req: Request, res: Response) => {
+    try {
+      const decision =
+        req.body?.decision;
+
+      if (
+        decision !==
+          'approved' &&
+        decision !==
+          'rejected'
+      ) {
+        res.status(400).json({
+          error:
+            'decision must be approved or rejected',
+        });
+        return;
+      }
+
+      const action =
+        await resolveTikTokManualDiscoveryReview(
+          req.params.id as string,
+          decision,
+        );
+
+      res.json({
+        ok:
+          true,
+        actionId:
+          action.id,
+        decision,
+        engagementCreated:
+          false,
+        engagementExecuted:
+          false,
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      res.status(409).json({
+        ok:
+          false,
+        error:
+          message,
+      });
+    }
+  });
+
+  /**
+   * POST /api/tiktok/reviews/:id/cancel-unfollow
+   *
+   * Cancels a pending UNFOLLOW review.
+   * This endpoint never executes UNFOLLOW.
+   */
+  router.post('/reviews/:id/cancel-unfollow', async (req: Request, res: Response) => {
+    try {
+      const action =
+        await cancelTikTokUnfollowReview(
+          req.params.id as string,
+        );
+
+      res.json({
+        ok:
+          true,
+        actionId:
+          action.id,
+        status:
+          action.status,
+        engagementCreated:
+          false,
+        engagementExecuted:
+          false,
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      res.status(409).json({
+        ok:
+          false,
         error:
           message,
       });
