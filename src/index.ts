@@ -19,7 +19,7 @@ import { initDatabase, closeDatabase } from './memory/database.js';
 import { initCache, closeCache } from './memory/cache.js';
 import { startWorker } from './queue/worker.js';
 import { startScheduler } from './queue/scheduler.js';
-import { createTikTokRuntime } from './tiktok/runtime.js';
+import { getTikTokRuntime } from './tiktok/runtime.js';
 import { startInterfaces, stopInterfaces } from './interfaces/index.js';
 import { findOrCreateUser, autoLinkUsers } from './memory/repositories/users.js';
 import { getOrCreateConversation, getCrossPlatformSummary } from './memory/repositories/conversations.js';
@@ -782,7 +782,7 @@ Rules:
    * claimed until an Android runtime dependency is explicitly registered.
    */
   const tikTokRuntime =
-    createTikTokRuntime();
+    getTikTokRuntime();
 
   tikTokRuntime.start();
 
