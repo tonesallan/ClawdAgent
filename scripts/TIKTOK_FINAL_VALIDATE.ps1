@@ -162,7 +162,7 @@ Invoke-FinalStep "1/8 BACKEND TYPECHECK" {
 }
 
 Invoke-FinalStep "2/8 ANDROID + CORE TESTS" {
-    pnpm exec vitest run tests/tiktok/android-profile-navigation.test.ts tests/tiktok/android-relationship.test.ts tests/tiktok/android-follow-registration.test.ts tests/tiktok/mobile-agent-android-bridge.test.ts tests/tiktok/provider-control-service.test.ts tests/tiktok/register-follow-scheduling.test.ts tests/tiktok/follow-back-handler.test.ts tests/tiktok/persistence-follow-back-review.test.ts tests/tiktok/runtime-wiring.test.ts tests/tiktok/scheduler-follow-back-safety.test.ts tests/tiktok/automatic-queue-repository-safety.test.ts tests/tiktok/due-queue-query-safety.test.ts tests/tiktok/unfollow-repository-safety.test.ts tests/tiktok/manual-review-service.test.ts tests/tiktok/manual-review-transition-atomicity.test.ts
+    pnpm exec vitest run tests/tiktok/android-profile-navigation.test.ts tests/tiktok/android-relationship.test.ts tests/tiktok/android-follow-registration.test.ts tests/tiktok/live-android-tiktok-provider.test.ts tests/tiktok/mobile-agent-android-bridge.test.ts tests/tiktok/provider-control-service.test.ts tests/tiktok/register-follow-scheduling.test.ts tests/tiktok/follow-back-handler.test.ts tests/tiktok/persistence-follow-back-review.test.ts tests/tiktok/runtime-wiring.test.ts tests/tiktok/scheduler-follow-back-safety.test.ts tests/tiktok/automatic-queue-repository-safety.test.ts tests/tiktok/due-queue-query-safety.test.ts tests/tiktok/unfollow-repository-safety.test.ts tests/tiktok/manual-review-service.test.ts tests/tiktok/manual-review-transition-atomicity.test.ts
 }
 
 Invoke-FinalStep "3/8 DASHBOARD PRODUCTION BUILD" {
