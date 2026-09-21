@@ -12,6 +12,9 @@ import {
 import {
   getTikTokRuntime,
 } from '../../../tiktok/runtime.js';
+import {
+  getTikTokCoreOverview,
+} from '../../../tiktok/core-observability-service.js';
 
 export function setupTikTokRoutes(): Router {
   const router = Router();
@@ -34,6 +37,68 @@ export function setupTikTokRoutes(): Router {
       runtime:
         runtime.getStatus(),
     });
+  });
+
+  /**
+   * GET /api/tiktok/core/overview
+   *
+   * Persisted Automation Core telemetry only.
+   * No action execution and no browser interaction.
+   */
+  router.get('/core/overview', async (req: Request, res: Response) => {
+    try {
+      const rawLimit =
+        Number(
+          req.query.limit ??
+          100,
+        );
+
+      const limit =
+        Number.isFinite(
+          rawLimit,
+        )
+          ? Math.min(
+              200,
+              Math.max(
+                1,
+                Math.floor(
+                  rawLimit,
+                ),
+              ),
+            )
+          : 100;
+
+      res.json(
+        await getTikTokCoreOverview({
+          historyLimit:
+            limit,
+          relationshipLimit:
+            Math.min(
+              100,
+              limit,
+            ),
+        }),
+      );
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      logger.warn(
+        'TikTok core overview failed',
+        {
+          error:
+            message,
+        },
+      );
+
+      res.status(500).json({
+        error:
+          message,
+      });
+    }
   });
 
   /** GET /api/tiktok/runtime/status — common TikTok core runtime status */
