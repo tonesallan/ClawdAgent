@@ -832,14 +832,8 @@ export class MobileAgent {
             profileOpened
           ) {
             try {
-              await this.appium
-                .pressKey(
-                  4,
-                );
-
-              await this.sleep(
-                800,
-              );
+              await this
+                .goToTikTokHome();
             } catch {
               // Best effort return to the feed.
             }
@@ -1164,6 +1158,76 @@ export class MobileAgent {
 
     return classifyTikTokRelationshipFromXml(
       source,
+    );
+  }
+
+  /**
+   * Return TikTok to the Home feed using the mapped bottom navigation control.
+   * Navigation-only: no engagement action is performed.
+   */
+  async goToTikTokHome(): Promise<void> {
+    if (this.config.app !== 'tiktok') {
+      throw new Error(
+        'TikTok Home navigation requires app=tiktok',
+      );
+    }
+
+    try {
+      const home =
+        await this.appium
+          .findElement(
+            'id',
+            'com.zhiliaoapp.musically:id/olw',
+          );
+
+      await this.appium
+        .clickElement(
+          home.elementId,
+        );
+
+      await this.sleep(
+        800,
+      );
+
+      return;
+    }
+    catch {
+      // Fallback to localized accessibility labels.
+    }
+
+    for (
+      const label of
+        [
+          'Início',
+          'Home',
+        ]
+    ) {
+      try {
+        const home =
+          await this.appium
+            .findElement(
+              'accessibility id',
+              label,
+            );
+
+        await this.appium
+          .clickElement(
+            home.elementId,
+          );
+
+        await this.sleep(
+          800,
+        );
+
+        return;
+      }
+      catch {
+        // Try next label.
+      }
+    }
+
+    throw new Error(
+      'TikTok Home navigation control was not found.',
     );
   }
 
