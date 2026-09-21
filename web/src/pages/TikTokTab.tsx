@@ -54,6 +54,47 @@ interface AgentLog {
   message: string;
 }
 
+interface TikTokProviderDescriptor {
+  name: 'web' | 'android' | 'dry-run';
+  label: string;
+  mode: string;
+  capabilities: {
+    checkRelationship: boolean;
+    follow: boolean;
+    unfollow: boolean;
+    like: boolean;
+    comment: boolean;
+    dm: boolean;
+  };
+}
+
+interface TikTokProviderStatus {
+  providers: TikTokProviderDescriptor[];
+  registeredProviders: string[];
+  browserProvider: {
+    registered: boolean;
+    persistentProfiles: boolean;
+    sessionReuse: boolean;
+    challengePolicy: string;
+  };
+}
+
+interface RelationshipObservationResult {
+  provider: string;
+  targetKey: string;
+  relationship: string;
+  observedAt: string;
+  details?: {
+    targetUsername?: string;
+    ownHandle?: string;
+    mobileDevice?: string;
+    sessionReused?: boolean;
+    cookieBootstrapApplied?: boolean;
+    reason?: string;
+    stage?: string;
+  };
+}
+
 const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; bg: string; label: string }> = {
   active:    { icon: CheckCircle,  color: 'text-green-400',  bg: 'bg-green-500/10', label: 'Active' },
   untested:  { icon: Clock,        color: 'text-yellow-400', bg: 'bg-yellow-500/10', label: 'Untested' },
@@ -83,6 +124,13 @@ export default function TikTokTab() {
   const [previewLoading, setPreviewLoading] = useState(false);
   const [showCookies, setShowCookies] = useState(false);
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  // Automation core/provider state
+  const [providerStatus, setProviderStatus] = useState<TikTokProviderStatus | null>(null);
+  const [selectedProvider, setSelectedProvider] = useState('');
+  const [selectedAccountId, setSelectedAccountId] = useState('');
+  const [relationshipUsername, setRelationshipUsername] = useState('');
+  const [relationshipObservation, setRelationshipObservation] = useState<RelationshipObservationResult | null>(null);
+  const [relationshipChecking, setRelationshipChecking] = useState(false);
   // Agent state
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [agentLogs, setAgentLogs] = useState<AgentLog[]>([]);
@@ -110,6 +158,15 @@ export default function TikTokTab() {
     finally { setLoading(false); }
   }, [token]);
 
+  const fetchProviderStatus = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tiktok/provider-status', { headers });
+      if (!res.ok) return;
+      const data = await res.json();
+      setProviderStatus(data);
+    } catch { /* silent */ }
+  }, [token]);
+
   const fetchAgentStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/tiktok-agent/agents', { headers });
@@ -128,7 +185,24 @@ export default function TikTokTab() {
     } catch { /* silent */ }
   }, [token, agentStatus?.accountId]);
 
-  useEffect(() => { fetchAccounts(); fetchAgentStatus(); }, [fetchAccounts, fetchAgentStatus]);
+  useEffect(() => {
+    fetchAccounts();
+    fetchAgentStatus();
+    fetchProviderStatus();
+  }, [fetchAccounts, fetchAgentStatus, fetchProviderStatus]);
+
+  useEffect(() => {
+    if (!selectedProvider && providerStatus?.providers.length) {
+      setSelectedProvider(providerStatus.providers[0].name);
+    }
+  }, [providerStatus, selectedProvider]);
+
+  useEffect(() => {
+    if (!selectedAccountId && accounts.length > 0) {
+      const activeAccount = accounts.find(account => account.status === 'active') ?? accounts[0];
+      setSelectedAccountId(activeAccount.id);
+    }
+  }, [accounts, selectedAccountId]);
 
   // Auto-refresh logs every 5s when agent is running
   useEffect(() => {
@@ -194,6 +268,45 @@ export default function TikTokTab() {
       fetchAccounts();
     } catch { setError('Verification failed'); }
     finally { setVerifyingId(null); }
+  };
+
+  const checkRelationship = async () => {
+    const cleanUsername = relationshipUsername.trim().replace(/^@/, '');
+    if (!selectedProvider || !cleanUsername) return;
+
+    if (selectedProvider === 'web' && !selectedAccountId) {
+      setError('Select a TikTok Web account first');
+      return;
+    }
+
+    setRelationshipChecking(true);
+    setRelationshipObservation(null);
+
+    try {
+      const res = await fetch('/api/tiktok/provider/check-relationship', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          provider: selectedProvider,
+          accountId: selectedAccountId || undefined,
+          username: cleanUsername,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Relationship check failed');
+        return;
+      }
+
+      setRelationshipObservation(data.observation ?? null);
+      fetchProviderStatus();
+    } catch {
+      setError('Relationship check failed');
+    } finally {
+      setRelationshipChecking(false);
+    }
   };
 
   const startAgent = async (accountId: string) => {
@@ -274,6 +387,167 @@ export default function TikTokTab() {
           <button onClick={() => setError('')} className="ml-auto"><X className="w-4 h-4" /></button>
         </div>
       )}
+
+      {/* Automation Core / Provider Controls */}
+      <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 className="text-sm font-medium text-white flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-sky-400" />
+              Automation Core
+            </h3>
+            <p className="text-xs text-zinc-500 mt-1">
+              Persistent relationship checks and 48h follow-back scheduling
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+              providerStatus?.browserProvider.registered
+                ? 'bg-green-500/15 text-green-400'
+                : 'bg-zinc-800 text-zinc-500'
+            }`}>
+              {providerStatus?.browserProvider.registered ? 'Web provider registered' : 'Web provider offline'}
+            </span>
+            <button
+              onClick={fetchProviderStatus}
+              className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white"
+              title="Refresh provider status"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1">Provider</label>
+            <select
+              value={selectedProvider}
+              onChange={e => {
+                setSelectedProvider(e.target.value);
+                setRelationshipObservation(null);
+              }}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+            >
+              {(providerStatus?.providers ?? []).map(provider => (
+                <option key={provider.name} value={provider.name}>
+                  {provider.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1">Account</label>
+            <select
+              value={selectedAccountId}
+              onChange={e => {
+                setSelectedAccountId(e.target.value);
+                setRelationshipObservation(null);
+              }}
+              className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+            >
+              <option value="">Select account</option>
+              {accounts.map(account => (
+                <option key={account.id} value={account.id}>
+                  {account.handle ? `@${account.handle}` : account.name} — {account.status}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1">Relationship target</label>
+            <div className="flex gap-2">
+              <input
+                value={relationshipUsername}
+                onChange={e => setRelationshipUsername(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') void checkRelationship();
+                }}
+                placeholder="@username"
+                className="min-w-0 flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-600"
+              />
+              <button
+                onClick={() => void checkRelationship()}
+                disabled={relationshipChecking || !selectedProvider || !relationshipUsername.trim()}
+                className="px-3 py-2 bg-sky-600 hover:bg-sky-700 disabled:bg-zinc-700 disabled:text-zinc-500 rounded text-xs font-medium transition-colors whitespace-nowrap"
+              >
+                {relationshipChecking
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : 'Check'}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2 text-xs mb-3">
+          <span className="px-2 py-1 rounded bg-sky-500/10 text-sky-400">
+            Relationship check: read-only
+          </span>
+          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+            Provider Follow: disabled
+          </span>
+          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+            Provider Unfollow: disabled
+          </span>
+          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+            Persistent profile: {providerStatus?.browserProvider.persistentProfiles ? 'ON' : '—'}
+          </span>
+          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+            Session reuse: {providerStatus?.browserProvider.sessionReuse ? 'ON' : '—'}
+          </span>
+          <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+            Challenge: UNKNOWN + retry
+          </span>
+        </div>
+
+        {relationshipObservation && (
+          <div className="border border-zinc-700 rounded-lg p-3 bg-zinc-950/60">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-zinc-500">Observed relationship</span>
+                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  relationshipObservation.relationship === 'unknown'
+                    ? 'bg-yellow-500/15 text-yellow-400'
+                    : 'bg-green-500/15 text-green-400'
+                }`}>
+                  {relationshipObservation.relationship}
+                </span>
+              </div>
+              <span className="text-xs text-zinc-600">
+                {new Date(relationshipObservation.observedAt).toLocaleString()}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-3 text-xs">
+              <div>
+                <div className="text-zinc-600">Provider</div>
+                <div className="text-zinc-300">{relationshipObservation.provider}</div>
+              </div>
+              <div>
+                <div className="text-zinc-600">Target</div>
+                <div className="text-zinc-300">@{relationshipObservation.details?.targetUsername ?? relationshipUsername.replace(/^@/, '')}</div>
+              </div>
+              <div>
+                <div className="text-zinc-600">Device</div>
+                <div className="text-zinc-300">{relationshipObservation.details?.mobileDevice ?? '—'}</div>
+              </div>
+              <div>
+                <div className="text-zinc-600">Session reused</div>
+                <div className="text-zinc-300">{relationshipObservation.details?.sessionReused === true ? 'yes' : relationshipObservation.details?.sessionReused === false ? 'no' : '—'}</div>
+              </div>
+            </div>
+
+            {relationshipObservation.details?.reason && (
+              <div className="mt-2 text-xs text-yellow-400">
+                {relationshipObservation.details.reason}
+                {relationshipObservation.details.stage ? ` — ${relationshipObservation.details.stage}` : ''}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       {/* Agent Status Bar */}
       {agentStatus && (
