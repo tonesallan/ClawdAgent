@@ -28,9 +28,9 @@ import type {
 function createAction(): TikTokAction {
   return {
     id:
-      'web-check-1',
+      'android-check-1',
     accountKey:
-      'web-account-1',
+      'android-device-1:tiktok',
     type:
       'CHECK_FOLLOW_BACK',
     targetKey:
@@ -52,7 +52,7 @@ function createAction(): TikTokAction {
     maxAttempts:
       3,
     provider:
-      'web',
+      'android',
     payload:
       {},
     result:
@@ -73,11 +73,11 @@ function createAction(): TikTokAction {
 describe(
   'TikTok runtime provider wiring',
   () => {
-    it('registers Web and runs CHECK_FOLLOW_BACK through the common handler', async () => {
+    it('registers Android and runs CHECK_FOLLOW_BACK through the common handler', async () => {
       const checkRelationship =
         vi.fn().mockResolvedValue({
           provider:
-            'web' as const,
+            'android' as const,
           targetKey:
             'username:tiktok',
           relationship:
@@ -98,7 +98,7 @@ describe(
           () => Promise<void>;
       } = {
         name:
-          'web',
+          'android',
         checkRelationship,
         follow:
           vi.fn(),
@@ -130,7 +130,7 @@ describe(
             expect(
               options.providerNames,
             ).toEqual([
-              'web',
+              'android',
             ]);
 
             expect(
@@ -191,7 +191,7 @@ describe(
       expect(
         runtime.getRegisteredProviders(),
       ).toEqual([
-        'web',
+        'android',
       ]);
 
       expect(
@@ -200,7 +200,7 @@ describe(
         targetKey:
           'username:tiktok',
         accountKey:
-          'web-account-1',
+          'android-device-1:tiktok',
         username:
           'tiktok',
         displayName:
@@ -211,15 +211,15 @@ describe(
         recordRelationshipCheck,
       ).toHaveBeenCalledWith({
         checkActionId:
-          'web-check-1',
+          'android-check-1',
         accountKey:
-          'web-account-1',
+          'android-device-1:tiktok',
         targetKey:
           'username:tiktok',
         relationshipState:
           'not_following',
         provider:
-          'web',
+          'android',
         checkedAt:
           new Date(
             '2026-09-19T00:00:00.000Z',
@@ -250,7 +250,7 @@ describe(
           () => Promise<void>;
       } = {
         name:
-          'web',
+          'android',
         checkRelationship:
           vi.fn(),
         follow:
@@ -322,7 +322,7 @@ describe(
         tickActive:
           false,
         registeredProviders: [
-          'web',
+          'android',
         ],
         lastResult: {
           scanned:
@@ -443,7 +443,7 @@ describe(
 
       const provider: TikTokAutomationProvider = {
         name:
-          'web',
+          'android',
         checkRelationship:
           vi.fn(),
         follow:
