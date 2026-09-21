@@ -239,6 +239,181 @@ describe(
       );
     });
 
+    it('exposes start pause resume stop lifecycle and last tick status', async () => {
+      const close =
+        vi.fn().mockResolvedValue(
+          undefined,
+        );
+
+      const provider: TikTokAutomationProvider & {
+        close:
+          () => Promise<void>;
+      } = {
+        name:
+          'web',
+        checkRelationship:
+          vi.fn(),
+        follow:
+          vi.fn(),
+        unfollow:
+          vi.fn(),
+        close,
+      };
+
+      const schedulerRunner =
+        vi.fn().mockResolvedValue({
+          scanned:
+            2,
+          processed:
+            1,
+          succeeded:
+            1,
+          failed:
+            0,
+          skipped:
+            1,
+        });
+
+      const runtime =
+        new TikTokRuntime({
+          registry:
+            new TikTokProviderRegistry(),
+          providers: [
+            provider,
+          ],
+          schedulerRunner:
+            schedulerRunner as any,
+          intervalMs:
+            60_000,
+        });
+
+      expect(
+        runtime.getStatus(),
+      ).toMatchObject({
+        state:
+          'stopped',
+        started:
+          false,
+        paused:
+          false,
+        tickActive:
+          false,
+        intervalMs:
+          60_000,
+        lastResult:
+          null,
+        lastError:
+          null,
+      });
+
+      runtime.start();
+
+      await runtime.runOnce();
+
+      expect(
+        runtime.getStatus(),
+      ).toMatchObject({
+        state:
+          'running',
+        started:
+          true,
+        paused:
+          false,
+        tickActive:
+          false,
+        registeredProviders: [
+          'web',
+        ],
+        lastResult: {
+          scanned:
+            2,
+          processed:
+            1,
+          succeeded:
+            1,
+          failed:
+            0,
+          skipped:
+            1,
+        },
+        lastError:
+          null,
+      });
+
+      expect(
+        runtime.getStatus()
+          .lastRunStartedAt,
+      ).toEqual(
+        expect.any(
+          String,
+        ),
+      );
+
+      expect(
+        runtime.getStatus()
+          .lastRunCompletedAt,
+      ).toEqual(
+        expect.any(
+          String,
+        ),
+      );
+
+      runtime.pause();
+
+      expect(
+        runtime.getStatus(),
+      ).toMatchObject({
+        state:
+          'paused',
+        started:
+          true,
+        paused:
+          true,
+      });
+
+      runtime.resume();
+
+      await runtime.runOnce();
+
+      expect(
+        runtime.getStatus(),
+      ).toMatchObject({
+        state:
+          'running',
+        started:
+          true,
+        paused:
+          false,
+      });
+
+      expect(
+        schedulerRunner.mock.calls.length,
+      ).toBeGreaterThanOrEqual(
+        2,
+      );
+
+      await runtime.stop();
+
+      expect(
+        runtime.getStatus(),
+      ).toMatchObject({
+        state:
+          'stopped',
+        started:
+          false,
+        paused:
+          false,
+        tickActive:
+          false,
+      });
+
+      expect(
+        close,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+    });
+
     it('deduplicates overlapping scheduler ticks', async () => {
       let resolveRun:
         (
