@@ -217,7 +217,17 @@ export class TikTokRuntime {
     }
 
     const providerNames =
-      this.registry.list();
+      this.providers
+        .filter(
+          provider =>
+            provider
+              .isAvailable?.() !==
+            false,
+        )
+        .map(
+          provider =>
+            provider.name,
+        );
 
     const handler =
       createFollowBackSchedulerHandler(
