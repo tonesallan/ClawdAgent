@@ -222,6 +222,66 @@ describe(
       ).toThrow();
     });
 
+    if (process.platform === 'win32') {
+      it('round-trips cookies with Windows DPAPI using the current user', () => {
+        const dataDir =
+          createTempDir();
+
+        const vault =
+          new TikTokCookieVault({
+            dataDir,
+            platform:
+              'win32',
+          });
+
+        const cookies =
+          sampleCookies();
+
+        vault.write(
+          'windows-dpapi-account',
+          cookies,
+        );
+
+        const vaultPath =
+          resolve(
+            dataDir,
+            'tiktok-cookie-vault',
+            'windows-dpapi-account.json',
+          );
+
+        const raw =
+          readFileSync(
+            vaultPath,
+            'utf-8',
+          );
+
+        expect(
+          JSON.parse(
+            raw,
+          ),
+        ).toMatchObject({
+          version:
+            1,
+          scheme:
+            'windows-dpapi',
+        });
+
+        expect(
+          raw,
+        ).not.toContain(
+          'unit-test-session-secret-value',
+        );
+
+        expect(
+          vault.read(
+            'windows-dpapi-account',
+          ),
+        ).toEqual(
+          cookies,
+        );
+      });
+    }
+
     it('deletes the account secret file', () => {
       const dataDir =
         createTempDir();
