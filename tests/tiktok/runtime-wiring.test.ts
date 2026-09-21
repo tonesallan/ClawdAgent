@@ -414,6 +414,89 @@ describe(
       );
     });
 
+    it('does not expose Android actions to the scheduler while the phone provider is unavailable', async () => {
+      const provider:
+        TikTokAutomationProvider = {
+          name:
+            'android',
+          isAvailable:
+            () => false,
+          checkRelationship:
+            vi.fn(),
+          follow:
+            vi.fn(),
+          unfollow:
+            vi.fn(),
+        };
+
+      const schedulerRunner =
+        vi.fn().mockImplementation(
+          async options => {
+            expect(
+              options.providerNames,
+            ).toEqual(
+              [],
+            );
+
+            return {
+              scanned:
+                0,
+              processed:
+                0,
+              succeeded:
+                0,
+              failed:
+                0,
+              skipped:
+                0,
+            };
+          },
+        );
+
+      const runtime =
+        new TikTokRuntime({
+          registry:
+            new TikTokProviderRegistry(),
+          providers: [
+            provider,
+          ],
+          schedulerRunner:
+            schedulerRunner as any,
+        });
+
+      const result =
+        await runtime.runOnce();
+
+      expect(
+        result,
+      ).toEqual({
+        scanned:
+          0,
+        processed:
+          0,
+        succeeded:
+          0,
+        failed:
+          0,
+        skipped:
+          0,
+      });
+
+      expect(
+        runtime.getRegisteredProviders(),
+      ).toEqual([
+        'android',
+      ]);
+
+      expect(
+        schedulerRunner,
+      ).toHaveBeenCalledTimes(
+        1,
+      );
+
+      await runtime.stop();
+    });
+
     it('deduplicates overlapping scheduler ticks', async () => {
       let resolveRun:
         (
