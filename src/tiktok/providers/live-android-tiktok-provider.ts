@@ -70,44 +70,103 @@ export function createLiveAndroidTikTokProvider(): AndroidTikTokProvider {
           target.accountKey,
         );
 
-      const opened =
-        await agent
-          .openTikTokProfileByUsername(
-            target.username,
-          );
+      const initialState =
+        agent.getStatus()
+          .state;
 
-      if (!opened) {
-        throw new Error(
-          `TikTok profile could not be opened on Android: ${target.username}`,
+      const shouldResume =
+        initialState ===
+        'running';
+
+      if (shouldResume) {
+        agent.pause();
+      }
+
+      const idleDeadline =
+        Date.now() +
+        30_000;
+
+      while (
+        agent.getStatus()
+          .currentAction &&
+        Date.now() <
+          idleDeadline
+      ) {
+        await new Promise<void>(
+          resolve =>
+            setTimeout(
+              resolve,
+              250,
+            ),
         );
       }
 
-      const relationship =
-        await agent
-          .inspectTikTokCurrentRelationship();
+      if (
+        agent.getStatus()
+          .currentAction
+      ) {
+        if (shouldResume) {
+          agent.resume();
+        }
 
-      return {
-        provider:
-          'android',
-        targetKey:
-          target.targetKey,
-        relationship,
-        observedAt:
-          new Date(),
-        details: {
-          readOnly:
-            true,
-          source:
-            'mobile-agent-live',
-          navigationPerformed:
-            true,
-          username:
-            target.username,
-          deviceId:
-            agent.getStatus()
-              .deviceId,
-        },
-      };
+        throw new Error(
+          'TikTok Android MobileAgent did not become idle before relationship check.',
+        );
+      }
+
+      try {
+        const opened =
+          await agent
+            .openTikTokProfileByUsername(
+              target.username,
+            );
+
+        if (!opened) {
+          throw new Error(
+            `TikTok profile could not be opened on Android: ${target.username}`,
+          );
+        }
+
+        const relationship =
+          await agent
+            .inspectTikTokCurrentRelationship();
+
+        return {
+          provider:
+            'android',
+          targetKey:
+            target.targetKey,
+          relationship,
+          observedAt:
+            new Date(),
+          details: {
+            readOnly:
+              true,
+            source:
+              'mobile-agent-live',
+            navigationPerformed:
+              true,
+            username:
+              target.username,
+            deviceId:
+              agent.getStatus()
+                .deviceId,
+          },
+        };
+      }
+      finally {
+        try {
+          await agent
+            .goToTikTokHome();
+        }
+        catch {
+          // Best-effort navigation recovery.
+        }
+
+        if (shouldResume) {
+          agent.resume();
+        }
+      }
     },
 
     async follow(
