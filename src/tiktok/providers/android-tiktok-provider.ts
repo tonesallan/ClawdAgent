@@ -7,6 +7,8 @@ import type {
 
 export interface AndroidTikTokProviderHandlers {
 
+  isAvailable?(): boolean;
+
   checkRelationship(
     target: TikTokTarget,
   ): Promise<TikTokRelationshipObservation>;
@@ -47,6 +49,12 @@ implements TikTokAutomationProvider {
     private readonly handlers:
       AndroidTikTokProviderHandlers,
   ) {}
+
+  isAvailable(): boolean {
+    return this.handlers
+      .isAvailable?.() ??
+      true;
+  }
 
   async checkRelationship(
     target: TikTokTarget,
