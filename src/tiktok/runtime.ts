@@ -20,8 +20,8 @@ import {
 } from './scheduler.js';
 
 import {
-  WebTikTokProvider,
-} from './providers/web-tiktok-provider.js';
+  createLiveAndroidTikTokProvider,
+} from './providers/live-android-tiktok-provider.js';
 
 import type {
   TikTokAutomationProvider,
@@ -121,7 +121,7 @@ export class TikTokRuntime {
     this.providers =
       options.providers ??
       [
-        new WebTikTokProvider(),
+        createLiveAndroidTikTokProvider(),
       ];
 
     this.intervalMs =
