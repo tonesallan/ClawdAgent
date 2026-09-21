@@ -65,7 +65,7 @@ const WINDOWS_DPAPI_PROTECT_SCRIPT =
   [
     "$inputText = [Console]::In.ReadToEnd()",
     "$bytes = [Text.Encoding]::UTF8.GetBytes($inputText)",
-    "$protected = [Security.Cryptography.ProtectedData]::Protect($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)",
+    "$protected = [System.Security.Cryptography.ProtectedData]::Protect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)",
     "[Console]::Out.Write([Convert]::ToBase64String($protected))",
   ].join('; ');
 
@@ -73,7 +73,7 @@ const WINDOWS_DPAPI_UNPROTECT_SCRIPT =
   [
     "$inputText = [Console]::In.ReadToEnd().Trim()",
     "$bytes = [Convert]::FromBase64String($inputText)",
-    "$plain = [Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [Security.Cryptography.DataProtectionScope]::CurrentUser)",
+    "$plain = [System.Security.Cryptography.ProtectedData]::Unprotect($bytes, $null, [System.Security.Cryptography.DataProtectionScope]::CurrentUser)",
     "[Console]::Out.Write([Text.Encoding]::UTF8.GetString($plain))",
   ].join('; ');
 
