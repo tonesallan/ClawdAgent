@@ -1,6 +1,6 @@
 import {
-  TikTokAccountManager,
-} from '../actions/browser/tiktok-manager.js';
+  MobileAgent,
+} from '../actions/mobile/mobile-agent.js';
 
 import {
   TikTokProviderRegistry,
@@ -106,11 +106,7 @@ export function getTikTokProviderControlStatus(
   registry:
     TikTokProviderRegistry =
       tikTokProviderRegistry,
-  accountManager:
-    TikTokAccountManager =
-      TikTokAccountManager.getInstance(),
 ) {
-
   const providers =
     registry
       .list()
@@ -118,23 +114,48 @@ export function getTikTokProviderControlStatus(
         describeTikTokProvider,
       );
 
-  const accounts =
-    accountManager
-      .listAccounts()
+  const mobileAgents =
+    MobileAgent
+      .listAgents()
+      .filter(
+        agent =>
+          agent.app ===
+          'tiktok',
+      )
       .map(
-        account => ({
+        agent => ({
           id:
-            account.id,
-          name:
-            account.name,
-          handle:
-            account.handle,
-          status:
-            account.status,
-          lastVerified:
-            account.lastVerified,
+            agent.id,
+          deviceId:
+            agent.deviceId,
+          state:
+            agent.state,
+          currentAction:
+            agent.currentAction,
+          lastError:
+            agent.lastError,
+          startedAt:
+            agent.startedAt,
+          lastAction:
+            agent.lastAction,
+          lastActionTime:
+            agent.lastActionTime,
+          stats:
+            agent.stats,
+          testMode:
+            agent.config
+              .testMode,
         }),
       );
+
+  const activeMobileAgents =
+    mobileAgents.filter(
+      agent =>
+        agent.state ===
+          'running' ||
+        agent.state ===
+          'paused',
+    );
 
   return {
     providers,
@@ -143,27 +164,30 @@ export function getTikTokProviderControlStatus(
         provider =>
           provider.name,
       ),
-    browserProvider: {
+    mobileProvider: {
       registered:
         providers.some(
           provider =>
             provider.name ===
-            'web',
+            'android',
         ),
-      persistentProfiles:
-        true,
-      sessionReuse:
-        true,
-      challengePolicy:
-        'unknown-retry' as const,
+      active:
+        activeMobileAgents.length >
+        0,
+      agentCount:
+        mobileAgents.length,
+      activeAgentCount:
+        activeMobileAgents.length,
+      mode:
+        'android-appium' as const,
     },
-    accounts,
+    mobileAgents,
   };
 }
 
 export interface TikTokProviderRelationshipCheckInput {
   provider: string;
-  accountId?: string;
+  accountKey?: string;
   username: string;
 }
 
@@ -210,19 +234,9 @@ export async function checkTikTokProviderRelationship(
     );
   }
 
-  const accountId =
-    input.accountId
+  const accountKey =
+    input.accountKey
       ?.trim();
-
-  if (
-    providerName ===
-      'web' &&
-    !accountId
-  ) {
-    throw new Error(
-      'accountId is required for the Web provider',
-    );
-  }
 
   const provider =
     registry.get(
@@ -233,8 +247,7 @@ export async function checkTikTokProviderRelationship(
     .checkRelationship({
       targetKey:
         `username:${cleanUsername.toLowerCase()}`,
-      accountKey:
-        accountId,
+      accountKey,
       username:
         cleanUsername,
     });
