@@ -5,10 +5,282 @@ import { Router, Request, Response } from 'express';
 import { TikTokAccountManager, loginWithCredentials, parseCredentialTable } from '../../../actions/browser/tiktok-manager.js';
 import { parseTikTokCookies, validateTikTokCookies } from '../../../actions/browser/tiktok-cookies.js';
 import logger from '../../../utils/logger.js';
+import {
+  tikTokProviderRegistry,
+} from '../../../tiktok/provider-registry.js';
+import type {
+  TikTokProviderName,
+} from '../../../tiktok/providers/tiktok-provider.js';
 
 export function setupTikTokRoutes(): Router {
   const router = Router();
   const mgr = TikTokAccountManager.getInstance();
+
+  const describeProvider = (
+    name: TikTokProviderName,
+  ) => {
+    if (name === 'web') {
+      return {
+        name,
+        label:
+          'Web / Playwright',
+        mode:
+          'read-only-core',
+        capabilities: {
+          checkRelationship:
+            true,
+          follow:
+            false,
+          unfollow:
+            false,
+          like:
+            false,
+          comment:
+            false,
+          dm:
+            false,
+        },
+      };
+    }
+
+    if (name === 'android') {
+      return {
+        name,
+        label:
+          'Android / Appium',
+        mode:
+          'read-only-core',
+        capabilities: {
+          checkRelationship:
+            true,
+          follow:
+            false,
+          unfollow:
+            false,
+          like:
+            false,
+          comment:
+            false,
+          dm:
+            false,
+        },
+      };
+    }
+
+    return {
+      name,
+      label:
+        'Dry Run',
+      mode:
+        'simulation',
+      capabilities: {
+        checkRelationship:
+          true,
+        follow:
+          false,
+        unfollow:
+          false,
+        like:
+          false,
+        comment:
+          false,
+        dm:
+          false,
+      },
+    };
+  };
+
+  /**
+   * GET /api/tiktok/provider-status
+   *
+   * Provider/core status only. Never returns cookie values.
+   */
+  router.get('/provider-status', (_req: Request, res: Response) => {
+    const providers =
+      tikTokProviderRegistry
+        .list()
+        .map(
+          describeProvider,
+        );
+
+    const accounts =
+      mgr.listAccounts().map(
+        account => ({
+          id:
+            account.id,
+          name:
+            account.name,
+          handle:
+            account.handle,
+          status:
+            account.status,
+          lastVerified:
+            account.lastVerified,
+        }),
+      );
+
+    res.json({
+      providers,
+      registeredProviders:
+        providers.map(
+          provider =>
+            provider.name,
+        ),
+      browserProvider: {
+        registered:
+          providers.some(
+            provider =>
+              provider.name ===
+              'web',
+          ),
+        persistentProfiles:
+          true,
+        sessionReuse:
+          true,
+        challengePolicy:
+          'unknown-retry',
+      },
+      accounts,
+    });
+  });
+
+  /**
+   * POST /api/tiktok/provider/check-relationship
+   *
+   * Read-only provider diagnostic/control.
+   * No Follow/Unfollow/Like/Comment method is exposed here.
+   */
+  router.post('/provider/check-relationship', async (req: Request, res: Response) => {
+    try {
+      const {
+        provider,
+        accountId,
+        username,
+      } = req.body ?? {};
+
+      if (
+        typeof provider !==
+          'string' ||
+        !provider.trim()
+      ) {
+        res.status(400).json({
+          error:
+            'provider is required',
+        });
+        return;
+      }
+
+      const providerName =
+        provider.trim() as
+          TikTokProviderName;
+
+      if (
+        !tikTokProviderRegistry
+          .has(
+            providerName,
+          )
+      ) {
+        res.status(400).json({
+          error:
+            `TikTok provider is not registered: ${providerName}`,
+        });
+        return;
+      }
+
+      if (
+        typeof username !==
+          'string' ||
+        !username.trim()
+      ) {
+        res.status(400).json({
+          error:
+            'username is required',
+        });
+        return;
+      }
+
+      const cleanUsername =
+        username
+          .trim()
+          .replace(
+            /^@/,
+            '',
+          );
+
+      if (!cleanUsername) {
+        res.status(400).json({
+          error:
+            'username is required',
+        });
+        return;
+      }
+
+      if (
+        providerName ===
+          'web' &&
+        (
+          typeof accountId !==
+            'string' ||
+          !accountId.trim()
+        )
+      ) {
+        res.status(400).json({
+          error:
+            'accountId is required for the Web provider',
+        });
+        return;
+      }
+
+      const automationProvider =
+        tikTokProviderRegistry
+          .get(
+            providerName,
+          );
+
+      const observation =
+        await automationProvider
+          .checkRelationship({
+            targetKey:
+              `username:${cleanUsername.toLowerCase()}`,
+            accountKey:
+              typeof accountId ===
+                'string'
+                ? accountId.trim()
+                : undefined,
+            username:
+              cleanUsername,
+          });
+
+      res.json({
+        observation: {
+          ...observation,
+          observedAt:
+            observation
+              .observedAt
+              .toISOString(),
+        },
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      logger.warn(
+        'TikTok provider relationship check failed',
+        {
+          error:
+            message,
+        },
+      );
+
+      res.status(400).json({
+        error:
+          message,
+      });
+    }
+  });
 
   /** GET /api/tiktok/accounts — list all accounts */
   router.get('/accounts', (_req: Request, res: Response) => {
