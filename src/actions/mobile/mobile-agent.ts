@@ -7,6 +7,7 @@ import { AppiumClient } from './appium-client.js';
 import { AIClient } from '../../core/ai-client.js';
 import logger from '../../utils/logger.js';
 import {
+  extractTikTokProfileUsername,
   findTikTokProfileSearchCandidate,
   getTikTokProfileTapPoint,
   tikTokProfileSourceMatchesUsername,
@@ -14,6 +15,9 @@ import {
 import {
   classifyTikTokRelationshipFromXml,
 } from '../../tiktok/android-relationship.js';
+import {
+  registerConfirmedAndroidFollow,
+} from '../../tiktok/android-follow-registration.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -651,35 +655,195 @@ export class MobileAgent {
           return;
         }
 
+        let profileOpened =
+          false;
+
         try {
-          let followButton;
+          let profileEntry;
 
           try {
-            followButton = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().descriptionStartsWith("Seguir ")'
-            );
+            profileEntry =
+              await this.appium.findElement(
+                'id',
+                'com.zhiliaoapp.musically:id/user_avatar',
+              );
           } catch {
-            followButton = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().descriptionStartsWith("Follow ")'
+            profileEntry =
+              await this.appium.findElement(
+                'id',
+                'com.zhiliaoapp.musically:id/title',
+              );
+          }
+
+          await this.appium.clickElement(
+            profileEntry.elementId,
+          );
+
+          profileOpened =
+            true;
+
+          await this.sleep(
+            1500,
+          );
+
+          const profileSource =
+            await this.appium
+              .getPageSource();
+
+          const username =
+            extractTikTokProfileUsername(
+              profileSource,
+            );
+
+          if (!username) {
+            throw new Error(
+              'TikTok creator profile opened but exact username could not be resolved.',
             );
           }
 
-          await this.appium.clickElement(followButton.elementId);
-          await this.sleep(1000);
+          const beforeRelationship =
+            classifyTikTokRelationshipFromXml(
+              profileSource,
+            );
+
+          if (
+            beforeRelationship ===
+              'following' ||
+            beforeRelationship ===
+              'friends'
+          ) {
+            this.log(
+              'follow',
+              'skipped',
+              `Already following @${username}`,
+            );
+            return;
+          }
+
+          if (
+            beforeRelationship !==
+              'not_following' &&
+            beforeRelationship !==
+              'follows_us'
+          ) {
+            throw new Error(
+              `TikTok relationship is not safe to follow: ${beforeRelationship}`,
+            );
+          }
+
+          const labels =
+            beforeRelationship ===
+              'follows_us'
+              ? [
+                  'Seguir de volta',
+                  'Follow back',
+                ]
+              : [
+                  'Seguir',
+                  'Follow',
+                ];
+
+          let followButton:
+            { elementId: string } |
+            null =
+              null;
+
+          for (
+            const label of
+              labels
+          ) {
+            try {
+              followButton =
+                await this.appium
+                  .findElement(
+                    'uiautomator',
+                    `new UiSelector().text("${label}")`,
+                  );
+
+              break;
+            } catch {
+              // Try next localized label.
+            }
+          }
+
+          if (!followButton) {
+            throw new Error(
+              `TikTok profile follow control not found for @${username}.`,
+            );
+          }
+
+          await this.appium.clickElement(
+            followButton.elementId,
+          );
+
+          const followedAt =
+            new Date();
+
+          await this.sleep(
+            1200,
+          );
+
+          const confirmedRelationship =
+            await this
+              .inspectTikTokCurrentRelationship();
+
+          if (
+            confirmedRelationship !==
+              'following' &&
+            confirmedRelationship !==
+              'friends'
+          ) {
+            throw new Error(
+              `TikTok Follow was not confirmed for @${username}: ${confirmedRelationship}`,
+            );
+          }
+
+          await registerConfirmedAndroidFollow({
+            accountKey:
+              this.config.id,
+            username,
+            observedRelationship:
+              confirmedRelationship,
+            followedAt,
+          });
 
           this.log(
             'follow',
             'success',
-            'Clicked TikTok follow button'
+            `Followed @${username}; persistent 48h follow-back check registered`,
           );
-        } catch {
+        } catch (err: unknown) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
           this.log(
             'follow',
-            'skipped',
-            'User already followed or TikTok follow button not found'
+            'error',
+            'TikTok follow failed',
+            msg,
           );
+
+          throw err;
+        }
+        finally {
+          if (
+            profileOpened
+          ) {
+            try {
+              await this.appium
+                .pressKey(
+                  4,
+                );
+
+              await this.sleep(
+                800,
+              );
+            } catch {
+              // Best effort return to the feed.
+            }
+          }
         }
 
         break;
