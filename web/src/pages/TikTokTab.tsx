@@ -1201,7 +1201,7 @@ export default function TikTokTab() {
             TikTok — Android only
           </h2>
           <p className="text-sm text-zinc-500 mt-1">
-            Appium/ADB mobile automation. Browser and cookie login are disabled from this panel.
+            Operacao exclusiva pelo app Android via Appium/ADB.
           </p>
         </div>
 
