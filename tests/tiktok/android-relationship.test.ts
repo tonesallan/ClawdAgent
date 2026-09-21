@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
   classifyTikTokRelationshipFromXml,
+  confirmTikTokFollowTransition,
+  hasTikTokActionableFollowControl,
 } from '../../src/tiktok/android-relationship.js';
 
 const profileOpenedFixturePath =
@@ -46,7 +48,7 @@ describe(
       }
     });
 
-    it('classifies Following from the real profile t54 control', () => {
+    it('ignores the profile statistics label t54 as relationship evidence', () => {
       const xml =
         '<android.widget.TextView text="Seguindo" resource-id="com.zhiliaoapp.musically:id/t54" />';
 
@@ -55,7 +57,80 @@ describe(
           xml,
         ),
       ).toBe(
+        'unknown',
+      );
+    });
+
+    it('detects only actionable mapped Follow controls', () => {
+      expect(
+        hasTikTokActionableFollowControl(
+          '<android.widget.TextView text="Seguir" resource-id="com.zhiliaoapp.musically:id/fm9" />',
+        ),
+      ).toBe(
+        true,
+      );
+
+      expect(
+        hasTikTokActionableFollowControl(
+          '<android.widget.TextView text="Mensagem" resource-id="com.zhiliaoapp.musically:id/fm9" />',
+        ),
+      ).toBe(
+        false,
+      );
+
+      expect(
+        hasTikTokActionableFollowControl(
+          '<android.widget.TextView text="Seguindo" resource-id="com.zhiliaoapp.musically:id/t54" />',
+        ),
+      ).toBe(
+        false,
+      );
+    });
+
+    it('confirms not_following -> following when the exact profile no longer exposes Follow', () => {
+      const after = [
+        '<android.widget.Button text="@candidate" resource-id="com.zhiliaoapp.musically:id/t1b" />',
+        '<android.widget.TextView text="Mensagem" resource-id="com.zhiliaoapp.musically:id/fm9" />',
+        '<android.widget.TextView text="Seguindo" resource-id="com.zhiliaoapp.musically:id/t54" />',
+      ].join('\n');
+
+      expect(
+        confirmTikTokFollowTransition(
+          'not_following',
+          after,
+        ),
+      ).toBe(
         'following',
+      );
+    });
+
+    it('confirms follows_us -> friends when Follow back disappears', () => {
+      const after = [
+        '<android.widget.Button text="@candidate" resource-id="com.zhiliaoapp.musically:id/t1b" />',
+        '<android.widget.TextView text="Mensagem" resource-id="com.zhiliaoapp.musically:id/fm9" />',
+      ].join('\n');
+
+      expect(
+        confirmTikTokFollowTransition(
+          'follows_us',
+          after,
+        ),
+      ).toBe(
+        'friends',
+      );
+    });
+
+    it('does not confirm Follow while the mapped Follow control is still present', () => {
+      const after =
+        '<android.widget.TextView text="Seguir" resource-id="com.zhiliaoapp.musically:id/fm9" />';
+
+      expect(
+        confirmTikTokFollowTransition(
+          'not_following',
+          after,
+        ),
+      ).toBe(
+        'unknown',
       );
     });
 
