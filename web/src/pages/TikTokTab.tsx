@@ -99,6 +99,29 @@ interface TikTokProviderStatus {
   runtime: TikTokRuntimeStatus;
 }
 
+interface TikTokManualReviewItem {
+  id: string;
+  kind: 'discovery' | 'unfollow';
+  accountKey: string;
+  provider: string;
+  targetKey: string | null;
+  username: string | null;
+  displayName: string | null;
+  reason: string | null;
+  query: string | null;
+  hashtags: string[];
+  createdAt: string;
+}
+
+interface TikTokManualReviewResponse {
+  reviews: TikTokManualReviewItem[];
+  counts: {
+    total: number;
+    discovery: number;
+    unfollow: number;
+  };
+}
+
 interface TikTokCoreOverview {
   actions: {
     total: number;
@@ -197,6 +220,8 @@ export default function TikTokTab() {
   const [relationshipChecking, setRelationshipChecking] = useState(false);
   const [runtimeLoading, setRuntimeLoading] = useState(false);
   const [coreOverview, setCoreOverview] = useState<TikTokCoreOverview | null>(null);
+  const [manualReviews, setManualReviews] = useState<TikTokManualReviewResponse | null>(null);
+  const [reviewLoadingId, setReviewLoadingId] = useState<string | null>(null);
   // Agent state
   const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
   const [agentLogs, setAgentLogs] = useState<AgentLog[]>([]);
@@ -241,6 +266,14 @@ export default function TikTokTab() {
     } catch { /* silent */ }
   }, [token]);
 
+  const fetchManualReviews = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tiktok/reviews', { headers });
+      if (!res.ok) return;
+      setManualReviews(await res.json());
+    } catch { /* silent */ }
+  }, [token]);
+
   const fetchAgentStatus = useCallback(async () => {
     try {
       const res = await fetch('/api/tiktok-agent/agents', { headers });
@@ -264,7 +297,8 @@ export default function TikTokTab() {
     fetchAgentStatus();
     fetchProviderStatus();
     fetchCoreOverview();
-  }, [fetchAccounts, fetchAgentStatus, fetchProviderStatus, fetchCoreOverview]);
+    fetchManualReviews();
+  }, [fetchAccounts, fetchAgentStatus, fetchProviderStatus, fetchCoreOverview, fetchManualReviews]);
 
   useEffect(() => {
     if (!selectedProvider && providerStatus?.providers.length) {
@@ -283,10 +317,11 @@ export default function TikTokTab() {
     const interval = setInterval(() => {
       fetchProviderStatus();
       fetchCoreOverview();
+      fetchManualReviews();
     }, 5000);
 
     return () => clearInterval(interval);
-  }, [fetchProviderStatus, fetchCoreOverview]);
+  }, [fetchProviderStatus, fetchCoreOverview, fetchManualReviews]);
 
   // Auto-refresh logs every 5s when agent is running
   useEffect(() => {
@@ -421,6 +456,72 @@ export default function TikTokTab() {
       setError(`Runtime ${action} failed`);
     } finally {
       setRuntimeLoading(false);
+    }
+  };
+
+  const resolveDiscoveryReview = async (
+    reviewId: string,
+    decision: 'approved' | 'rejected',
+  ) => {
+    setReviewLoadingId(reviewId);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/tiktok/reviews/${reviewId}/discovery-decision`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ decision }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to resolve discovery review');
+        return;
+      }
+
+      await Promise.all([
+        fetchManualReviews(),
+        fetchCoreOverview(),
+      ]);
+    } catch {
+      setError('Failed to resolve discovery review');
+    } finally {
+      setReviewLoadingId(null);
+    }
+  };
+
+  const cancelUnfollowReview = async (
+    reviewId: string,
+  ) => {
+    if (!confirm('Cancel this pending UNFOLLOW review? No TikTok unfollow will be executed.')) {
+      return;
+    }
+
+    setReviewLoadingId(reviewId);
+    setError('');
+
+    try {
+      const res = await fetch(`/api/tiktok/reviews/${reviewId}/cancel-unfollow`, {
+        method: 'POST',
+        headers,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || 'Failed to cancel UNFOLLOW review');
+        return;
+      }
+
+      await Promise.all([
+        fetchManualReviews(),
+        fetchCoreOverview(),
+      ]);
+    } catch {
+      setError('Failed to cancel UNFOLLOW review');
+    } finally {
+      setReviewLoadingId(null);
     }
   };
 
@@ -723,6 +824,117 @@ export default function TikTokTab() {
             Challenge: UNKNOWN + retry
           </span>
         </div>
+
+        {manualReviews && (
+          <div className="mt-4 border border-zinc-800 rounded-lg overflow-hidden">
+            <div className="px-3 py-2 bg-zinc-800/60 border-b border-zinc-800 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <ShieldAlert className="w-4 h-4 text-yellow-400" />
+                <span className="text-sm font-medium text-white">Manual Review Queue</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <span className="px-2 py-1 rounded bg-zinc-900 text-zinc-400">
+                  total: {manualReviews.counts.total}
+                </span>
+                <span className="px-2 py-1 rounded bg-sky-500/10 text-sky-400">
+                  discovery: {manualReviews.counts.discovery}
+                </span>
+                <span className="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400">
+                  unfollow: {manualReviews.counts.unfollow}
+                </span>
+              </div>
+            </div>
+
+            {manualReviews.reviews.length === 0 ? (
+              <div className="p-4 text-center text-xs text-zinc-600">
+                No pending TikTok manual reviews.
+              </div>
+            ) : (
+              <div className="divide-y divide-zinc-800 bg-zinc-950/40">
+                {manualReviews.reviews.map(review => (
+                  <div key={review.id} className="p-3">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className={'px-2 py-0.5 rounded-full text-xs font-medium ' + (
+                            review.kind === 'discovery'
+                              ? 'bg-sky-500/15 text-sky-400'
+                              : 'bg-yellow-500/15 text-yellow-400'
+                          )}>
+                            {review.kind === 'discovery' ? 'DISCOVERY_REVIEW' : 'UNFOLLOW REVIEW'}
+                          </span>
+                          <span className="text-xs text-zinc-600">{review.provider}</span>
+                          <span className="text-xs text-zinc-600">
+                            {new Date(review.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+
+                        <div className="mt-2 text-sm text-zinc-200">
+                          {review.username
+                            ? '@' + review.username
+                            : review.displayName ?? review.targetKey ?? review.id}
+                        </div>
+
+                        {review.kind === 'discovery' ? (
+                          <div className="mt-1 text-xs text-zinc-500">
+                            {review.query ?? 'Discovery candidate'}
+                            {review.hashtags.length > 0
+                              ? ' · ' + review.hashtags.map(tag => '#' + tag).join(' ')
+                              : ''}
+                          </div>
+                        ) : (
+                          <div className="mt-1 text-xs text-yellow-500/80">
+                            {review.reason === 'no_follow_back_after_wait'
+                              ? 'Did not follow back after the configured waiting period.'
+                              : review.reason ?? 'Pending manual UNFOLLOW review.'}
+                            {' '}Execution remains disabled.
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap gap-2 shrink-0">
+                        {review.kind === 'discovery' ? (
+                          <>
+                            <button
+                              onClick={() => void resolveDiscoveryReview(review.id, 'approved')}
+                              disabled={reviewLoadingId === review.id}
+                              className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-xs font-medium"
+                            >
+                              {reviewLoadingId === review.id
+                                ? <Loader2 className="w-3 h-3 animate-spin" />
+                                : 'Approve'}
+                            </button>
+                            <button
+                              onClick={() => void resolveDiscoveryReview(review.id, 'rejected')}
+                              disabled={reviewLoadingId === review.id}
+                              className="px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-xs font-medium"
+                            >
+                              Reject
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            onClick={() => void cancelUnfollowReview(review.id)}
+                            disabled={reviewLoadingId === review.id}
+                            className="px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-xs font-medium"
+                          >
+                            {reviewLoadingId === review.id
+                              ? <Loader2 className="w-3 h-3 animate-spin" />
+                              : 'Cancel review'}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="px-3 py-2 border-t border-zinc-800 text-xs text-zinc-600">
+              Discovery approval is decision-only. UNFOLLOW has no execute/approve control and remains manual-review-only.
+            </div>
+          </div>
+        )}
 
         {coreOverview && (
           <div className="mt-4 border border-zinc-800 rounded-lg overflow-hidden">
