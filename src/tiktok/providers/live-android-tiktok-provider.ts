@@ -56,6 +56,26 @@ function resolveTikTokAgent(
 
 export function createLiveAndroidTikTokProvider(): AndroidTikTokProvider {
   return new AndroidTikTokProvider({
+    isAvailable() {
+      const agent =
+        MobileAgent.getTikTokAgent();
+
+      if (!agent) {
+        return false;
+      }
+
+      const state =
+        agent.getStatus()
+          .state;
+
+      return (
+        state ===
+          'running' ||
+        state ===
+          'paused'
+      );
+    },
+
     async checkRelationship(
       target,
     ): Promise<TikTokRelationshipObservation> {
