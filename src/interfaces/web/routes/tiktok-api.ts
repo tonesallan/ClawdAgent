@@ -9,6 +9,9 @@ import {
   checkTikTokProviderRelationship,
   getTikTokProviderControlStatus,
 } from '../../../tiktok/provider-control-service.js';
+import {
+  getTikTokRuntime,
+} from '../../../tiktok/runtime.js';
 
 export function setupTikTokRoutes(): Router {
   const router = Router();
@@ -20,12 +23,86 @@ export function setupTikTokRoutes(): Router {
    * Provider/core status only. Never returns cookie values.
    */
   router.get('/provider-status', (_req: Request, res: Response) => {
-    res.json(
-      getTikTokProviderControlStatus(
+    const runtime =
+      getTikTokRuntime();
+
+    res.json({
+      ...getTikTokProviderControlStatus(
         undefined,
         mgr,
       ),
-    );
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** GET /api/tiktok/runtime/status — common TikTok core runtime status */
+  router.get('/runtime/status', (_req: Request, res: Response) => {
+    res.json({
+      runtime:
+        getTikTokRuntime()
+          .getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/start — start scheduler ticks */
+  router.post('/runtime/start', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    runtime.start();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/pause — pause new scheduler ticks */
+  router.post('/runtime/pause', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    runtime.pause();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/resume — resume scheduler ticks */
+  router.post('/runtime/resume', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    runtime.resume();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/stop — stop runtime and close provider sessions */
+  router.post('/runtime/stop', async (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    await runtime.stop();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
   });
 
   /**
