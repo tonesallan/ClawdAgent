@@ -140,6 +140,73 @@ export class MobileAgent {
     return [...MobileAgent.instances.values()].map(a => a.getStatus());
   }
 
+  static getTikTokAgent(
+    accountKey?: string | null,
+  ): MobileAgent | undefined {
+    const tikTokAgents =
+      [...MobileAgent.instances.values()]
+        .filter(
+          agent =>
+            agent.getStatus().app ===
+            'tiktok',
+        );
+
+    if (
+      accountKey
+    ) {
+      const exact =
+        tikTokAgents.find(
+          agent => {
+            const status =
+              agent.getStatus();
+
+            return (
+              status.id ===
+                accountKey ||
+              status.deviceId ===
+                accountKey
+            );
+          },
+        );
+
+      if (exact) {
+        return exact;
+      }
+    }
+
+    const active =
+      tikTokAgents.filter(
+        agent => {
+          const state =
+            agent.getStatus().state;
+
+          return (
+            state === 'running' ||
+            state === 'paused'
+          );
+        },
+      );
+
+    if (
+      active.length ===
+        1
+    ) {
+      return active[0];
+    }
+
+    if (
+      active.length >
+        1
+    ) {
+      return undefined;
+    }
+
+    return tikTokAgents.length ===
+      1
+      ? tikTokAgents[0]
+      : undefined;
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────────────
 
   async start(): Promise<void> {
