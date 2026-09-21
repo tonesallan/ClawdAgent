@@ -2,7 +2,13 @@
  * TikTok Account Manager — stores accounts, injects cookies, verifies login.
  * Uses JSON file storage in data/tiktok-accounts.json.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+} from 'fs';
 import { resolve } from 'path';
 import {
   parseTikTokCookies,
@@ -12,6 +18,9 @@ import {
   type ParseResult,
 } from './tiktok-cookies.js';
 import { BrowserSessionManager } from './session-manager.js';
+import {
+  TikTokCookieVault,
+} from './tiktok-cookie-vault.js';
 import logger from '../../utils/logger.js';
 
 export interface TikTokAccount {
@@ -32,23 +41,192 @@ export interface TikTokAccount {
 const DATA_DIR = resolve(process.cwd(), 'data');
 const ACCOUNTS_FILE = resolve(DATA_DIR, 'tiktok-accounts.json');
 
+interface StoredTikTokAccount
+extends Omit<TikTokAccount, 'cookies'> {
+  cookieSecretRef?: string;
+  cookieCount?: number;
+
+  /**
+   * Legacy plaintext field.
+   * Read only for one-time migration; never written by the new store.
+   */
+  cookies?: TikTokCookie[];
+}
+
+const COOKIE_VAULT =
+  new TikTokCookieVault({
+    dataDir:
+      DATA_DIR,
+  });
+
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 }
 
+function serializeAccountMetadata(
+  account: TikTokAccount,
+): StoredTikTokAccount {
+
+  const {
+    cookies,
+    ...metadata
+  } = account;
+
+  return {
+    ...metadata,
+    cookieSecretRef:
+      COOKIE_VAULT.getReference(
+        account.id,
+      ),
+    cookieCount:
+      cookies.length,
+  };
+}
+
+function writeAccountMetadata(
+  accounts: TikTokAccount[],
+): void {
+
+  ensureDataDir();
+
+  const temporaryPath =
+    `${ACCOUNTS_FILE}.tmp`;
+
+  writeFileSync(
+    temporaryPath,
+    JSON.stringify(
+      accounts.map(
+        serializeAccountMetadata,
+      ),
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+
+  renameSync(
+    temporaryPath,
+    ACCOUNTS_FILE,
+  );
+}
+
 function loadAccounts(): TikTokAccount[] {
   ensureDataDir();
-  if (!existsSync(ACCOUNTS_FILE)) return [];
-  try {
-    return JSON.parse(readFileSync(ACCOUNTS_FILE, 'utf-8'));
-  } catch {
+
+  if (!existsSync(ACCOUNTS_FILE)) {
     return [];
   }
+
+  let storedAccounts:
+    StoredTikTokAccount[];
+
+  try {
+    const parsed =
+      JSON.parse(
+        readFileSync(
+          ACCOUNTS_FILE,
+          'utf-8',
+        ),
+      );
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    storedAccounts =
+      parsed as
+        StoredTikTokAccount[];
+  }
+  catch {
+    return [];
+  }
+
+  let migratedPlaintextCookies =
+    false;
+
+  const accounts =
+    storedAccounts.map(
+      stored => {
+        const {
+          cookies:
+            legacyCookies,
+          cookieSecretRef:
+            _cookieSecretRef,
+          cookieCount:
+            _cookieCount,
+          ...metadata
+        } = stored;
+
+        let cookies:
+          TikTokCookie[] = [];
+
+        if (
+          Array.isArray(
+            legacyCookies,
+          ) &&
+          legacyCookies.length >
+            0
+        ) {
+          COOKIE_VAULT.write(
+            stored.id,
+            legacyCookies,
+          );
+
+          cookies =
+            legacyCookies;
+
+          migratedPlaintextCookies =
+            true;
+        }
+        else {
+          cookies =
+            COOKIE_VAULT.read(
+              stored.id,
+            );
+        }
+
+        return {
+          ...metadata,
+          cookies,
+        } as TikTokAccount;
+      },
+    );
+
+  if (
+    migratedPlaintextCookies
+  ) {
+    writeAccountMetadata(
+      accounts,
+    );
+
+    logger.info(
+      'Migrated TikTok account cookies to encrypted vault',
+      {
+        accountCount:
+          accounts.length,
+      },
+    );
+  }
+
+  return accounts;
 }
 
 function saveAccounts(accounts: TikTokAccount[]) {
   ensureDataDir();
-  writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2), 'utf-8');
+
+  for (
+    const account of
+      accounts
+  ) {
+    COOKIE_VAULT.write(
+      account.id,
+      account.cookies,
+    );
+  }
+
+  writeAccountMetadata(
+    accounts,
+  );
 }
 
 export class TikTokAccountManager {
@@ -130,6 +308,7 @@ export class TikTokAccountManager {
     const filtered = accounts.filter(a => a.id !== id);
     if (filtered.length === accounts.length) throw new Error(`Account ${id} not found`);
     saveAccounts(filtered);
+    COOKIE_VAULT.delete(id);
     logger.info('TikTok account deleted', { id });
   }
 
