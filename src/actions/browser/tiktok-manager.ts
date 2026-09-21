@@ -1,6 +1,6 @@
 /**
- * TikTok Account Manager — stores accounts, injects cookies, verifies login.
- * Uses JSON file storage in data/tiktok-accounts.json.
+ * TikTok Account Manager — stores account metadata, injects cookies, verifies login.
+ * Authentication cookies are kept in the encrypted TikTok cookie vault.
  */
 import {
   readFileSync,
@@ -163,9 +163,7 @@ function loadAccounts(): TikTokAccount[] {
         if (
           Array.isArray(
             legacyCookies,
-          ) &&
-          legacyCookies.length >
-            0
+          )
         ) {
           COOKIE_VAULT.write(
             stored.id,
