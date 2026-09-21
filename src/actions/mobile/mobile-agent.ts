@@ -14,6 +14,7 @@ import {
 } from '../../tiktok/android-profile-navigation.js';
 import {
   classifyTikTokRelationshipFromXml,
+  confirmTikTokFollowTransition,
 } from '../../tiktok/android-relationship.js';
 import {
   registerConfirmedAndroidFollow,
@@ -783,9 +784,58 @@ export class MobileAgent {
             1200,
           );
 
-          const confirmedRelationship =
-            await this
-              .inspectTikTokCurrentRelationship();
+          let afterSource =
+            await this.appium
+              .getPageSource();
+
+          if (
+            !tikTokProfileSourceMatchesUsername(
+              afterSource,
+              username,
+            )
+          ) {
+            throw new Error(
+              `TikTok profile identity changed after Follow for @${username}.`,
+            );
+          }
+
+          let confirmedRelationship =
+            confirmTikTokFollowTransition(
+              beforeRelationship,
+              afterSource,
+            );
+
+          if (
+            confirmedRelationship !==
+              'following' &&
+            confirmedRelationship !==
+              'friends'
+          ) {
+            await this.sleep(
+              1200,
+            );
+
+            afterSource =
+              await this.appium
+                .getPageSource();
+
+            if (
+              !tikTokProfileSourceMatchesUsername(
+                afterSource,
+                username,
+              )
+            ) {
+              throw new Error(
+                `TikTok profile identity changed while confirming Follow for @${username}.`,
+              );
+            }
+
+            confirmedRelationship =
+              confirmTikTokFollowTransition(
+                beforeRelationship,
+                afterSource,
+              );
+          }
 
           if (
             confirmedRelationship !==
