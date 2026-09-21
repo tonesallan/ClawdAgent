@@ -46,6 +46,19 @@ describe(
       }
     });
 
+    it('classifies Following from the real profile t54 control', () => {
+      const xml =
+        '<android.widget.TextView text="Seguindo" resource-id="com.zhiliaoapp.musically:id/t54" />';
+
+      expect(
+        classifyTikTokRelationshipFromXml(
+          xml,
+        ),
+      ).toBe(
+        'following',
+      );
+    });
+
     it('classifies follows_us from follow-back controls', () => {
       const xml = [
         '<android.widget.TextView text="Seguir de volta" resource-id="com.zhiliaoapp.musically:id/u68" />',
