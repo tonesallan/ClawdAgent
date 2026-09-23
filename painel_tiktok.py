@@ -399,6 +399,144 @@ class TikTokBotPanel(tk.Tk):
             wraplength=920,
         ).grid(row=5, column=0, columnspan=2, sticky="w", padx=10, pady=(4, 10))
 
+        tools = ttk.LabelFrame(self.tab_automation, text="Ferramentas read-only / core")
+        tools.pack(fill="x", padx=14, pady=8)
+
+        ttk.Label(tools, text="Verificar @username", style="Muted.TLabel").grid(row=0, column=0, sticky="w", padx=10, pady=8)
+        ttk.Entry(tools, textvariable=self.relationship_username, width=28).grid(row=0, column=1, sticky="w", padx=10, pady=8)
+        ttk.Button(tools, text="Checar relacionamento", command=self.check_relationship).grid(row=0, column=2, sticky="w", padx=8, pady=8)
+        ttk.Button(tools, text="Executar tick agora", command=lambda: self.send_command("run_core_once")).grid(row=0, column=3, sticky="w", padx=8, pady=8)
+
+        ttk.Label(tools, text="Resultado", style="Muted.TLabel").grid(row=1, column=0, sticky="nw", padx=10, pady=(2, 10))
+        ttk.Label(tools, textvariable=self.relationship_result, style="Card.TLabel", wraplength=760).grid(row=1, column=1, columnspan=3, sticky="w", padx=10, pady=(2, 10))
+
+        ttk.Label(
+            tools,
+            text=(
+                "A checagem por username é somente leitura: abre o perfil exato, observa a relação e retorna ao feed. "
+                "Não segue, deixa de seguir, curte, comenta ou envia mensagem."
+            ),
+            style="Muted.TLabel",
+            wraplength=920,
+        ).grid(row=2, column=0, columnspan=4, sticky="w", padx=10, pady=(0, 10))
+
+    def _build_reviews_tab(self) -> None:
+        header = ttk.Frame(self.tab_reviews, style="Card.TFrame")
+        header.pack(fill="x", padx=12, pady=(12, 6))
+
+        ttk.Label(header, text="Pendentes:", style="Muted.TLabel").pack(side="left")
+        ttk.Label(header, textvariable=self.review_count, style="Card.TLabel").pack(side="left", padx=(5, 16))
+        ttk.Button(header, text="↻ Atualizar", command=lambda: self.send_command("refresh_persistent")).pack(side="right")
+
+        columns = ("kind", "username", "reason", "query", "hashtags", "created")
+        self.review_tree = ttk.Treeview(self.tab_reviews, columns=columns, show="headings", height=16)
+
+        headings = {
+            "kind": "Tipo",
+            "username": "Usuário",
+            "reason": "Motivo",
+            "query": "Busca",
+            "hashtags": "Hashtags",
+            "created": "Criado em",
+        }
+        widths = {
+            "kind": 100,
+            "username": 160,
+            "reason": 220,
+            "query": 150,
+            "hashtags": 250,
+            "created": 180,
+        }
+
+        for column in columns:
+            self.review_tree.heading(column, text=headings[column])
+            self.review_tree.column(column, width=widths[column], anchor="w")
+
+        self.review_tree.pack(fill="both", expand=True, padx=12, pady=6)
+
+        buttons = ttk.Frame(self.tab_reviews, style="Card.TFrame")
+        buttons.pack(fill="x", padx=12, pady=(4, 12))
+
+        ttk.Button(buttons, text="Aprovar DISCOVERY", command=lambda: self.review_selected("approve_discovery")).pack(side="left", padx=(0, 6))
+        ttk.Button(buttons, text="Rejeitar DISCOVERY", command=lambda: self.review_selected("reject_discovery")).pack(side="left", padx=6)
+        ttk.Button(buttons, text="Cancelar UNFOLLOW", command=lambda: self.review_selected("cancel_unfollow")).pack(side="left", padx=6)
+
+        ttk.Label(
+            buttons,
+            text=(
+                "Aprovar DISCOVERY só registra a decisão humana. Não cria Follow/Like/Comment/Share/DM. "
+                "UNFOLLOW nunca é executado automaticamente; neste painel ele só pode ser cancelado."
+            ),
+            style="Muted.TLabel",
+            wraplength=680,
+        ).pack(side="right", padx=8)
+
+    def _build_history_tab(self) -> None:
+        header = ttk.Frame(self.tab_history, style="Card.TFrame")
+        header.pack(fill="x", padx=12, pady=(12, 6))
+
+        ttk.Label(header, text="Ações persistidas:", style="Muted.TLabel").pack(side="left")
+        ttk.Label(header, textvariable=self.history_count, style="Card.TLabel").pack(side="left", padx=(5, 16))
+        ttk.Button(header, text="↻ Atualizar", command=lambda: self.send_command("refresh_persistent")).pack(side="right")
+
+        actions_frame = ttk.LabelFrame(self.tab_history, text="Histórico recente de ações")
+        actions_frame.pack(fill="both", expand=True, padx=12, pady=6)
+
+        action_columns = ("type", "status", "username", "provider", "updated", "error")
+        self.history_tree = ttk.Treeview(actions_frame, columns=action_columns, show="headings", height=9)
+
+        action_headings = {
+            "type": "Ação",
+            "status": "Status",
+            "username": "Usuário",
+            "provider": "Provider",
+            "updated": "Atualizado",
+            "error": "Erro",
+        }
+        action_widths = {
+            "type": 150,
+            "status": 100,
+            "username": 160,
+            "provider": 90,
+            "updated": 180,
+            "error": 380,
+        }
+
+        for column in action_columns:
+            self.history_tree.heading(column, text=action_headings[column])
+            self.history_tree.column(column, width=action_widths[column], anchor="w")
+
+        self.history_tree.pack(fill="both", expand=True, padx=6, pady=6)
+
+        relations_frame = ttk.LabelFrame(self.tab_history, text="Relacionamentos persistidos")
+        relations_frame.pack(fill="both", expand=True, padx=12, pady=(6, 12))
+
+        relation_columns = ("username", "state", "follows_us", "followed_by_us", "protected", "checked")
+        self.relationship_tree = ttk.Treeview(relations_frame, columns=relation_columns, show="headings", height=8)
+
+        relation_headings = {
+            "username": "Usuário",
+            "state": "Relação",
+            "follows_us": "Segue nós",
+            "followed_by_us": "Seguimos",
+            "protected": "Protegido",
+            "checked": "Última checagem",
+        }
+        relation_widths = {
+            "username": 190,
+            "state": 130,
+            "follows_us": 100,
+            "followed_by_us": 100,
+            "protected": 100,
+            "checked": 210,
+        }
+
+        for column in relation_columns:
+            self.relationship_tree.heading(column, text=relation_headings[column])
+            self.relationship_tree.column(column, width=relation_widths[column], anchor="w")
+
+        self.relationship_tree.pack(fill="both", expand=True, padx=6, pady=6)
+
     def _entry_row(self, parent: ttk.Widget, row: int, label: str, variable: tk.StringVar) -> None:
         ttk.Label(parent, text=label, style="Muted.TLabel").grid(row=row, column=0, sticky="w", padx=10, pady=6)
         ttk.Entry(parent, textvariable=variable, width=28).grid(row=row, column=1, sticky="ew", padx=10, pady=6)
