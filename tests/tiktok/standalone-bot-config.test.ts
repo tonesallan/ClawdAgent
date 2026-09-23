@@ -50,6 +50,28 @@ describe(
         });
 
         expect(
+          config.automationCore,
+        ).toEqual({
+          enabled:
+            true,
+          followBackCheckHours:
+            48,
+          hashtags: {
+            enabled:
+              false,
+            include:
+              [],
+            exclude:
+              [],
+            matchMode:
+              'any',
+            maxCandidatesPerCycle:
+              20,
+          },
+        });
+
+
+        expect(
           getEnabledStandaloneTikTokActions(
             config,
           ),
