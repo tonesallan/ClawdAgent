@@ -891,6 +891,13 @@ class TikTokBotPanel(tk.Tk):
         core = data.get("automationCore", {})
         self.core_state.set(str(core.get("state", "stopped")))
         self.core_tick.set("ativo" if core.get("tickActive") else "inativo")
+
+        interval_ms = core.get("intervalMs")
+        if isinstance(interval_ms, (int, float)):
+            self.core_interval.set(f"{int(interval_ms / 1000)} s")
+        else:
+            self.core_interval.set("-")
+
         self.core_last_tick.set(str(core.get("lastRunCompletedAt") or core.get("lastRunStartedAt") or "-"))
 
         result = core.get("lastResult")
@@ -909,6 +916,152 @@ class TikTokBotPanel(tk.Tk):
         device = str(data.get("deviceId") or "-")
         if device != "-":
             self.device_state.set(device)
+
+        provider = data.get("providerControl", {})
+        registered = provider.get("registeredProviders", []) if isinstance(provider, dict) else []
+        mobile_provider = provider.get("mobileProvider", {}) if isinstance(provider, dict) else {}
+        active_provider = bool(mobile_provider.get("active")) if isinstance(mobile_provider, dict) else False
+
+        if "android" in registered:
+            self.provider_state.set("android • ativo" if active_provider else "android • registrado")
+        else:
+            self.provider_state.set("android • aguardando")
+
+        mobile_agents = provider.get("mobileAgents", []) if isinstance(provider, dict) else []
+        if isinstance(mobile_agents, list) and mobile_agents:
+            first_agent = mobile_agents[0] if isinstance(mobile_agents[0], dict) else {}
+            self.account_state.set(str(first_agent.get("id") or "-"))
+        else:
+            self.account_state.set("-")
+
+        database = data.get("database", {})
+        if isinstance(database, dict) and database.get("connected"):
+            self.database_state.set("conectado")
+        elif isinstance(database, dict) and database.get("error"):
+            self.database_state.set("indisponível")
+        else:
+            self.database_state.set("desligado")
+
+        reviews = data.get("manualReviews", [])
+        if not isinstance(reviews, list):
+            reviews = []
+
+        review_rows: list[tuple[str, tuple[object, ...]]] = []
+        for review in reviews:
+            if not isinstance(review, dict):
+                continue
+
+            action_id = str(review.get("id") or "")
+            if not action_id:
+                continue
+
+            hashtags = review.get("hashtags", [])
+            hashtags_text = ", ".join(f"#{tag}" for tag in hashtags) if isinstance(hashtags, list) else ""
+
+            review_rows.append(
+                (
+                    action_id,
+                    (
+                        str(review.get("kind") or ""),
+                        str(review.get("username") or ""),
+                        str(review.get("reason") or ""),
+                        str(review.get("query") or ""),
+                        hashtags_text,
+                        str(review.get("createdAt") or ""),
+                    ),
+                )
+            )
+
+        self.review_count.set(str(len(review_rows)))
+        self._replace_tree(self.review_tree, review_rows)
+
+        actions = data.get("recentActions", [])
+        if not isinstance(actions, list):
+            actions = []
+
+        history_rows: list[tuple[str, tuple[object, ...]]] = []
+        for index, action in enumerate(actions):
+            if not isinstance(action, dict):
+                continue
+
+            action_id = str(action.get("id") or f"action-{index}")
+            history_rows.append(
+                (
+                    f"history-{action_id}-{index}",
+                    (
+                        str(action.get("type") or ""),
+                        str(action.get("status") or ""),
+                        str(action.get("targetUsername") or ""),
+                        str(action.get("provider") or ""),
+                        str(action.get("updatedAt") or action.get("createdAt") or ""),
+                        str(action.get("error") or ""),
+                    ),
+                )
+            )
+
+        self.history_count.set(str(len(history_rows)))
+        self._replace_tree(self.history_tree, history_rows)
+
+        relationships = data.get("recentRelationships", [])
+        if not isinstance(relationships, list):
+            relationships = []
+
+        relation_rows: list[tuple[str, tuple[object, ...]]] = []
+        for index, relationship in enumerate(relationships):
+            if not isinstance(relationship, dict):
+                continue
+
+            row_key = str(
+                relationship.get("id")
+                or relationship.get("targetKey")
+                or f"relationship-{index}"
+            )
+
+            relation_rows.append(
+                (
+                    f"relationship-{row_key}-{index}",
+                    (
+                        str(relationship.get("username") or ""),
+                        str(relationship.get("relationshipState") or ""),
+                        str(relationship.get("followsUs") if relationship.get("followsUs") is not None else "-"),
+                        str(relationship.get("followedByUs") if relationship.get("followedByUs") is not None else "-"),
+                        str(relationship.get("protected") if relationship.get("protected") is not None else "-"),
+                        str(relationship.get("lastCheckedAt") or relationship.get("updatedAt") or ""),
+                    ),
+                )
+            )
+
+        self._replace_tree(self.relationship_tree, relation_rows)
+
+        control_result = data.get("lastControlResult")
+        if isinstance(control_result, dict):
+            control_key = "|".join(
+                str(control_result.get(part) or "")
+                for part in ("requestId", "command", "completedAt")
+            )
+
+            if control_key and control_key != self._last_control_result_key:
+                self._last_control_result_key = control_key
+                command = str(control_result.get("command") or "")
+                success = bool(control_result.get("success"))
+                error = str(control_result.get("error") or "")
+                command_result = control_result.get("result")
+
+                if command == "check_relationship":
+                    if success and isinstance(command_result, dict):
+                        relationship = str(command_result.get("relationship") or "unknown")
+                        provider_name = str(command_result.get("provider") or "android")
+                        observed = str(command_result.get("observedAt") or "")
+                        self.relationship_result.set(
+                            f"{relationship} • {provider_name} • {observed}"
+                        )
+                    else:
+                        self.relationship_result.set(f"erro: {error or 'falha na checagem'}")
+
+                if success:
+                    self._append_log(f"[PAINEL] Comando concluído: {command}")
+                else:
+                    self._append_log(f"[PAINEL] Falha no comando {command}: {error}")
 
         for entry in data.get("logs", []):
             if not isinstance(entry, dict):
