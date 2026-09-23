@@ -779,20 +779,85 @@ class TikTokBotPanel(tk.Tk):
         if lines > 1200:
             self.logs_text.delete("1.0", "200.0")
 
-    def send_command(self, command: str) -> None:
+    def send_command(self, command: str, **extra: object) -> str:
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
 
-        payload = {
+        request_id = f"{int(time.time() * 1000)}-{os.getpid()}"
+
+        payload: dict[str, object] = {
             "command": command,
+            "requestId": request_id,
             "requestedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "source": "python-panel",
         }
+        payload.update(extra)
 
         temp = COMMAND_PATH.with_suffix(".tmp")
-        temp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        temp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         temp.replace(COMMAND_PATH)
 
         self._append_log(f"[PAINEL] Comando enviado: {command}")
+        return request_id
+
+    def check_relationship(self) -> None:
+        username = self.relationship_username.get().strip().lstrip("@")
+        if not username:
+            messagebox.showwarning("Relacionamento", "Informe um @username.")
+            return
+
+        if self.bot_state.get().lower() not in ("running", "paused"):
+            messagebox.showwarning(
+                "Relacionamento",
+                "Inicie o bot antes da checagem read-only para que o provider Android esteja disponível.",
+            )
+            return
+
+        self.relationship_result.set("checando...")
+        self.send_command("check_relationship", username=username)
+
+    def review_selected(self, command: str) -> None:
+        selected = self.review_tree.selection()
+        if not selected:
+            messagebox.showwarning("Revisão", "Selecione uma revisão pendente.")
+            return
+
+        action_id = selected[0]
+        values = self.review_tree.item(action_id, "values")
+        kind = str(values[0]) if values else ""
+
+        if command in ("approve_discovery", "reject_discovery") and kind != "discovery":
+            messagebox.showwarning("Revisão", "Selecione uma revisão DISCOVERY para esta decisão.")
+            return
+
+        if command == "cancel_unfollow" and kind != "unfollow":
+            messagebox.showwarning("Revisão", "Selecione uma revisão UNFOLLOW para cancelar.")
+            return
+
+        if command == "approve_discovery":
+            confirmed = messagebox.askyesno(
+                "Aprovar DISCOVERY",
+                "Aprovar este candidato?\n\nA aprovação NÃO executa follow, like, comment, share ou DM.",
+            )
+            if not confirmed:
+                return
+
+        if command == "cancel_unfollow":
+            confirmed = messagebox.askyesno(
+                "Cancelar UNFOLLOW",
+                "Cancelar esta revisão de UNFOLLOW?\n\nNenhum unfollow será executado.",
+            )
+            if not confirmed:
+                return
+
+        self.send_command(command, actionId=action_id)
+
+    @staticmethod
+    def _replace_tree(tree: ttk.Treeview, rows: list[tuple[str, tuple[object, ...]]]) -> None:
+        for item in tree.get_children():
+            tree.delete(item)
+
+        for item_id, values in rows:
+            tree.insert("", "end", iid=item_id, values=values)
 
     def _poll_status(self) -> None:
         try:
