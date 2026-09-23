@@ -40,6 +40,7 @@ class TikTokBotPanel(tk.Tk):
         self.output_queue: queue.Queue[str] = queue.Queue()
         self.seen_logs: set[str] = set()
         self._last_status_mtime = 0.0
+        self._last_control_result_key = ""
         self._closing = False
 
         self.action_vars: dict[str, dict[str, tk.Variable]] = {}
@@ -91,6 +92,14 @@ class TikTokBotPanel(tk.Tk):
         self.core_tick = tk.StringVar(value="inativo")
         self.core_last_tick = tk.StringVar(value="-")
         self.core_result = tk.StringVar(value="-")
+        self.core_interval = tk.StringVar(value="-")
+        self.provider_state = tk.StringVar(value="-")
+        self.account_state = tk.StringVar(value="-")
+        self.database_state = tk.StringVar(value="-")
+        self.relationship_username = tk.StringVar(value="")
+        self.relationship_result = tk.StringVar(value="-")
+        self.review_count = tk.StringVar(value="0")
+        self.history_count = tk.StringVar(value="0")
 
         self.min_delay = tk.StringVar(value="60")
         self.max_per_hour = tk.StringVar(value="10")
@@ -149,7 +158,9 @@ class TikTokBotPanel(tk.Tk):
         self._status_item(status_strip, "MODO", self.bot_mode, 1)
         self._status_item(status_strip, "CELULAR / ADB", self.device_state, 2)
         self._status_item(status_strip, "APPIUM", self.appium_state, 3)
-        self._status_item(status_strip, "CORE", self.core_state, 4)
+        self._status_item(status_strip, "PROVIDER", self.provider_state, 4)
+        self._status_item(status_strip, "CORE", self.core_state, 5)
+        self._status_item(status_strip, "BANCO", self.database_state, 6)
 
         controls = ttk.Frame(root, style="Card.TFrame")
         controls.pack(fill="x", pady=(0, 10), ipady=7)
@@ -168,16 +179,22 @@ class TikTokBotPanel(tk.Tk):
         self.tab_actions = ttk.Frame(notebook, style="Card.TFrame")
         self.tab_config = ttk.Frame(notebook, style="Card.TFrame")
         self.tab_automation = ttk.Frame(notebook, style="Card.TFrame")
+        self.tab_reviews = ttk.Frame(notebook, style="Card.TFrame")
+        self.tab_history = ttk.Frame(notebook, style="Card.TFrame")
 
         notebook.add(self.tab_control, text="Controle e logs")
         notebook.add(self.tab_actions, text="Ações")
         notebook.add(self.tab_config, text="Conteúdo e limites")
         notebook.add(self.tab_automation, text="Follow-back e hashtags")
+        notebook.add(self.tab_reviews, text="Revisões manuais")
+        notebook.add(self.tab_history, text="Histórico")
 
         self._build_control_tab()
         self._build_actions_tab()
         self._build_config_tab()
         self._build_automation_tab()
+        self._build_reviews_tab()
+        self._build_history_tab()
 
     def _status_item(self, parent: ttk.Frame, title: str, variable: tk.StringVar, column: int) -> None:
         frame = ttk.Frame(parent, style="Card.TFrame")
@@ -195,6 +212,7 @@ class TikTokBotPanel(tk.Tk):
         runtime.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         labels = (
+            ("Conta / agente", self.account_state),
             ("Ação atual", self.current_action),
             ("Última ação", self.last_action),
             ("Próxima ação", self.next_action),
@@ -210,6 +228,7 @@ class TikTokBotPanel(tk.Tk):
         core_labels = (
             ("Estado", self.core_state),
             ("Tick", self.core_tick),
+            ("Intervalo", self.core_interval),
             ("Último tick", self.core_last_tick),
             ("Resultado", self.core_result),
         )
@@ -379,6 +398,144 @@ class TikTokBotPanel(tk.Tk):
             style="Muted.TLabel",
             wraplength=920,
         ).grid(row=5, column=0, columnspan=2, sticky="w", padx=10, pady=(4, 10))
+
+        tools = ttk.LabelFrame(self.tab_automation, text="Ferramentas read-only / core")
+        tools.pack(fill="x", padx=14, pady=8)
+
+        ttk.Label(tools, text="Verificar @username", style="Muted.TLabel").grid(row=0, column=0, sticky="w", padx=10, pady=8)
+        ttk.Entry(tools, textvariable=self.relationship_username, width=28).grid(row=0, column=1, sticky="w", padx=10, pady=8)
+        ttk.Button(tools, text="Checar relacionamento", command=self.check_relationship).grid(row=0, column=2, sticky="w", padx=8, pady=8)
+        ttk.Button(tools, text="Executar tick agora", command=lambda: self.send_command("run_core_once")).grid(row=0, column=3, sticky="w", padx=8, pady=8)
+
+        ttk.Label(tools, text="Resultado", style="Muted.TLabel").grid(row=1, column=0, sticky="nw", padx=10, pady=(2, 10))
+        ttk.Label(tools, textvariable=self.relationship_result, style="Card.TLabel", wraplength=760).grid(row=1, column=1, columnspan=3, sticky="w", padx=10, pady=(2, 10))
+
+        ttk.Label(
+            tools,
+            text=(
+                "A checagem por username é somente leitura: abre o perfil exato, observa a relação e retorna ao feed. "
+                "Não segue, deixa de seguir, curte, comenta ou envia mensagem."
+            ),
+            style="Muted.TLabel",
+            wraplength=920,
+        ).grid(row=2, column=0, columnspan=4, sticky="w", padx=10, pady=(0, 10))
+
+    def _build_reviews_tab(self) -> None:
+        header = ttk.Frame(self.tab_reviews, style="Card.TFrame")
+        header.pack(fill="x", padx=12, pady=(12, 6))
+
+        ttk.Label(header, text="Pendentes:", style="Muted.TLabel").pack(side="left")
+        ttk.Label(header, textvariable=self.review_count, style="Card.TLabel").pack(side="left", padx=(5, 16))
+        ttk.Button(header, text="↻ Atualizar", command=lambda: self.send_command("refresh_persistent")).pack(side="right")
+
+        columns = ("kind", "username", "reason", "query", "hashtags", "created")
+        self.review_tree = ttk.Treeview(self.tab_reviews, columns=columns, show="headings", height=16)
+
+        headings = {
+            "kind": "Tipo",
+            "username": "Usuário",
+            "reason": "Motivo",
+            "query": "Busca",
+            "hashtags": "Hashtags",
+            "created": "Criado em",
+        }
+        widths = {
+            "kind": 100,
+            "username": 160,
+            "reason": 220,
+            "query": 150,
+            "hashtags": 250,
+            "created": 180,
+        }
+
+        for column in columns:
+            self.review_tree.heading(column, text=headings[column])
+            self.review_tree.column(column, width=widths[column], anchor="w")
+
+        self.review_tree.pack(fill="both", expand=True, padx=12, pady=6)
+
+        buttons = ttk.Frame(self.tab_reviews, style="Card.TFrame")
+        buttons.pack(fill="x", padx=12, pady=(4, 12))
+
+        ttk.Button(buttons, text="Aprovar DISCOVERY", command=lambda: self.review_selected("approve_discovery")).pack(side="left", padx=(0, 6))
+        ttk.Button(buttons, text="Rejeitar DISCOVERY", command=lambda: self.review_selected("reject_discovery")).pack(side="left", padx=6)
+        ttk.Button(buttons, text="Cancelar UNFOLLOW", command=lambda: self.review_selected("cancel_unfollow")).pack(side="left", padx=6)
+
+        ttk.Label(
+            buttons,
+            text=(
+                "Aprovar DISCOVERY só registra a decisão humana. Não cria Follow/Like/Comment/Share/DM. "
+                "UNFOLLOW nunca é executado automaticamente; neste painel ele só pode ser cancelado."
+            ),
+            style="Muted.TLabel",
+            wraplength=680,
+        ).pack(side="right", padx=8)
+
+    def _build_history_tab(self) -> None:
+        header = ttk.Frame(self.tab_history, style="Card.TFrame")
+        header.pack(fill="x", padx=12, pady=(12, 6))
+
+        ttk.Label(header, text="Ações persistidas:", style="Muted.TLabel").pack(side="left")
+        ttk.Label(header, textvariable=self.history_count, style="Card.TLabel").pack(side="left", padx=(5, 16))
+        ttk.Button(header, text="↻ Atualizar", command=lambda: self.send_command("refresh_persistent")).pack(side="right")
+
+        actions_frame = ttk.LabelFrame(self.tab_history, text="Histórico recente de ações")
+        actions_frame.pack(fill="both", expand=True, padx=12, pady=6)
+
+        action_columns = ("type", "status", "username", "provider", "updated", "error")
+        self.history_tree = ttk.Treeview(actions_frame, columns=action_columns, show="headings", height=9)
+
+        action_headings = {
+            "type": "Ação",
+            "status": "Status",
+            "username": "Usuário",
+            "provider": "Provider",
+            "updated": "Atualizado",
+            "error": "Erro",
+        }
+        action_widths = {
+            "type": 150,
+            "status": 100,
+            "username": 160,
+            "provider": 90,
+            "updated": 180,
+            "error": 380,
+        }
+
+        for column in action_columns:
+            self.history_tree.heading(column, text=action_headings[column])
+            self.history_tree.column(column, width=action_widths[column], anchor="w")
+
+        self.history_tree.pack(fill="both", expand=True, padx=6, pady=6)
+
+        relations_frame = ttk.LabelFrame(self.tab_history, text="Relacionamentos persistidos")
+        relations_frame.pack(fill="both", expand=True, padx=12, pady=(6, 12))
+
+        relation_columns = ("username", "state", "follows_us", "followed_by_us", "protected", "checked")
+        self.relationship_tree = ttk.Treeview(relations_frame, columns=relation_columns, show="headings", height=8)
+
+        relation_headings = {
+            "username": "Usuário",
+            "state": "Relação",
+            "follows_us": "Segue nós",
+            "followed_by_us": "Seguimos",
+            "protected": "Protegido",
+            "checked": "Última checagem",
+        }
+        relation_widths = {
+            "username": 190,
+            "state": 130,
+            "follows_us": 100,
+            "followed_by_us": 100,
+            "protected": 100,
+            "checked": 210,
+        }
+
+        for column in relation_columns:
+            self.relationship_tree.heading(column, text=relation_headings[column])
+            self.relationship_tree.column(column, width=relation_widths[column], anchor="w")
+
+        self.relationship_tree.pack(fill="both", expand=True, padx=6, pady=6)
 
     def _entry_row(self, parent: ttk.Widget, row: int, label: str, variable: tk.StringVar) -> None:
         ttk.Label(parent, text=label, style="Muted.TLabel").grid(row=row, column=0, sticky="w", padx=10, pady=6)
@@ -622,20 +779,85 @@ class TikTokBotPanel(tk.Tk):
         if lines > 1200:
             self.logs_text.delete("1.0", "200.0")
 
-    def send_command(self, command: str) -> None:
+    def send_command(self, command: str, **extra: object) -> str:
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
 
-        payload = {
+        request_id = f"{int(time.time() * 1000)}-{os.getpid()}"
+
+        payload: dict[str, object] = {
             "command": command,
+            "requestId": request_id,
             "requestedAt": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "source": "python-panel",
         }
+        payload.update(extra)
 
         temp = COMMAND_PATH.with_suffix(".tmp")
-        temp.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        temp.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
         temp.replace(COMMAND_PATH)
 
         self._append_log(f"[PAINEL] Comando enviado: {command}")
+        return request_id
+
+    def check_relationship(self) -> None:
+        username = self.relationship_username.get().strip().lstrip("@")
+        if not username:
+            messagebox.showwarning("Relacionamento", "Informe um @username.")
+            return
+
+        if self.bot_state.get().lower() not in ("running", "paused"):
+            messagebox.showwarning(
+                "Relacionamento",
+                "Inicie o bot antes da checagem read-only para que o provider Android esteja disponível.",
+            )
+            return
+
+        self.relationship_result.set("checando...")
+        self.send_command("check_relationship", username=username)
+
+    def review_selected(self, command: str) -> None:
+        selected = self.review_tree.selection()
+        if not selected:
+            messagebox.showwarning("Revisão", "Selecione uma revisão pendente.")
+            return
+
+        action_id = selected[0]
+        values = self.review_tree.item(action_id, "values")
+        kind = str(values[0]) if values else ""
+
+        if command in ("approve_discovery", "reject_discovery") and kind != "discovery":
+            messagebox.showwarning("Revisão", "Selecione uma revisão DISCOVERY para esta decisão.")
+            return
+
+        if command == "cancel_unfollow" and kind != "unfollow":
+            messagebox.showwarning("Revisão", "Selecione uma revisão UNFOLLOW para cancelar.")
+            return
+
+        if command == "approve_discovery":
+            confirmed = messagebox.askyesno(
+                "Aprovar DISCOVERY",
+                "Aprovar este candidato?\n\nA aprovação NÃO executa follow, like, comment, share ou DM.",
+            )
+            if not confirmed:
+                return
+
+        if command == "cancel_unfollow":
+            confirmed = messagebox.askyesno(
+                "Cancelar UNFOLLOW",
+                "Cancelar esta revisão de UNFOLLOW?\n\nNenhum unfollow será executado.",
+            )
+            if not confirmed:
+                return
+
+        self.send_command(command, actionId=action_id)
+
+    @staticmethod
+    def _replace_tree(tree: ttk.Treeview, rows: list[tuple[str, tuple[object, ...]]]) -> None:
+        for item in tree.get_children():
+            tree.delete(item)
+
+        for item_id, values in rows:
+            tree.insert("", "end", iid=item_id, values=values)
 
     def _poll_status(self) -> None:
         try:
@@ -669,6 +891,13 @@ class TikTokBotPanel(tk.Tk):
         core = data.get("automationCore", {})
         self.core_state.set(str(core.get("state", "stopped")))
         self.core_tick.set("ativo" if core.get("tickActive") else "inativo")
+
+        interval_ms = core.get("intervalMs")
+        if isinstance(interval_ms, (int, float)):
+            self.core_interval.set(f"{int(interval_ms / 1000)} s")
+        else:
+            self.core_interval.set("-")
+
         self.core_last_tick.set(str(core.get("lastRunCompletedAt") or core.get("lastRunStartedAt") or "-"))
 
         result = core.get("lastResult")
@@ -687,6 +916,152 @@ class TikTokBotPanel(tk.Tk):
         device = str(data.get("deviceId") or "-")
         if device != "-":
             self.device_state.set(device)
+
+        provider = data.get("providerControl", {})
+        registered = provider.get("registeredProviders", []) if isinstance(provider, dict) else []
+        mobile_provider = provider.get("mobileProvider", {}) if isinstance(provider, dict) else {}
+        active_provider = bool(mobile_provider.get("active")) if isinstance(mobile_provider, dict) else False
+
+        if "android" in registered:
+            self.provider_state.set("android • ativo" if active_provider else "android • registrado")
+        else:
+            self.provider_state.set("android • aguardando")
+
+        mobile_agents = provider.get("mobileAgents", []) if isinstance(provider, dict) else []
+        if isinstance(mobile_agents, list) and mobile_agents:
+            first_agent = mobile_agents[0] if isinstance(mobile_agents[0], dict) else {}
+            self.account_state.set(str(first_agent.get("id") or "-"))
+        else:
+            self.account_state.set("-")
+
+        database = data.get("database", {})
+        if isinstance(database, dict) and database.get("connected"):
+            self.database_state.set("conectado")
+        elif isinstance(database, dict) and database.get("error"):
+            self.database_state.set("indisponível")
+        else:
+            self.database_state.set("desligado")
+
+        reviews = data.get("manualReviews", [])
+        if not isinstance(reviews, list):
+            reviews = []
+
+        review_rows: list[tuple[str, tuple[object, ...]]] = []
+        for review in reviews:
+            if not isinstance(review, dict):
+                continue
+
+            action_id = str(review.get("id") or "")
+            if not action_id:
+                continue
+
+            hashtags = review.get("hashtags", [])
+            hashtags_text = ", ".join(f"#{tag}" for tag in hashtags) if isinstance(hashtags, list) else ""
+
+            review_rows.append(
+                (
+                    action_id,
+                    (
+                        str(review.get("kind") or ""),
+                        str(review.get("username") or ""),
+                        str(review.get("reason") or ""),
+                        str(review.get("query") or ""),
+                        hashtags_text,
+                        str(review.get("createdAt") or ""),
+                    ),
+                )
+            )
+
+        self.review_count.set(str(len(review_rows)))
+        self._replace_tree(self.review_tree, review_rows)
+
+        actions = data.get("recentActions", [])
+        if not isinstance(actions, list):
+            actions = []
+
+        history_rows: list[tuple[str, tuple[object, ...]]] = []
+        for index, action in enumerate(actions):
+            if not isinstance(action, dict):
+                continue
+
+            action_id = str(action.get("id") or f"action-{index}")
+            history_rows.append(
+                (
+                    f"history-{action_id}-{index}",
+                    (
+                        str(action.get("type") or ""),
+                        str(action.get("status") or ""),
+                        str(action.get("targetUsername") or ""),
+                        str(action.get("provider") or ""),
+                        str(action.get("updatedAt") or action.get("createdAt") or ""),
+                        str(action.get("error") or ""),
+                    ),
+                )
+            )
+
+        self.history_count.set(str(len(history_rows)))
+        self._replace_tree(self.history_tree, history_rows)
+
+        relationships = data.get("recentRelationships", [])
+        if not isinstance(relationships, list):
+            relationships = []
+
+        relation_rows: list[tuple[str, tuple[object, ...]]] = []
+        for index, relationship in enumerate(relationships):
+            if not isinstance(relationship, dict):
+                continue
+
+            row_key = str(
+                relationship.get("id")
+                or relationship.get("targetKey")
+                or f"relationship-{index}"
+            )
+
+            relation_rows.append(
+                (
+                    f"relationship-{row_key}-{index}",
+                    (
+                        str(relationship.get("username") or ""),
+                        str(relationship.get("relationshipState") or ""),
+                        str(relationship.get("followsUs") if relationship.get("followsUs") is not None else "-"),
+                        str(relationship.get("followedByUs") if relationship.get("followedByUs") is not None else "-"),
+                        str(relationship.get("protected") if relationship.get("protected") is not None else "-"),
+                        str(relationship.get("lastCheckedAt") or relationship.get("updatedAt") or ""),
+                    ),
+                )
+            )
+
+        self._replace_tree(self.relationship_tree, relation_rows)
+
+        control_result = data.get("lastControlResult")
+        if isinstance(control_result, dict):
+            control_key = "|".join(
+                str(control_result.get(part) or "")
+                for part in ("requestId", "command", "completedAt")
+            )
+
+            if control_key and control_key != self._last_control_result_key:
+                self._last_control_result_key = control_key
+                command = str(control_result.get("command") or "")
+                success = bool(control_result.get("success"))
+                error = str(control_result.get("error") or "")
+                command_result = control_result.get("result")
+
+                if command == "check_relationship":
+                    if success and isinstance(command_result, dict):
+                        relationship = str(command_result.get("relationship") or "unknown")
+                        provider_name = str(command_result.get("provider") or "android")
+                        observed = str(command_result.get("observedAt") or "")
+                        self.relationship_result.set(
+                            f"{relationship} • {provider_name} • {observed}"
+                        )
+                    else:
+                        self.relationship_result.set(f"erro: {error or 'falha na checagem'}")
+
+                if success:
+                    self._append_log(f"[PAINEL] Comando concluído: {command}")
+                else:
+                    self._append_log(f"[PAINEL] Falha no comando {command}: {error}")
 
         for entry in data.get("logs", []):
             if not isinstance(entry, dict):

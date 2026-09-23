@@ -23,8 +23,29 @@ import {
   setTikTokConfigurationValue,
 } from '../memory/repositories/tiktok-configuration.js';
 import {
+  listRecentTikTokActionsAcrossAccounts,
+} from '../memory/repositories/tiktok-actions.js';
+import {
+  listRecentTikTokRelationships,
+} from '../memory/repositories/tiktok-relationships.js';
+import {
   setTikTokHashtagConfiguration,
 } from './hashtag-policy.js';
+import {
+  cancelTikTokUnfollowReview,
+  listPendingTikTokManualReviews,
+  resolveTikTokManualDiscoveryReview,
+} from './manual-review-service.js';
+import {
+  checkTikTokProviderRelationship,
+  getTikTokProviderControlStatus,
+} from './provider-control-service.js';
+import {
+  tikTokProviderRegistry,
+} from './provider-registry.js';
+import {
+  createLiveAndroidTikTokProvider,
+} from './providers/live-android-tiktok-provider.js';
 import {
   createTikTokRuntime,
   type TikTokRuntime,
@@ -440,15 +461,24 @@ export async function runStandaloneTikTokBot(): Promise<void> {
   
   let databaseInitialized =
     false;
-  
-  if (
+
+  let databaseError:
+    string | null =
+      null;
+
+  const databaseRequired =
     !config.testMode &&
     enabledActions.includes(
       'follow',
-    )
+    );
+
+  if (
+    databaseRequired ||
+    config.automationCore.enabled
   ) {
     try {
       await initDatabase();
+
       databaseInitialized =
         true;
     }
@@ -456,13 +486,21 @@ export async function runStandaloneTikTokBot(): Promise<void> {
       error:
         unknown
     ) {
-      const message =
+      databaseError =
         error instanceof Error
           ? error.message
           : String(error);
-  
-      throw new Error(
-        `Real FOLLOW is enabled, but the persistence database could not be initialized: ${message}`,
+
+      if (
+        databaseRequired
+      ) {
+        throw new Error(
+          `Real FOLLOW is enabled, but the persistence database could not be initialized: ${databaseError}`,
+        );
+      }
+
+      console.warn(
+        `TikTok persistent panel data is unavailable: ${databaseError}`,
       );
     }
   }
@@ -531,6 +569,16 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     MobileAgent.createAgent(
       agentConfig,
     );
+
+  if (
+    !tikTokProviderRegistry.has(
+      'android',
+    )
+  ) {
+    tikTokProviderRegistry.register(
+      createLiveAndroidTikTokProvider(),
+    );
+  }
   
   let shuttingDown =
     false;
@@ -552,7 +600,102 @@ export async function runStandaloneTikTokBot(): Promise<void> {
           resolveDonePromise;
       },
     );
-  
+
+  let manualReviews:
+    unknown[] =
+      [];
+
+  let recentActions:
+    unknown[] =
+      [];
+
+  let recentRelationships:
+    unknown[] =
+      [];
+
+  let persistentDataError:
+    string | null =
+      databaseError;
+
+  let persistentDataUpdatedAt:
+    string | null =
+      null;
+
+  let lastPersistentRefreshAt =
+    0;
+
+  let lastControlResult:
+    Record<string, unknown> | null =
+      null;
+
+  async function refreshPersistentPanelData(
+    force =
+      false,
+  ): Promise<void> {
+    if (
+      !databaseInitialized
+    ) {
+      return;
+    }
+
+    const now =
+      Date.now();
+
+    if (
+      !force &&
+      now -
+        lastPersistentRefreshAt <
+        5_000
+    ) {
+      return;
+    }
+
+    lastPersistentRefreshAt =
+      now;
+
+    try {
+      const [
+        reviews,
+        actions,
+        relationships,
+      ] =
+        await Promise.all([
+          listPendingTikTokManualReviews(),
+          listRecentTikTokActionsAcrossAccounts(
+            100,
+          ),
+          listRecentTikTokRelationships(
+            100,
+          ),
+        ]);
+
+      manualReviews =
+        reviews;
+
+      recentActions =
+        actions;
+
+      recentRelationships =
+        relationships;
+
+      persistentDataError =
+        null;
+
+      persistentDataUpdatedAt =
+        new Date()
+          .toISOString();
+    }
+    catch (
+      error:
+        unknown
+    ) {
+      persistentDataError =
+        error instanceof Error
+          ? error.message
+          : String(error);
+    }
+  }
+
   function writeStatus(
     stateOverride?:
       'stopped',
@@ -629,6 +772,19 @@ export async function runStandaloneTikTokBot(): Promise<void> {
           hashtagFilters:
             config.automationCore
               .hashtags,
+          providerControl:
+            getTikTokProviderControlStatus(),
+          database: {
+            connected:
+              databaseInitialized,
+            error:
+              persistentDataError,
+          },
+          manualReviews,
+          recentActions,
+          recentRelationships,
+          persistentDataUpdatedAt,
+          lastControlResult,
           updatedAt:
             new Date()
               .toISOString(),
@@ -650,28 +806,18 @@ export async function runStandaloneTikTokBot(): Promise<void> {
       return;
     }
 
-    let command:
-      string | null =
-        null;
+    let payload:
+      Record<string, unknown> =
+        {};
 
     try {
-      const payload =
+      payload =
         JSON.parse(
           readFileSync(
             commandPath,
             'utf8',
           ),
-        ) as {
-          command?: unknown;
-        };
-
-      command =
-        typeof payload.command ===
-          'string'
-          ? payload.command
-              .trim()
-              .toLowerCase()
-          : null;
+        ) as Record<string, unknown>;
     }
     finally {
       rmSync(
@@ -682,39 +828,323 @@ export async function runStandaloneTikTokBot(): Promise<void> {
       );
     }
 
-    if (
-      command === 'pause'
-    ) {
-      agent.pause();
-      automationRuntime
-        ?.pause();
+    const command =
+      typeof payload.command ===
+        'string'
+        ? payload.command
+            .trim()
+            .toLowerCase()
+        : '';
 
-      console.log(
-        'TIKTOK_BOT_PAUSED=YES',
+    const requestId =
+      typeof payload.requestId ===
+        'string'
+        ? payload.requestId
+        : null;
+
+    const complete =
+      (
+        success:
+          boolean,
+        result:
+          unknown =
+            null,
+        error:
+          string | null =
+            null,
+      ): void => {
+        lastControlResult = {
+          requestId,
+          command,
+          success,
+          result,
+          error,
+          completedAt:
+            new Date()
+              .toISOString(),
+        };
+      };
+
+    const requireDatabase =
+      (): void => {
+        if (
+          !databaseInitialized
+        ) {
+          throw new Error(
+            persistentDataError
+              ? `TikTok database is unavailable: ${persistentDataError}`
+              : 'TikTok database is unavailable.',
+          );
+        }
+      };
+
+    try {
+      if (
+        command === 'pause'
+      ) {
+        agent.pause();
+        automationRuntime
+          ?.pause();
+
+        complete(
+          true,
+          {
+            state:
+              'paused',
+          },
+        );
+
+        console.log(
+          'TIKTOK_BOT_PAUSED=YES',
+        );
+
+        return;
+      }
+
+      if (
+        command === 'resume'
+      ) {
+        agent.resume();
+        automationRuntime
+          ?.resume();
+
+        complete(
+          true,
+          {
+            state:
+              'running',
+          },
+        );
+
+        console.log(
+          'TIKTOK_BOT_RESUMED=YES',
+        );
+
+        return;
+      }
+
+      if (
+        command === 'run_core_once'
+      ) {
+        if (
+          !automationRuntime
+        ) {
+          throw new Error(
+            'TikTok Automation Core is not running.',
+          );
+        }
+
+        const result =
+          await automationRuntime
+            .runOnce();
+
+        await refreshPersistentPanelData(
+          true,
+        );
+
+        complete(
+          true,
+          result,
+        );
+
+        return;
+      }
+
+      if (
+        command === 'check_relationship'
+      ) {
+        const username =
+          typeof payload.username ===
+            'string'
+            ? payload.username
+                .trim()
+            : '';
+
+        if (!username) {
+          throw new Error(
+            'username is required for relationship check.',
+          );
+        }
+
+        const result =
+          await checkTikTokProviderRelationship({
+            provider:
+              'android',
+            accountKey:
+              agentConfig.id,
+            username,
+          });
+
+        complete(
+          true,
+          result,
+        );
+
+        return;
+      }
+
+      if (
+        command ===
+          'approve_discovery' ||
+        command ===
+          'reject_discovery'
+      ) {
+        requireDatabase();
+
+        const actionId =
+          typeof payload.actionId ===
+            'string'
+            ? payload.actionId
+                .trim()
+            : '';
+
+        if (!actionId) {
+          throw new Error(
+            'actionId is required for discovery review.',
+          );
+        }
+
+        const result =
+          await resolveTikTokManualDiscoveryReview(
+            actionId,
+            command ===
+              'approve_discovery'
+              ? 'approved'
+              : 'rejected',
+          );
+
+        await refreshPersistentPanelData(
+          true,
+        );
+
+        complete(
+          true,
+          {
+            id:
+              result.id,
+            status:
+              result.status,
+            type:
+              result.type,
+            engagementCreated:
+              false,
+            engagementExecuted:
+              false,
+          },
+        );
+
+        return;
+      }
+
+      if (
+        command ===
+          'cancel_unfollow'
+      ) {
+        requireDatabase();
+
+        const actionId =
+          typeof payload.actionId ===
+            'string'
+            ? payload.actionId
+                .trim()
+            : '';
+
+        if (!actionId) {
+          throw new Error(
+            'actionId is required for UNFOLLOW review.',
+          );
+        }
+
+        const result =
+          await cancelTikTokUnfollowReview(
+            actionId,
+          );
+
+        await refreshPersistentPanelData(
+          true,
+        );
+
+        complete(
+          true,
+          {
+            id:
+              result.id,
+            status:
+              result.status,
+            type:
+              result.type,
+            unfollowExecuted:
+              false,
+          },
+        );
+
+        return;
+      }
+
+      if (
+        command ===
+          'refresh_persistent'
+      ) {
+        requireDatabase();
+
+        await refreshPersistentPanelData(
+          true,
+        );
+
+        complete(
+          true,
+          {
+            reviews:
+              manualReviews.length,
+            actions:
+              recentActions.length,
+            relationships:
+              recentRelationships.length,
+          },
+        );
+
+        return;
+      }
+
+      if (
+        command === 'stop'
+      ) {
+        complete(
+          true,
+          {
+            state:
+              'stopping',
+          },
+        );
+
+        await shutdown(
+          'control command',
+        );
+
+        return;
+      }
+
+      throw new Error(
+        `Unknown TikTok panel command: ${command || '(empty)'}`,
+      );
+    }
+    catch (
+      error:
+        unknown
+    ) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      complete(
+        false,
+        null,
+        message,
       );
 
-      return;
-    }
-
-    if (
-      command === 'resume'
-    ) {
-      agent.resume();
-      automationRuntime
-        ?.resume();
-
-      console.log(
-        'TIKTOK_BOT_RESUMED=YES',
-      );
-
-      return;
-    }
-
-    if (
-      command === 'stop'
-    ) {
-      await shutdown(
-        'control command',
+      console.error(
+        `TikTok panel command failed (${command}): ${message}`,
       );
     }
   }
@@ -871,6 +1301,10 @@ export async function runStandaloneTikTokBot(): Promise<void> {
         .start();
     }
 
+    await refreshPersistentPanelData(
+      true,
+    );
+
     writeStatus();
 
     statusTimer =
@@ -898,6 +1332,8 @@ export async function runStandaloneTikTokBot(): Promise<void> {
 
                   return;
                 }
+
+                await refreshPersistentPanelData();
 
                 writeStatus();
               }

@@ -922,6 +922,40 @@ export async function listTikTokActionsByTypeAcrossAccounts(
     );
 }
 
+/**
+ * Lists the most recently updated TikTok actions across all accounts.
+ *
+ * Read-only helper for standalone/dashboard observability.
+ * It never claims, schedules, executes, or mutates an action.
+ */
+export async function listRecentTikTokActionsAcrossAccounts(
+  limit = 100,
+): Promise<TikTokAction[]> {
+
+  const db = getDb();
+
+  const safeLimit =
+    Math.min(
+      500,
+      Math.max(
+        1,
+        Math.floor(limit),
+      ),
+    );
+
+  return db
+    .select()
+    .from(tiktokActions)
+    .orderBy(
+      desc(
+        tiktokActions.updatedAt,
+      ),
+    )
+    .limit(
+      safeLimit,
+    );
+}
+
 // PHASE12_ATOMIC_QUEUE_HARDENING
 
 export interface RecoverStaleTikTokRunningActionsResult {
