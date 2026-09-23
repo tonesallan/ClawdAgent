@@ -127,6 +127,23 @@ O painel permite:
 - configurar follow-back (48h por padrão);
 - configurar filtros de hashtag com ANY/ALL, inclusão e exclusão;
 - acompanhar ação atual, última/próxima ação, contadores, erros e logs;
-- acompanhar o Automation Core e os ticks de CHECK_FOLLOW_BACK.
+- acompanhar o Automation Core, intervalo, último tick e métricas scanned/processed/succeeded/failed;
+- fazer checagem read-only de relacionamento por @username no provider Android;
+- ver a fila persistente de revisões DISCOVERY e UNFOLLOW;
+- aprovar/rejeitar DISCOVERY sem criar ou executar qualquer engajamento;
+- cancelar revisão UNFOLLOW sem executar unfollow;
+- consultar histórico persistente recente de ações e relacionamentos;
+- acompanhar provider Android registrado/ativo e disponibilidade do banco.
+
+O painel atualiza o status local continuamente e atualiza revisões/histórico persistente em ciclos curtos. O botão **Executar tick agora** dispara apenas o Automation Core existente, cujo scheduler continua restrito a CHECK_FOLLOW_BACK.
 
 O UNFOLLOW continua deliberadamente manual: quando a checagem de follow-back identifica uma conta que ainda não retornou o follow, o core cria apenas uma revisão pendente. O scheduler não executa UNFOLLOW automaticamente.
+
+
+## Regras de revisão manual
+
+- `DISCOVERY_REVIEW` permanece pendente até decisão humana.
+- Aprovar uma descoberta registra somente a decisão; não cria e não executa `FOLLOW`, `LIKE`, `COMMENT`, `SHARE`, `DM` ou visita de perfil.
+- `UNFOLLOW` não é executado pelo scheduler nem pelo painel. O painel oferece somente **Cancelar UNFOLLOW**.
+- O único tipo executado automaticamente pelo Automation Core é `CHECK_FOLLOW_BACK`.
+- A checagem manual de relacionamento por username usa o provider Android em modo read-only e retorna ao feed ao finalizar.
