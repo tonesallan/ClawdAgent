@@ -152,6 +152,57 @@ export const standaloneTikTokBotConfigSchema =
           end: 24,
         },
       }),
+    automationCore: z
+      .object({
+        enabled: z
+          .boolean()
+          .default(true),
+        followBackCheckHours: z
+          .number()
+          .int()
+          .min(1)
+          .max(24 * 30)
+          .default(48),
+        hashtags: z
+          .object({
+            enabled: z
+              .boolean()
+              .default(false),
+            include: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            exclude: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            matchMode: z
+              .enum(['any', 'all'])
+              .default('any'),
+            maxCandidatesPerCycle: z
+              .number()
+              .int()
+              .min(1)
+              .max(100)
+              .default(20),
+          })
+          .default({
+            enabled: false,
+            include: [],
+            exclude: [],
+            matchMode: 'any',
+            maxCandidatesPerCycle: 20,
+          }),
+      })
+      .default({
+        enabled: true,
+        followBackCheckHours: 48,
+        hashtags: {
+          enabled: false,
+          include: [],
+          exclude: [],
+          matchMode: 'any',
+          maxCandidatesPerCycle: 20,
+        },
+      }),
     content: z
       .object({
         tone: z
