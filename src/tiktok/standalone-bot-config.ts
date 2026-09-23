@@ -235,7 +235,7 @@ export const standaloneTikTokBotConfigSchema =
           .int()
           .min(20)
           .max(500)
-          .default(5),
+          .default(120),
       })
       .default({
         tone:
@@ -271,7 +271,7 @@ export const standaloneTikTokBotConfigSchema =
           .number()
           .int()
           .min(1)
-          .default(120),
+          .default(5),
       })
       .default({
         minDelaySeconds:
