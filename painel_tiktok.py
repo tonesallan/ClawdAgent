@@ -40,6 +40,7 @@ class TikTokBotPanel(tk.Tk):
         self.output_queue: queue.Queue[str] = queue.Queue()
         self.seen_logs: set[str] = set()
         self._last_status_mtime = 0.0
+        self._last_control_result_key = ""
         self._closing = False
 
         self.action_vars: dict[str, dict[str, tk.Variable]] = {}
@@ -91,6 +92,14 @@ class TikTokBotPanel(tk.Tk):
         self.core_tick = tk.StringVar(value="inativo")
         self.core_last_tick = tk.StringVar(value="-")
         self.core_result = tk.StringVar(value="-")
+        self.core_interval = tk.StringVar(value="-")
+        self.provider_state = tk.StringVar(value="-")
+        self.account_state = tk.StringVar(value="-")
+        self.database_state = tk.StringVar(value="-")
+        self.relationship_username = tk.StringVar(value="")
+        self.relationship_result = tk.StringVar(value="-")
+        self.review_count = tk.StringVar(value="0")
+        self.history_count = tk.StringVar(value="0")
 
         self.min_delay = tk.StringVar(value="60")
         self.max_per_hour = tk.StringVar(value="10")
@@ -149,7 +158,9 @@ class TikTokBotPanel(tk.Tk):
         self._status_item(status_strip, "MODO", self.bot_mode, 1)
         self._status_item(status_strip, "CELULAR / ADB", self.device_state, 2)
         self._status_item(status_strip, "APPIUM", self.appium_state, 3)
-        self._status_item(status_strip, "CORE", self.core_state, 4)
+        self._status_item(status_strip, "PROVIDER", self.provider_state, 4)
+        self._status_item(status_strip, "CORE", self.core_state, 5)
+        self._status_item(status_strip, "BANCO", self.database_state, 6)
 
         controls = ttk.Frame(root, style="Card.TFrame")
         controls.pack(fill="x", pady=(0, 10), ipady=7)
@@ -168,16 +179,22 @@ class TikTokBotPanel(tk.Tk):
         self.tab_actions = ttk.Frame(notebook, style="Card.TFrame")
         self.tab_config = ttk.Frame(notebook, style="Card.TFrame")
         self.tab_automation = ttk.Frame(notebook, style="Card.TFrame")
+        self.tab_reviews = ttk.Frame(notebook, style="Card.TFrame")
+        self.tab_history = ttk.Frame(notebook, style="Card.TFrame")
 
         notebook.add(self.tab_control, text="Controle e logs")
         notebook.add(self.tab_actions, text="Ações")
         notebook.add(self.tab_config, text="Conteúdo e limites")
         notebook.add(self.tab_automation, text="Follow-back e hashtags")
+        notebook.add(self.tab_reviews, text="Revisões manuais")
+        notebook.add(self.tab_history, text="Histórico")
 
         self._build_control_tab()
         self._build_actions_tab()
         self._build_config_tab()
         self._build_automation_tab()
+        self._build_reviews_tab()
+        self._build_history_tab()
 
     def _status_item(self, parent: ttk.Frame, title: str, variable: tk.StringVar, column: int) -> None:
         frame = ttk.Frame(parent, style="Card.TFrame")
