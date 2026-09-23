@@ -35,7 +35,7 @@ describe(
           pauseOnErrorCount:
             2,
           pauseDurationMinutes:
-            120,
+            5,
         });
 
         expect(
