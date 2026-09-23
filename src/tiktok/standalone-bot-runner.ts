@@ -584,7 +584,102 @@ export async function runStandaloneTikTokBot(): Promise<void> {
           resolveDonePromise;
       },
     );
-  
+
+  let manualReviews:
+    unknown[] =
+      [];
+
+  let recentActions:
+    unknown[] =
+      [];
+
+  let recentRelationships:
+    unknown[] =
+      [];
+
+  let persistentDataError:
+    string | null =
+      databaseError;
+
+  let persistentDataUpdatedAt:
+    string | null =
+      null;
+
+  let lastPersistentRefreshAt =
+    0;
+
+  let lastControlResult:
+    Record<string, unknown> | null =
+      null;
+
+  async function refreshPersistentPanelData(
+    force =
+      false,
+  ): Promise<void> {
+    if (
+      !databaseInitialized
+    ) {
+      return;
+    }
+
+    const now =
+      Date.now();
+
+    if (
+      !force &&
+      now -
+        lastPersistentRefreshAt <
+        5_000
+    ) {
+      return;
+    }
+
+    lastPersistentRefreshAt =
+      now;
+
+    try {
+      const [
+        reviews,
+        actions,
+        relationships,
+      ] =
+        await Promise.all([
+          listPendingTikTokManualReviews(),
+          listRecentTikTokActionsAcrossAccounts(
+            100,
+          ),
+          listRecentTikTokRelationships(
+            100,
+          ),
+        ]);
+
+      manualReviews =
+        reviews;
+
+      recentActions =
+        actions;
+
+      recentRelationships =
+        relationships;
+
+      persistentDataError =
+        null;
+
+      persistentDataUpdatedAt =
+        new Date()
+          .toISOString();
+    }
+    catch (
+      error:
+        unknown
+    ) {
+      persistentDataError =
+        error instanceof Error
+          ? error.message
+          : String(error);
+    }
+  }
+
   function writeStatus(
     stateOverride?:
       'stopped',
