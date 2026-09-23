@@ -1,8 +1,14 @@
 /**
- * TikTok Account Manager — stores accounts, injects cookies, verifies login.
- * Uses JSON file storage in data/tiktok-accounts.json.
+ * TikTok Account Manager — stores account metadata, injects cookies, verifies login.
+ * Authentication cookies are kept in the encrypted TikTok cookie vault.
  */
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  renameSync,
+} from 'fs';
 import { resolve } from 'path';
 import {
   parseTikTokCookies,
@@ -12,6 +18,9 @@ import {
   type ParseResult,
 } from './tiktok-cookies.js';
 import { BrowserSessionManager } from './session-manager.js';
+import {
+  TikTokCookieVault,
+} from './tiktok-cookie-vault.js';
 import logger from '../../utils/logger.js';
 
 export interface TikTokAccount {
@@ -32,23 +41,190 @@ export interface TikTokAccount {
 const DATA_DIR = resolve(process.cwd(), 'data');
 const ACCOUNTS_FILE = resolve(DATA_DIR, 'tiktok-accounts.json');
 
+interface StoredTikTokAccount
+extends Omit<TikTokAccount, 'cookies'> {
+  cookieSecretRef?: string;
+  cookieCount?: number;
+
+  /**
+   * Legacy plaintext field.
+   * Read only for one-time migration; never written by the new store.
+   */
+  cookies?: TikTokCookie[];
+}
+
+const COOKIE_VAULT =
+  new TikTokCookieVault({
+    dataDir:
+      DATA_DIR,
+  });
+
 function ensureDataDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 }
 
+function serializeAccountMetadata(
+  account: TikTokAccount,
+): StoredTikTokAccount {
+
+  const {
+    cookies,
+    ...metadata
+  } = account;
+
+  return {
+    ...metadata,
+    cookieSecretRef:
+      COOKIE_VAULT.getReference(
+        account.id,
+      ),
+    cookieCount:
+      cookies.length,
+  };
+}
+
+function writeAccountMetadata(
+  accounts: TikTokAccount[],
+): void {
+
+  ensureDataDir();
+
+  const temporaryPath =
+    `${ACCOUNTS_FILE}.tmp`;
+
+  writeFileSync(
+    temporaryPath,
+    JSON.stringify(
+      accounts.map(
+        serializeAccountMetadata,
+      ),
+      null,
+      2,
+    ),
+    'utf-8',
+  );
+
+  renameSync(
+    temporaryPath,
+    ACCOUNTS_FILE,
+  );
+}
+
 function loadAccounts(): TikTokAccount[] {
   ensureDataDir();
-  if (!existsSync(ACCOUNTS_FILE)) return [];
-  try {
-    return JSON.parse(readFileSync(ACCOUNTS_FILE, 'utf-8'));
-  } catch {
+
+  if (!existsSync(ACCOUNTS_FILE)) {
     return [];
   }
+
+  let storedAccounts:
+    StoredTikTokAccount[];
+
+  try {
+    const parsed =
+      JSON.parse(
+        readFileSync(
+          ACCOUNTS_FILE,
+          'utf-8',
+        ),
+      );
+
+    if (!Array.isArray(parsed)) {
+      return [];
+    }
+
+    storedAccounts =
+      parsed as
+        StoredTikTokAccount[];
+  }
+  catch {
+    return [];
+  }
+
+  let migratedPlaintextCookies =
+    false;
+
+  const accounts =
+    storedAccounts.map(
+      stored => {
+        const {
+          cookies:
+            legacyCookies,
+          cookieSecretRef:
+            _cookieSecretRef,
+          cookieCount:
+            _cookieCount,
+          ...metadata
+        } = stored;
+
+        let cookies:
+          TikTokCookie[] = [];
+
+        if (
+          Array.isArray(
+            legacyCookies,
+          )
+        ) {
+          COOKIE_VAULT.write(
+            stored.id,
+            legacyCookies,
+          );
+
+          cookies =
+            legacyCookies;
+
+          migratedPlaintextCookies =
+            true;
+        }
+        else {
+          cookies =
+            COOKIE_VAULT.read(
+              stored.id,
+            );
+        }
+
+        return {
+          ...metadata,
+          cookies,
+        } as TikTokAccount;
+      },
+    );
+
+  if (
+    migratedPlaintextCookies
+  ) {
+    writeAccountMetadata(
+      accounts,
+    );
+
+    logger.info(
+      'Migrated TikTok account cookies to encrypted vault',
+      {
+        accountCount:
+          accounts.length,
+      },
+    );
+  }
+
+  return accounts;
 }
 
 function saveAccounts(accounts: TikTokAccount[]) {
   ensureDataDir();
-  writeFileSync(ACCOUNTS_FILE, JSON.stringify(accounts, null, 2), 'utf-8');
+
+  for (
+    const account of
+      accounts
+  ) {
+    COOKIE_VAULT.write(
+      account.id,
+      account.cookies,
+    );
+  }
+
+  writeAccountMetadata(
+    accounts,
+  );
 }
 
 export class TikTokAccountManager {
@@ -130,6 +306,7 @@ export class TikTokAccountManager {
     const filtered = accounts.filter(a => a.id !== id);
     if (filtered.length === accounts.length) throw new Error(`Account ${id} not found`);
     saveAccounts(filtered);
+    COOKIE_VAULT.delete(id);
     logger.info('TikTok account deleted', { id });
   }
 
@@ -275,7 +452,17 @@ export class TikTokAccountManager {
     }
   }
 
-  async launchSession(id: string, withVnc = true): Promise<{ sessionId: string; url: string }> {
+  async launchSession(
+    id: string,
+    withVnc = true,
+    contextOptions: Record<string, unknown> = {},
+    persistentProfileDir: string | null = null,
+  ): Promise<{
+    sessionId: string;
+    url: string;
+    persistentProfile: boolean;
+    cookieBootstrapApplied: boolean;
+  }> {
     const account = this.getAccount(id);
     if (!account) throw new Error(`Account ${id} not found`);
 
@@ -285,21 +472,79 @@ export class TikTokAccountManager {
     }
 
     const mgr = BrowserSessionManager.getInstance();
-    const session = await mgr.createSession(undefined, withVnc);
+    const session = await mgr.createSession(
+      undefined,
+      withVnc,
+      contextOptions,
+      persistentProfileDir,
+    );
 
     try {
       const page = mgr.getPage(session.id);
       if (!page) throw new Error('Failed to get page');
 
-      // Inject cookies BEFORE navigation (TikTok fingerprinting)
       const context = page.context();
-      await context.addCookies(toPlaywrightCookies(account.cookies));
+
+      let cookieBootstrapApplied =
+        false;
+
+      if (persistentProfileDir) {
+        /*
+         * Persistent profiles become the source of truth after bootstrap.
+         *
+         * Only seed the imported cookies when the persistent context does
+         * not already contain a TikTok session. This preserves cookies and
+         * browser storage updated by TikTok during later sessions.
+         */
+        const persistedCookies =
+          await context.cookies([
+            'https://www.tiktok.com',
+          ]);
+
+        const hasPersistedSession =
+          persistedCookies.some(
+            (cookie: any) =>
+              cookie.name ===
+                'sessionid' &&
+              Boolean(
+                cookie.value,
+              ),
+          );
+
+        if (!hasPersistedSession) {
+          await context.addCookies(
+            toPlaywrightCookies(
+              account.cookies,
+            ),
+          );
+
+          cookieBootstrapApplied =
+            true;
+        }
+      } else {
+        await context.addCookies(
+          toPlaywrightCookies(
+            account.cookies,
+          ),
+        );
+
+        cookieBootstrapApplied =
+          true;
+      }
 
       await page.goto('https://www.tiktok.com/foryou', { waitUntil: 'domcontentloaded', timeout: 30_000 });
       await page.waitForTimeout(3000);
       await dismissTikTokBanners(page);
 
-      return { sessionId: session.id, url: 'https://www.tiktok.com/foryou' };
+      return {
+        sessionId:
+          session.id,
+        url:
+          'https://www.tiktok.com/foryou',
+        persistentProfile:
+          persistentProfileDir !== null,
+        cookieBootstrapApplied,
+      };
     } catch (err: unknown) {
       try { await mgr.closeSession(session.id); } catch { /* */ }
       const message = err instanceof Error ? err.message : String(err);

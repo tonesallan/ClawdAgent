@@ -5,6 +5,7 @@
  */
 import { spawn, ChildProcess, execSync } from 'child_process';
 import { readFileSync } from 'fs';
+import { freemem, totalmem } from 'os';
 import logger from '../../utils/logger.js';
 import { STEALTH_ARGS, STEALTH_INIT_SCRIPT, getStealthContextOptions } from './stealth-config.js';
 
@@ -38,6 +39,10 @@ interface InternalSession {
   browser: any; // playwright Browser
   page: any;    // playwright Page
   context: any; // playwright BrowserContext
+  /** Optional Playwright BrowserContext options, preserved across relaunches. */
+  contextOptions: Record<string, unknown>;
+  /** Optional Chromium user data directory for a persistent browser profile. */
+  persistentProfileDir: string | null;
   /** Auto-detach VNC after inactivity */
   vncIdleTimer: ReturnType<typeof setTimeout> | null;
   /** True when browser is being intentionally relaunched (attach/detach VNC) — suppresses disconnect watchdog */
@@ -60,21 +65,50 @@ async function getPlaywright() {
 }
 
 function getAvailableRamMB(): number {
-  try {
-    const meminfo = readFileSync('/proc/meminfo', 'utf-8');
-    const match = meminfo.match(/MemAvailable:\s+(\d+)/);
-    if (match) return Math.round(parseInt(match[1], 10) / 1024);
-  } catch { /* fallback */ }
-  return 0;
+  /*
+   * Linux exposes MemAvailable, which accounts for reclaimable cache
+   * and is a better signal than os.freemem() for capacity checks.
+   *
+   * Windows/macOS do not expose /proc/meminfo, so fall back to the
+   * cross-platform Node OS API instead of reporting 0 MB.
+   */
+  if (process.platform === 'linux') {
+    try {
+      const meminfo = readFileSync('/proc/meminfo', 'utf-8');
+      const match = meminfo.match(/MemAvailable:\s+(\d+)/);
+      if (match) {
+        return Math.round(
+          parseInt(match[1], 10) / 1024,
+        );
+      }
+    } catch {
+      // Fall through to the cross-platform OS API.
+    }
+  }
+
+  return Math.round(
+    freemem() / 1024 / 1024,
+  );
 }
 
 function getTotalRamMB(): number {
-  try {
-    const meminfo = readFileSync('/proc/meminfo', 'utf-8');
-    const match = meminfo.match(/MemTotal:\s+(\d+)/);
-    if (match) return Math.round(parseInt(match[1], 10) / 1024);
-  } catch { /* fallback */ }
-  return 0;
+  if (process.platform === 'linux') {
+    try {
+      const meminfo = readFileSync('/proc/meminfo', 'utf-8');
+      const match = meminfo.match(/MemTotal:\s+(\d+)/);
+      if (match) {
+        return Math.round(
+          parseInt(match[1], 10) / 1024,
+        );
+      }
+    } catch {
+      // Fall through to the cross-platform OS API.
+    }
+  }
+
+  return Math.round(
+    totalmem() / 1024 / 1024,
+  );
 }
 
 function killProcess(proc: ChildProcess | null) {
@@ -123,6 +157,14 @@ export class BrowserSessionManager {
    * Safe to call at startup.
    */
   static cleanupOrphans(): void {
+    if (process.platform !== 'linux') {
+      logger.info(
+        'Browser orphan cleanup skipped on non-Linux platform',
+        { platform: process.platform },
+      );
+      return;
+    }
+
     const cmds = [
       `pkill -f "Xvfb :20[0-2]" 2>/dev/null || true`,
       `pkill -f "x11vnc.*-rfbport 6[12]0[0-2]" 2>/dev/null || true`,
@@ -136,10 +178,20 @@ export class BrowserSessionManager {
 
   /**
    * Create a new browser session.
-   * Launches headless by default — call attachVnc() to start VNC streaming.
-   * If `withVnc` is true, VNC is attached immediately (for BrowserView page).
+   *
+   * withVnc=false:
+   * - cross-platform headless browser.
+   *
+   * withVnc=true:
+   * - Linux: headed browser through the existing VNC stack;
+   * - Windows/macOS: native visible headed browser (no VNC layer).
    */
-  async createSession(url?: string, withVnc = true): Promise<BrowserSession> {
+  async createSession(
+    url?: string,
+    withVnc = true,
+    contextOptions: Record<string, unknown> = {},
+    persistentProfileDir: string | null = null,
+  ): Promise<BrowserSession> {
     if (this.sessions.size >= MAX_SESSIONS) {
       throw new Error(`Maximum ${MAX_SESSIONS} concurrent sessions allowed. Close an existing session first.`);
     }
@@ -163,20 +215,43 @@ export class BrowserSessionManager {
       createdAt: new Date(),
       xvfbProcess: null, vncProcess: null, wsProcess: null,
       browser: null, page: null, context: null,
+      contextOptions,
+      persistentProfileDir,
       vncIdleTimer: null, relaunching: false,
     };
 
     this.sessions.set(id, session);
-    logger.info('Creating browser session', { id, display: `:${displayNumber}`, withVnc });
+    logger.info('Creating browser session', {
+      id,
+      display: `:${displayNumber}`,
+      withVnc,
+      persistentProfile:
+        persistentProfileDir !== null,
+    });
 
     try {
       if (withVnc) {
-        // Headed mode: start VNC stack + visible browser
-        await this.startVncStack(session);
-        await this.launchBrowser(session, false); // headed
+        if (process.platform === 'linux') {
+          // Linux: headed browser is exposed through the existing VNC stack.
+          await this.startVncStack(session);
+          await this.launchBrowser(session, false);
+        } else {
+          /*
+           * Windows/macOS: launch a native visible browser.
+           * There is no VNC layer on these platforms, so vncEnabled remains false.
+           */
+          await this.launchBrowser(session, false);
+          logger.info(
+            'Native headed browser session started',
+            {
+              id: session.id,
+              platform: process.platform,
+            },
+          );
+        }
       } else {
-        // Headless mode: just the browser, no VNC
-        await this.launchBrowser(session, true); // headless
+        // Cross-platform headless mode: browser only, no VNC.
+        await this.launchBrowser(session, true);
       }
 
       // Navigate to initial URL
@@ -509,6 +584,12 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
 
   /** Start VNC stack: Xvfb + x11vnc + websockify */
   private async startVncStack(session: InternalSession): Promise<void> {
+    if (process.platform !== 'linux') {
+      throw new Error(
+        `VNC browser sessions currently require Linux (current platform: ${process.platform}). Use withVnc=false for cross-platform headless sessions.`,
+      );
+    }
+
     const { id, displayNumber, vncPort, wsPort } = session;
 
     // 1. Xvfb
@@ -565,23 +646,61 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
     const args = [...STEALTH_ARGS];
     const env = { ...process.env };
 
-    if (!headless) {
-      args.push(`--display=:${session.displayNumber}`);
-      env.DISPLAY = `:${session.displayNumber}`;
+    if (
+      !headless &&
+      process.platform === 'linux'
+    ) {
+      args.push(
+        `--display=:${session.displayNumber}`,
+      );
+      env.DISPLAY =
+        `:${session.displayNumber}`;
     }
 
-    session.browser = await pw.chromium.launch({
-      headless,
-      args,
-      env,
-    });
+    const contextOptions = {
+      ...getStealthContextOptions(),
+      ...session.contextOptions,
+    };
 
-    session.context = await session.browser.newContext(getStealthContextOptions());
-    session.page = await session.context.newPage();
+    if (session.persistentProfileDir) {
+      session.context =
+        await pw.chromium.launchPersistentContext(
+          session.persistentProfileDir,
+          {
+            headless,
+            args,
+            env,
+            ...contextOptions,
+          },
+        );
+
+      session.browser =
+        session.context.browser();
+
+      session.page =
+        session.context.pages()[0] ??
+        await session.context.newPage();
+    } else {
+      session.browser =
+        await pw.chromium.launch({
+          headless,
+          args,
+          env,
+        });
+
+      session.context =
+        await session.browser.newContext(
+          contextOptions,
+        );
+
+      session.page =
+        await session.context.newPage();
+    }
+
     await session.page.addInitScript(STEALTH_INIT_SCRIPT);
 
     // Watchdog: browser crash → cleanup (skip during intentional relaunch)
-    session.browser.on('disconnected', () => {
+    session.browser?.on('disconnected', () => {
       if (session.relaunching) return; // Intentional close during VNC attach/detach
       if (session.status === 'running' || session.status === 'starting') {
         logger.warn('Browser disconnected', { id: session.id });
@@ -619,6 +738,7 @@ ${results.length ? `\nPROGRESS:\n${results.join('\n')}` : ''}
 
   private async closeSessionInternal(session: InternalSession): Promise<void> {
     try { await session.page?.close().catch(() => {}); } catch { /* */ }
+    try { await session.context?.close().catch(() => {}); } catch { /* */ }
     try { await session.browser?.close().catch(() => {}); } catch { /* */ }
     killProcess(session.wsProcess);
     killProcess(session.vncProcess);

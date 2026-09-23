@@ -5,10 +5,389 @@ import { Router, Request, Response } from 'express';
 import { TikTokAccountManager, loginWithCredentials, parseCredentialTable } from '../../../actions/browser/tiktok-manager.js';
 import { parseTikTokCookies, validateTikTokCookies } from '../../../actions/browser/tiktok-cookies.js';
 import logger from '../../../utils/logger.js';
+import {
+  checkTikTokProviderRelationship,
+  getTikTokProviderControlStatus,
+} from '../../../tiktok/provider-control-service.js';
+import {
+  getTikTokRuntime,
+} from '../../../tiktok/runtime.js';
+import {
+  getTikTokCoreOverview,
+} from '../../../tiktok/core-observability-service.js';
+import {
+  cancelTikTokUnfollowReview,
+  listPendingTikTokManualReviews,
+  resolveTikTokManualDiscoveryReview,
+} from '../../../tiktok/manual-review-service.js';
 
 export function setupTikTokRoutes(): Router {
   const router = Router();
   const mgr = TikTokAccountManager.getInstance();
+
+  /**
+   * GET /api/tiktok/provider-status
+   *
+   * Provider/core status only. Never returns cookie values.
+   */
+  router.get('/provider-status', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    res.json({
+      ...getTikTokProviderControlStatus(),
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /**
+   * GET /api/tiktok/core/overview
+   *
+   * Persisted Automation Core telemetry only.
+   * No action execution and no browser interaction.
+   */
+  router.get('/core/overview', async (req: Request, res: Response) => {
+    try {
+      const rawLimit =
+        Number(
+          req.query.limit ??
+          100,
+        );
+
+      const limit =
+        Number.isFinite(
+          rawLimit,
+        )
+          ? Math.min(
+              200,
+              Math.max(
+                1,
+                Math.floor(
+                  rawLimit,
+                ),
+              ),
+            )
+          : 100;
+
+      res.json(
+        await getTikTokCoreOverview({
+          historyLimit:
+            limit,
+          relationshipLimit:
+            Math.min(
+              100,
+              limit,
+            ),
+        }),
+      );
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      logger.warn(
+        'TikTok core overview failed',
+        {
+          error:
+            message,
+        },
+      );
+
+      res.status(500).json({
+        error:
+          message,
+      });
+    }
+  });
+
+  /**
+   * GET /api/tiktok/reviews
+   *
+   * Lists persistent human-review items only.
+   */
+  router.get('/reviews', async (_req: Request, res: Response) => {
+    try {
+      const reviews =
+        await listPendingTikTokManualReviews();
+
+      res.json({
+        reviews,
+        counts: {
+          total:
+            reviews.length,
+          discovery:
+            reviews.filter(
+              review =>
+                review.kind ===
+                'discovery',
+            ).length,
+          unfollow:
+            reviews.filter(
+              review =>
+                review.kind ===
+                'unfollow',
+            ).length,
+        },
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      logger.warn(
+        'TikTok review queue failed',
+        {
+          error:
+            message,
+        },
+      );
+
+      res.status(500).json({
+        error:
+          message,
+      });
+    }
+  });
+
+  /**
+   * POST /api/tiktok/reviews/:id/discovery-decision
+   *
+   * Human decision only.
+   * Approving a discovery candidate does not create or execute engagement.
+   */
+  router.post('/reviews/:id/discovery-decision', async (req: Request, res: Response) => {
+    try {
+      const decision =
+        req.body?.decision;
+
+      if (
+        decision !==
+          'approved' &&
+        decision !==
+          'rejected'
+      ) {
+        res.status(400).json({
+          error:
+            'decision must be approved or rejected',
+        });
+        return;
+      }
+
+      const action =
+        await resolveTikTokManualDiscoveryReview(
+          req.params.id as string,
+          decision,
+        );
+
+      res.json({
+        ok:
+          true,
+        actionId:
+          action.id,
+        decision,
+        engagementCreated:
+          false,
+        engagementExecuted:
+          false,
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      res.status(409).json({
+        ok:
+          false,
+        error:
+          message,
+      });
+    }
+  });
+
+  /**
+   * POST /api/tiktok/reviews/:id/cancel-unfollow
+   *
+   * Cancels a pending UNFOLLOW review.
+   * This endpoint never executes UNFOLLOW.
+   */
+  router.post('/reviews/:id/cancel-unfollow', async (req: Request, res: Response) => {
+    try {
+      const action =
+        await cancelTikTokUnfollowReview(
+          req.params.id as string,
+        );
+
+      res.json({
+        ok:
+          true,
+        actionId:
+          action.id,
+        status:
+          action.status,
+        engagementCreated:
+          false,
+        engagementExecuted:
+          false,
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      res.status(409).json({
+        ok:
+          false,
+        error:
+          message,
+      });
+    }
+  });
+
+  /** GET /api/tiktok/runtime/status — common TikTok core runtime status */
+  router.get('/runtime/status', (_req: Request, res: Response) => {
+    res.json({
+      runtime:
+        getTikTokRuntime()
+          .getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/start — start scheduler ticks */
+  router.post('/runtime/start', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    runtime.start();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/pause — pause new scheduler ticks */
+  router.post('/runtime/pause', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    runtime.pause();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/resume — resume scheduler ticks */
+  router.post('/runtime/resume', (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    runtime.resume();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /** POST /api/tiktok/runtime/stop — stop runtime and close provider sessions */
+  router.post('/runtime/stop', async (_req: Request, res: Response) => {
+    const runtime =
+      getTikTokRuntime();
+
+    await runtime.stop();
+
+    res.json({
+      ok:
+        true,
+      runtime:
+        runtime.getStatus(),
+    });
+  });
+
+  /**
+   * POST /api/tiktok/provider/check-relationship
+   *
+   * Read-only provider diagnostic/control.
+   * No Follow/Unfollow/Like/Comment method is exposed here.
+   */
+  router.post('/provider/check-relationship', async (req: Request, res: Response) => {
+    try {
+      const {
+        provider,
+        accountKey,
+        accountId,
+        username,
+      } = req.body ?? {};
+
+      const observation =
+        await checkTikTokProviderRelationship({
+          provider:
+            typeof provider ===
+              'string'
+              ? provider
+              : '',
+          accountKey:
+            typeof accountKey ===
+              'string'
+              ? accountKey
+              : typeof accountId ===
+                  'string'
+                ? accountId
+                : undefined,
+          username:
+            typeof username ===
+              'string'
+              ? username
+              : '',
+        });
+
+      res.json({
+        observation: {
+          ...observation,
+          observedAt:
+            observation
+              .observedAt
+              .toISOString(),
+        },
+      });
+    }
+    catch (err: unknown) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      logger.warn(
+        'TikTok provider relationship check failed',
+        {
+          error:
+            message,
+        },
+      );
+
+      res.status(400).json({
+        error:
+          message,
+      });
+    }
+  });
 
   /** GET /api/tiktok/accounts — list all accounts */
   router.get('/accounts', (_req: Request, res: Response) => {

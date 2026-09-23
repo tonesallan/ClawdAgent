@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, integer, boolean, jsonb, uuid, varchar, index, serial, real, doublePrecision } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+﻿import { pgTable, text, timestamp, integer, boolean, jsonb, uuid, varchar, index, serial, real, doublePrecision, uniqueIndex } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -228,7 +229,7 @@ export const tradingRiskConfig = pgTable('trading_risk_config', {
 ]);
 
 // ---------------------------------------------------------------------------
-// Persistent Memory tables (Cross-Session Memory — AGI 2026)
+// Persistent Memory tables (Cross-Session Memory â€” AGI 2026)
 // ---------------------------------------------------------------------------
 
 export const memoryEntries = pgTable('memory_entries', {
@@ -299,3 +300,291 @@ export const auditLog = pgTable('audit_log', {
   index('idx_audit_user').on(table.userId),
   index('idx_audit_action').on(table.action),
 ]);
+
+// ---------------------------------------------------------------------------
+// TikTok automation persistence
+// ---------------------------------------------------------------------------
+
+/**
+ * Estado persistente de cada relacionamento observado no TikTok.
+ *
+ * targetKey existe porque nem toda linha do TikTok expoe o @username.
+ * Quando username estiver disponivel, targetKey normalmente sera:
+ *
+ *   username:<username>
+ *
+ * Caso contrario, o RelationshipManager podera usar uma chave
+ * persistente derivada da identidade observada pelo provider.
+ */
+export const tiktokUserRelationships = pgTable('tiktok_user_relationships', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  accountKey: varchar('account_key', { length: 100 })
+    .default('default')
+    .notNull(),
+
+  targetKey: varchar('target_key', { length: 250 }).notNull(),
+
+  username: varchar('username', { length: 100 }),
+
+  displayName: varchar('display_name', { length: 200 }),
+
+  relationshipState: varchar('relationship_state', { length: 30 })
+    .default('unknown')
+    .notNull(),
+
+  followsUs: boolean('follows_us'),
+
+  followedByUs: boolean('followed_by_us')
+    .default(false)
+    .notNull(),
+
+  followedByUsAt: timestamp('followed_by_us_at'),
+
+  followBackCheckAt: timestamp('follow_back_check_at'),
+
+  lastCheckedAt: timestamp('last_checked_at'),
+
+  protected: boolean('protected')
+    .default(false)
+    .notNull(),
+
+  processed: boolean('processed')
+    .default(false)
+    .notNull(),
+
+  metadata: jsonb('metadata').default({}),
+
+  createdAt: timestamp('created_at')
+    .defaultNow()
+    .notNull(),
+
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .notNull(),
+}, (table) => [
+  uniqueIndex('uq_tiktok_relationship_account_target')
+    .on(table.accountKey, table.targetKey),
+
+  index('idx_tiktok_relationship_username')
+    .on(table.username),
+
+  index('idx_tiktok_relationship_state')
+    .on(table.relationshipState),
+
+  index('idx_tiktok_relationship_followback_check')
+    .on(table.followBackCheckAt),
+
+  index('idx_tiktok_relationship_protected')
+    .on(table.protected),
+]);
+
+
+/**
+ * Fila persistente de acoes da automacao TikTok.
+ *
+ * Tipos previstos:
+ * FOLLOW
+ * UNFOLLOW
+ * LIKE
+ * COMMENT
+ * DM
+ * PROFILE_VISIT
+ * WATCH_VIDEO
+ * POST
+ * CHECK_FOLLOW_BACK
+ *
+ * executeAt permite agendamento persistente sem sleep().
+ */
+export const tiktokActions = pgTable('tiktok_actions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  accountKey: varchar('account_key', { length: 100 })
+    .default('default')
+    .notNull(),
+
+  type: varchar('type', { length: 40 }).notNull(),
+
+  targetKey: varchar('target_key', { length: 250 }),
+
+  targetUsername: varchar('target_username', { length: 100 }),
+
+  targetDisplayName: varchar('target_display_name', { length: 200 }),
+
+  status: varchar('status', { length: 20 })
+    .default('pending')
+    .notNull(),
+
+  executeAt: timestamp('execute_at'),
+
+  priority: integer('priority')
+    .default(5)
+    .notNull(),
+
+  attempts: integer('attempts')
+    .default(0)
+    .notNull(),
+
+  maxAttempts: integer('max_attempts')
+    .default(3)
+    .notNull(),
+
+  provider: varchar('provider', { length: 30 })
+    .default('android')
+    .notNull(),
+
+  payload: jsonb('payload').default({}),
+
+  result: jsonb('result'),
+
+  error: text('error'),
+
+  createdAt: timestamp('created_at')
+    .defaultNow()
+    .notNull(),
+
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .notNull(),
+}, (table) => [
+  index('idx_tiktok_actions_status')
+    .on(table.status),
+
+  index('idx_tiktok_actions_execute_at')
+    .on(table.executeAt),
+
+  index('idx_tiktok_actions_type')
+    .on(table.type),
+
+  index('idx_tiktok_actions_account_status')
+    .on(table.accountKey, table.status),
+
+  index('idx_tiktok_actions_target')
+    .on(table.targetKey),
+
+  /*
+   * At most one logically equivalent OPEN action may exist.
+   *
+   * Terminal rows remain outside this index so historical
+   * SUCCESS / FAILED / CANCELLED actions never block a future
+   * legitimate occurrence.
+   */
+  uniqueIndex('uq_tiktok_actions_open_account_type_target')
+    .on(
+      table.accountKey,
+      table.type,
+      table.targetKey,
+    )
+    .where(
+      sql`${table.status} in ('pending', 'scheduled', 'running')`,
+    ),
+]);
+
+
+/**
+ * Auditoria imutavel das transicoes e execucoes das acoes.
+ */
+export const tiktokActionHistory = pgTable('tiktok_action_history', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  actionId: uuid('action_id')
+    .references(() => tiktokActions.id)
+    .notNull(),
+
+  status: varchar('status', { length: 20 }).notNull(),
+
+  provider: varchar('provider', { length: 30 }),
+
+  result: jsonb('result'),
+
+  error: text('error'),
+
+  metadata: jsonb('metadata').default({}),
+
+  createdAt: timestamp('created_at')
+    .defaultNow()
+    .notNull(),
+}, (table) => [
+  index('idx_tiktok_action_history_action')
+    .on(table.actionId),
+
+  index('idx_tiktok_action_history_status')
+    .on(table.status),
+
+  index('idx_tiktok_action_history_created')
+    .on(table.createdAt),
+]);
+
+
+/**
+ * Configuracoes editaveis futuramente pelo painel Python.
+ *
+ * Exemplos:
+ * follow_enabled
+ * unfollow_enabled
+ * follow_back_check_hours
+ * dry_run
+ * comments_enabled
+ * hashtags_enabled
+ */
+export const tiktokConfiguration = pgTable('tiktok_configuration', {
+  key: varchar('key', { length: 100 }).primaryKey(),
+
+  value: jsonb('value').notNull(),
+
+  description: text('description'),
+
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .notNull(),
+});
+
+
+/**
+ * Politicas de limite por tipo de acao.
+ *
+ * O painel Python podera alterar esses valores sem alterar codigo.
+ */
+export const tiktokActionLimits = pgTable('tiktok_action_limits', {
+  id: uuid('id').primaryKey().defaultRandom(),
+
+  accountKey: varchar('account_key', { length: 100 })
+    .default('default')
+    .notNull(),
+
+  actionType: varchar('action_type', { length: 40 }).notNull(),
+
+  enabled: boolean('enabled')
+    .default(true)
+    .notNull(),
+
+  dailyLimit: integer('daily_limit'),
+
+  hourlyLimit: integer('hourly_limit'),
+
+  minIntervalSeconds: integer('min_interval_seconds'),
+
+  maxIntervalSeconds: integer('max_interval_seconds'),
+
+  cooldownSeconds: integer('cooldown_seconds'),
+
+  allowedHours: jsonb('allowed_hours').default([]),
+
+  allowedWeekdays: jsonb('allowed_weekdays').default([]),
+
+  createdAt: timestamp('created_at')
+    .defaultNow()
+    .notNull(),
+
+  updatedAt: timestamp('updated_at')
+    .defaultNow()
+    .notNull(),
+}, (table) => [
+  uniqueIndex('uq_tiktok_action_limits_account_type')
+    .on(table.accountKey, table.actionType),
+
+  index('idx_tiktok_action_limits_enabled')
+    .on(table.enabled),
+]);
+
+

@@ -1,0 +1,56 @@
+{
+  "generatedAt": "2026-09-16T01:41:10.703Z",
+  "note": "Comparacao somente dos usernames atualmente visiveis/carregados nas capturas.",
+  "followers": [
+    "fernando.investimento0",
+    "izabelcristina_43",
+    "laurafleitas2708",
+    "mais",
+    "maria.winckler.ro",
+    "passarinho",
+    "passarinho2977",
+    "pollyana",
+    "samuca.guincho",
+    "theomenezes9402",
+    "tonesallan",
+    "user47499905384",
+    "user9528668465376",
+    "xscarface07"
+  ],
+  "following": [
+    "adilsin",
+    "arrange.gametrack",
+    "dudu_briques",
+    "escaleno_",
+    "mais",
+    "superachadosmil",
+    "tonesallan"
+  ],
+  "comparison": {
+    "mutual": [
+      "mais",
+      "tonesallan"
+    ],
+    "followBackCandidates": [
+      "fernando.investimento0",
+      "izabelcristina_43",
+      "laurafleitas2708",
+      "maria.winckler.ro",
+      "passarinho",
+      "passarinho2977",
+      "pollyana",
+      "samuca.guincho",
+      "theomenezes9402",
+      "user47499905384",
+      "user9528668465376",
+      "xscarface07"
+    ],
+    "notFollowingBackCandidates": [
+      "adilsin",
+      "arrange.gametrack",
+      "dudu_briques",
+      "escaleno_",
+      "superachadosmil"
+    ]
+  }
+}

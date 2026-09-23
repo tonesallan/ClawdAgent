@@ -1,0 +1,216 @@
+{
+  "followers": [
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/za1",
+      "class": "android.widget.TextView",
+      "examples": [
+        "tonesallan"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/afj",
+      "class": "android.widget.ImageView",
+      "examples": [
+        "Adicionar pessoa"
+      ]
+    },
+    {
+      "resourceId": "android:id/text1",
+      "class": "android.widget.TextView",
+      "examples": [
+        "Seguindo 388",
+        "Seguidores 153",
+        "Amigos 135",
+        "Sugerido"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/lc_",
+      "class": "android.widget.ImageView",
+      "examples": [
+        "Pesquisar"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/vcl",
+      "class": "android.widget.EditText",
+      "examples": [
+        "Procurar"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/txt_user_name",
+      "class": "android.widget.TextView",
+      "examples": [
+        "Vitor,Breno e Théo",
+        ".",
+        "Maria/Antonio",
+        "laurafleitas2708",
+        "Jean Pedro Siqueira",
+        "Passarinho",
+        "user47499905384",
+        "Samuca guincho",
+        "pollyana"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/txt_desc",
+      "class": "android.widget.TextView",
+      "examples": [
+        "theomenezes9402",
+        "izabelcristina_43",
+        "maria.winckler.ro",
+        "laurafleitas2708",
+        "xscarface07",
+        "passarinho2977",
+        "fernando.investimento0",
+        "samuca.guincho",
+        "user9528668465376"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/u6i",
+      "class": "android.widget.Button",
+      "examples": [
+        "Segue  ",
+        "Amigo(a) de  "
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/u68",
+      "class": "android.widget.Button",
+      "examples": [
+        "Seguir de volta",
+        "Amigos"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/pb1",
+      "class": "android.widget.ImageView",
+      "examples": [
+        "Mais"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/u6i",
+      "class": "android.widget.TextView",
+      "examples": [
+        "Pessoas que talvez você conheça"
+      ]
+    }
+  ],
+  "following": [
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/za1",
+      "class": "android.widget.TextView",
+      "examples": [
+        "tonesallan"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/afj",
+      "class": "android.widget.ImageView",
+      "examples": [
+        "Adicionar pessoa"
+      ]
+    },
+    {
+      "resourceId": "android:id/text1",
+      "class": "android.widget.TextView",
+      "examples": [
+        "Seguindo 388",
+        "Seguidores 153",
+        "Amigos 135",
+        "Sugerido"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/lc_",
+      "class": "android.widget.ImageView",
+      "examples": [
+        "Pesquisar"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/vcl",
+      "class": "android.widget.EditText",
+      "examples": [
+        "Procurar"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/wu5",
+      "class": "android.widget.TextView",
+      "examples": [
+        "Ordenar por padrão"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/onb",
+      "class": "android.widget.Button",
+      "examples": [
+        "Gerenciar"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/tv_icon_tag",
+      "class": "android.widget.TextView",
+      "examples": [
+        "LIVE"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/txt_user_name",
+      "class": "android.widget.TextView",
+      "examples": [
+        "O Boticário",
+        "Super Achados Mil",
+        "𝓙𝓪𝓬𝓴",
+        "Dudu_briques",
+        "Vender no Mercado Livre",
+        "Zn brique",
+        "ARRANGE GAMETRACKS",
+        "escaleno_",
+        "Adilsin"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/ngg",
+      "class": "android.widget.Button",
+      "examples": [
+        "Visitar a loja",
+        "Ver a vitrine"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/u68",
+      "class": "android.widget.Button",
+      "examples": [
+        "Seguindo"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/pb1",
+      "class": "android.widget.ImageView",
+      "examples": [
+        "Mais"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/txt_desc",
+      "class": "android.widget.TextView",
+      "examples": [
+        "superachadosmil",
+        "dudu_briques",
+        "arrange.gametrack"
+      ]
+    },
+    {
+      "resourceId": "com.zhiliaoapp.musically:id/pyw",
+      "class": "android.widget.TextView",
+      "examples": [
+        "10+ novas publicações"
+      ]
+    }
+  ]
+}

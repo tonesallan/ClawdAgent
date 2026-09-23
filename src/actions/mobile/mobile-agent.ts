@@ -6,6 +6,19 @@
 import { AppiumClient } from './appium-client.js';
 import { AIClient } from '../../core/ai-client.js';
 import logger from '../../utils/logger.js';
+import {
+  extractTikTokProfileUsername,
+  findTikTokProfileSearchCandidate,
+  getTikTokProfileTapPoint,
+  tikTokProfileSourceMatchesUsername,
+} from '../../tiktok/android-profile-navigation.js';
+import {
+  classifyTikTokRelationshipFromXml,
+  confirmTikTokFollowTransition,
+} from '../../tiktok/android-relationship.js';
+import {
+  registerConfirmedAndroidFollow,
+} from '../../tiktok/android-follow-registration.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -23,6 +36,14 @@ export interface MobileAgentConfig {
   content: { tone: string; language: string; topics: string[]; maxLength: number };
   safety: { minDelaySeconds: number; maxActionsPerHour: number; pauseOnErrorCount: number; pauseDurationMinutes: number };
   testMode: boolean;
+  /**
+   * Warm-up duration before the autonomous action loop starts.
+   *
+   * Default:
+   * - production: 300 seconds
+   * - testMode: 0 seconds
+   */
+  warmupSeconds?: number;
 }
 
 export interface MobileAgentStatus {
@@ -65,7 +86,7 @@ export interface MobileAgentLogEntry {
 // ── App Definitions ──────────────────────────────────────────────────
 
 const APP_DEFS: Record<MobileApp, { pkg: string; activity: string; actions: MobileActionType[] }> = {
-  tiktok:   { pkg: 'com.zhiliaoapp.musically', activity: 'com.ss.android.ugc.aweme.splash.SplashActivity', actions: ['like', 'comment', 'follow', 'scroll'] },
+  tiktok:   { pkg: 'com.zhiliaoapp.musically', activity: 'com.ss.android.ugc.aweme.splash.SplashActivity', actions: ['like', 'comment', 'follow', 'share', 'scroll'] },
   twitter:  { pkg: 'com.twitter.android',      activity: 'com.twitter.android.StartActivity',              actions: ['like', 'reply', 'retweet', 'follow', 'scroll'] },
   facebook: { pkg: 'com.facebook.katana',       activity: 'com.facebook.katana.LoginActivity',              actions: ['like', 'comment', 'share', 'scroll'] },
 };
@@ -89,6 +110,7 @@ export class MobileAgent {
   private dailyResetDate = '';
   private appium: AppiumClient;
   private aiClient: AIClient;
+  private screenSize: { width: number; height: number } | null = null;
 
   private constructor(config: MobileAgentConfig) {
     this.config = config;
@@ -123,6 +145,73 @@ export class MobileAgent {
     return [...MobileAgent.instances.values()].map(a => a.getStatus());
   }
 
+  static getTikTokAgent(
+    accountKey?: string | null,
+  ): MobileAgent | undefined {
+    const tikTokAgents =
+      [...MobileAgent.instances.values()]
+        .filter(
+          agent =>
+            agent.getStatus().app ===
+            'tiktok',
+        );
+
+    if (
+      accountKey
+    ) {
+      const exact =
+        tikTokAgents.find(
+          agent => {
+            const status =
+              agent.getStatus();
+
+            return (
+              status.id ===
+                accountKey ||
+              status.deviceId ===
+                accountKey
+            );
+          },
+        );
+
+      if (exact) {
+        return exact;
+      }
+    }
+
+    const active =
+      tikTokAgents.filter(
+        agent => {
+          const state =
+            agent.getStatus().state;
+
+          return (
+            state === 'running' ||
+            state === 'paused'
+          );
+        },
+      );
+
+    if (
+      active.length ===
+        1
+    ) {
+      return active[0];
+    }
+
+    if (
+      active.length >
+        1
+    ) {
+      return undefined;
+    }
+
+    return tikTokAgents.length ===
+      1
+      ? tikTokAgents[0]
+      : undefined;
+  }
+
   // ── Lifecycle ──────────────────────────────────────────────────────
 
   async start(): Promise<void> {
@@ -132,6 +221,7 @@ export class MobileAgent {
     if (!appDef) throw new Error(`Unknown app: ${this.config.app}`);
 
     this.state = 'running';
+    this.screenSize = null;
     this.startedAt = new Date().toISOString();
     this.consecutiveErrors = 0;
     this.stats = this.freshStats();
@@ -150,6 +240,9 @@ export class MobileAgent {
         'appium:autoGrantPermissions': true,
         'appium:newCommandTimeout': 600,
         'appium:ignoreHiddenApiPolicyError': true,
+        'appium:settings[waitForIdleTimeout]': 1000,
+        'appium:settings[waitForSelectorTimeout]': 1000,
+        'appium:settings[trackScrollEvents]': false,
       });
       this.log('system', 'info', 'Appium session created — app launched');
     } catch (err: unknown) {
@@ -161,7 +254,7 @@ export class MobileAgent {
     }
 
     await this.sleep(3000);
-    this.dismissPopups();
+    await this.dismissPopups();
     this.startWarmup();
   }
 
@@ -223,15 +316,57 @@ export class MobileAgent {
 
   // ── Warmup ─────────────────────────────────────────────────────────
 
-  private startWarmup(): void {
-    this.log('system', 'info', 'Starting 5-minute warmup (scroll only)');
-    this.performWarmup();
+  private getWarmupDurationMs(): number {
+    const configured =
+      this.config.warmupSeconds;
+
+    if (
+      typeof configured === 'number' &&
+      Number.isFinite(configured)
+    ) {
+      return Math.max(
+        0,
+        configured,
+      ) * 1000;
+    }
+
+    return this.config.testMode
+      ? 0
+      : 5 * 60_000;
   }
 
-  private async performWarmup(): Promise<void> {
+  private startWarmup(): void {
+    const warmupDurationMs =
+      this.getWarmupDurationMs();
+
+    if (warmupDurationMs <= 0) {
+      this.log(
+        'system',
+        'info',
+        'Warmup skipped — beginning action loop'
+      );
+      this.scheduleNextAction();
+      return;
+    }
+
+    this.log(
+      'system',
+      'info',
+      `Starting ${Math.round(warmupDurationMs / 1000)}s warmup (scroll only)`
+    );
+
+    this.performWarmup(
+      warmupDurationMs,
+    );
+  }
+
+  private async performWarmup(
+    warmupDurationMs: number,
+  ): Promise<void> {
     if (this.state !== 'running') return;
+
     try {
-      await this.appium.swipe(540, 1600, 540, 400, 600);
+      await this.swipeRelative(0.5, 2 / 3, 1 / 6, 600);
       await this.sleep(4000 + Math.random() * 8000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -239,12 +374,18 @@ export class MobileAgent {
     }
 
     const elapsedMs = Date.now() - new Date(this.startedAt!).getTime();
-    if (elapsedMs >= 5 * 60_000) {
+    if (elapsedMs >= warmupDurationMs) {
       this.log('system', 'info', 'Warmup complete — beginning action loop');
       this.scheduleNextAction();
     } else {
       const nextDelay = 8000 + Math.floor(Math.random() * 12000);
-      this.loopTimer = setTimeout(() => this.performWarmup(), nextDelay);
+      this.loopTimer = setTimeout(
+        () =>
+          this.performWarmup(
+            warmupDurationMs,
+          ),
+        nextDelay,
+      );
     }
   }
 
@@ -282,11 +423,11 @@ export class MobileAgent {
         return;
       }
 
-      // Random scroll before action (human-like)
-      if (Math.random() < 0.4) {
+      // Random pre-action navigation is disabled in testMode.
+      if (!this.config.testMode && Math.random() < 0.4) {
         const scrolls = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < scrolls; i++) {
-          await this.appium.swipe(540, 1500, 540, 500, 400 + Math.floor(Math.random() * 400));
+          await this.swipeRelative(0.5, 0.625, 5 / 24, 400 + Math.floor(Math.random() * 400));
           await this.sleep(2000 + Math.random() * 4000);
         }
       }
@@ -347,61 +488,518 @@ export class MobileAgent {
     switch (action) {
       case 'like': {
         if (this.config.testMode) { this.log('like', 'success', '[TEST] Would like a video'); return; }
-        // Double-tap center of screen to like (TikTok gesture)
-        await this.appium.tap(540, 960);
-        await this.sleep(150);
-        await this.appium.tap(540, 960);
-        await this.sleep(1500);
-        this.log('like', 'success', 'Double-tapped to like video');
+        try {
+          let likeButton;
+
+          try {
+            likeButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Curtir vídeo")'
+            );
+          } catch {
+            likeButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Like video")'
+            );
+          }
+
+          await this.appium.clickElement(likeButton.elementId);
+          await this.sleep(1000);
+
+          this.log(
+            'like',
+            'success',
+            'Clicked TikTok like button'
+          );
+        } catch {
+          this.log(
+            'like',
+            'skipped',
+            'Video already liked or TikTok like button not found'
+          );
+        }
         break;
       }
       case 'comment': {
+        if (this.config.testMode) {
+          this.log(
+            'comment',
+            'success',
+            '[TEST] Would comment on TikTok video'
+          );
+          return;
+        }
+
         const commentText = await this.generateComment('tiktok');
-        if (this.config.testMode) { this.log('comment', 'success', `[TEST] Would comment: "${commentText}"`); return; }
-        // Tap comment icon (right side, below like heart)
-        await this.appium.tap(680, 680);
-        await this.sleep(2000);
-        // Find comment input and type
+
         try {
-          const input = await this.appium.findElement('uiautomator', 'new UiSelector().textContains("Add comment")');
-          await this.appium.clickElement(input.elementId);
-          await this.sleep(500);
-          await this.appium.sendKeys(input.elementId, commentText);
+          let commentButton;
+
+          try {
+            commentButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Leia ou adicione comentários")'
+            );
+          } catch {
+            commentButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionContains("comment")'
+            );
+          }
+
+          await this.appium.clickElement(
+            commentButton.elementId
+          );
+
+          await this.sleep(1200);
+
+          let commentInput;
+
+          try {
+            commentInput = await this.appium.findElement(
+              'id',
+              'com.zhiliaoapp.musically:id/ejc'
+            );
+          } catch {
+            commentInput = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().className("android.widget.EditText")'
+            );
+          }
+
+          await this.appium.clickElement(
+            commentInput.elementId
+          );
+
+          // TikTok ignora sendKeys neste campo.
+          // Limpa, usa o clipboard do Appium 3 e cola via Android.
+          await this.appium.clearElement(
+            commentInput.elementId
+          );
+
+          await this.sleep(300);
+
+          await this.appium.setClipboard(commentText);
+
+          // Android KEYCODE_PASTE
+          await this.appium.pressKey(279);
+
           await this.sleep(800);
-          // Tap send/post button
-          const sendBtn = await this.appium.findElement('uiautomator', 'new UiSelector().textContains("Post")');
-          await this.appium.clickElement(sendBtn.elementId);
-          await this.sleep(2000);
-          // Close comment panel
-          await this.appium.pressKey(4); // BACK
-          this.log('comment', 'success', `Commented: "${commentText.slice(0, 60)}..."`);
+
+          const source = await this.appium.getPageSource();
+
+          const inputLine = source
+            .split(/\r?\n/)
+            .find(line =>
+              line.includes('com.zhiliaoapp.musically:id/ejc')
+            );
+
+          if (!inputLine) {
+            throw new Error(
+              'TikTok comment field could not be validated'
+            );
+          }
+
+          const sendLine = source
+            .split(/\r?\n/)
+            .find(line =>
+              line.includes('com.zhiliaoapp.musically:id/d1u')
+            );
+
+          if (
+            !sendLine ||
+            !sendLine.includes('enabled="true"')
+          ) {
+            throw new Error(
+              'TikTok comment send button is disabled'
+            );
+          }
+
+          const sendButton =
+            await this.appium.findElement(
+              'id',
+              'com.zhiliaoapp.musically:id/d1u'
+            );
+
+          await this.appium.clickElement(
+            sendButton.elementId
+          );
+
+          await this.sleep(1500);
+
+          this.log(
+            'comment',
+            'success',
+            `Posted TikTok comment: "${commentText.slice(0, 60)}"`
+          );
         } catch (err: unknown) {
-          await this.appium.pressKey(4);
+          const msg =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
+          this.log(
+            'comment',
+            'error',
+            'TikTok comment failed',
+            msg
+          );
+
           throw err;
         }
+
         break;
       }
       case 'follow': {
-        if (this.config.testMode) { this.log('follow', 'success', '[TEST] Would follow creator'); return; }
-        try {
-          const followBtn = await this.appium.findElement('uiautomator', 'new UiSelector().text("Follow")');
-          const isDisplayed = await this.appium.isElementDisplayed(followBtn.elementId);
-          if (isDisplayed) {
-            await this.appium.clickElement(followBtn.elementId);
-            await this.sleep(1500);
-            this.log('follow', 'success', 'Followed creator');
-          } else {
-            this.log('follow', 'skipped', 'Follow button not visible');
-          }
-        } catch {
-          this.log('follow', 'skipped', 'No follow button found');
+        if (this.config.testMode) {
+          this.log('follow', 'success', '[TEST] Would follow user');
+          return;
         }
+
+        let profileOpened =
+          false;
+
+        try {
+          let profileEntry;
+
+          try {
+            profileEntry =
+              await this.appium.findElement(
+                'id',
+                'com.zhiliaoapp.musically:id/user_avatar',
+              );
+          } catch {
+            profileEntry =
+              await this.appium.findElement(
+                'id',
+                'com.zhiliaoapp.musically:id/title',
+              );
+          }
+
+          await this.appium.clickElement(
+            profileEntry.elementId,
+          );
+
+          profileOpened =
+            true;
+
+          await this.sleep(
+            1500,
+          );
+
+          const profileSource =
+            await this.appium
+              .getPageSource();
+
+          const username =
+            extractTikTokProfileUsername(
+              profileSource,
+            );
+
+          if (!username) {
+            throw new Error(
+              'TikTok creator profile opened but exact username could not be resolved.',
+            );
+          }
+
+          const beforeRelationship =
+            classifyTikTokRelationshipFromXml(
+              profileSource,
+            );
+
+          if (
+            beforeRelationship ===
+              'following' ||
+            beforeRelationship ===
+              'friends'
+          ) {
+            this.log(
+              'follow',
+              'skipped',
+              `Already following @${username}`,
+            );
+            return;
+          }
+
+          if (
+            beforeRelationship !==
+              'not_following' &&
+            beforeRelationship !==
+              'follows_us'
+          ) {
+            throw new Error(
+              `TikTok relationship is not safe to follow: ${beforeRelationship}`,
+            );
+          }
+
+          const labels =
+            beforeRelationship ===
+              'follows_us'
+              ? [
+                  'Seguir de volta',
+                  'Follow back',
+                ]
+              : [
+                  'Seguir',
+                  'Follow',
+                ];
+
+          let followButton:
+            { elementId: string } |
+            null =
+              null;
+
+          for (
+            const label of
+              labels
+          ) {
+            try {
+              followButton =
+                await this.appium
+                  .findElement(
+                    'uiautomator',
+                    `new UiSelector().text("${label}")`,
+                  );
+
+              break;
+            } catch {
+              // Try next localized label.
+            }
+          }
+
+          if (!followButton) {
+            throw new Error(
+              `TikTok profile follow control not found for @${username}.`,
+            );
+          }
+
+          await this.appium.clickElement(
+            followButton.elementId,
+          );
+
+          const followedAt =
+            new Date();
+
+          await this.sleep(
+            1200,
+          );
+
+          let afterSource =
+            await this.appium
+              .getPageSource();
+
+          if (
+            !tikTokProfileSourceMatchesUsername(
+              afterSource,
+              username,
+            )
+          ) {
+            throw new Error(
+              `TikTok profile identity changed after Follow for @${username}.`,
+            );
+          }
+
+          let confirmedRelationship =
+            confirmTikTokFollowTransition(
+              beforeRelationship,
+              afterSource,
+            );
+
+          if (
+            confirmedRelationship !==
+              'following' &&
+            confirmedRelationship !==
+              'friends'
+          ) {
+            await this.sleep(
+              1200,
+            );
+
+            afterSource =
+              await this.appium
+                .getPageSource();
+
+            if (
+              !tikTokProfileSourceMatchesUsername(
+                afterSource,
+                username,
+              )
+            ) {
+              throw new Error(
+                `TikTok profile identity changed while confirming Follow for @${username}.`,
+              );
+            }
+
+            confirmedRelationship =
+              confirmTikTokFollowTransition(
+                beforeRelationship,
+                afterSource,
+              );
+          }
+
+          if (
+            confirmedRelationship !==
+              'following' &&
+            confirmedRelationship !==
+              'friends'
+          ) {
+            throw new Error(
+              `TikTok Follow was not confirmed for @${username}: ${confirmedRelationship}`,
+            );
+          }
+
+          await registerConfirmedAndroidFollow({
+            accountKey:
+              this.config.id,
+            username,
+            observedRelationship:
+              confirmedRelationship,
+            followedAt,
+          });
+
+          this.log(
+            'follow',
+            'success',
+            `Followed @${username}; persistent 48h follow-back check registered`,
+          );
+        } catch (err: unknown) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
+          this.log(
+            'follow',
+            'error',
+            'TikTok follow failed',
+            msg,
+          );
+
+          throw err;
+        }
+        finally {
+          if (
+            profileOpened
+          ) {
+            try {
+              await this
+                .goToTikTokHome();
+            } catch {
+              // Best effort return to the feed.
+            }
+          }
+        }
+
+        break;
+      }
+
+      case 'share': {
+        if (this.config.testMode) {
+          this.log(
+            'share',
+            'success',
+            '[TEST] Would open TikTok share panel and close it without sharing'
+          );
+          return;
+        }
+
+        let shareButtonClicked =
+          false;
+
+        try {
+          let shareButton;
+
+          try {
+            shareButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Compartilhar vídeo")'
+            );
+          } catch {
+            shareButton = await this.appium.findElement(
+              'uiautomator',
+              'new UiSelector().descriptionStartsWith("Share video")'
+            );
+          }
+
+          await this.appium.clickElement(
+            shareButton.elementId
+          );
+
+          shareButtonClicked =
+            true;
+
+          await this.sleep(1200);
+
+          const shareSource =
+            await this.appium.getPageSource();
+
+          const sharePanelOpen =
+            shareSource.includes(
+              'com.zhiliaoapp.musically:id/g1i'
+            ) ||
+            shareSource.includes(
+              'text="Enviar para"'
+            ) ||
+            shareSource.includes(
+              'text="Send to"'
+            );
+
+          if (!sharePanelOpen) {
+            throw new Error(
+              'TikTok share panel did not open after clicking share.'
+            );
+          }
+
+          this.log(
+            'share',
+            'success',
+            'Opened TikTok share panel without sharing'
+          );
+        } catch (err: unknown) {
+          const msg =
+            err instanceof Error
+              ? err.message
+              : String(err);
+
+          this.log(
+            'share',
+            'error',
+            'TikTok share failed',
+            msg
+          );
+
+          throw err;
+        } finally {
+          /*
+           * Safety invariant:
+           * after clicking Share we only close the panel.
+           * No recipient/action inside the panel is ever clicked.
+           */
+          if (shareButtonClicked) {
+            try {
+              await this.appium.pressKey(4);
+              await this.sleep(500);
+            } catch {
+              // Best effort: never replace the original share result.
+            }
+          }
+        }
+
         break;
       }
       case 'scroll': {
+        if (this.config.testMode) {
+          this.log(
+            'scroll',
+            'success',
+            '[TEST] Would scroll TikTok feed'
+          );
+          return;
+        }
+
         const count = 2 + Math.floor(Math.random() * 4);
         for (let i = 0; i < count; i++) {
-          await this.appium.swipe(540, 1500, 540, 400, 400 + Math.floor(Math.random() * 400));
+          await this.swipeRelative(0.5, 0.625, 1 / 6, 400 + Math.floor(Math.random() * 400));
           await this.sleep(3000 + Math.random() * 5000);
         }
         this.log('scroll', 'success', `Scrolled through ${count} videos`);
@@ -583,6 +1181,491 @@ export class MobileAgent {
     }
   }
 
+
+  /**
+   * Read-only TikTok relationship inspection.
+   *
+   * IMPORTANT:
+   * - Does not click anything.
+   * - Does not follow/unfollow.
+   * - Does not navigate away from the current screen.
+   * - Intended as a low-level primitive for the Android provider.
+   *
+   * The caller must already have the correct target profile/list row
+   * visible before using this method.
+   */
+  async inspectTikTokCurrentRelationship(): Promise<
+    'friends' | 'following' | 'follows_us' | 'not_following' | 'unknown'
+  > {
+    if (this.config.app !== 'tiktok') {
+      throw new Error(
+        'TikTok relationship inspection requires app=tiktok'
+      );
+    }
+
+    const source =
+      await this.appium.getPageSource();
+
+    return classifyTikTokRelationshipFromXml(
+      source,
+    );
+  }
+
+  /**
+   * Return TikTok to the Home feed using the mapped bottom navigation control.
+   * Navigation-only: no engagement action is performed.
+   */
+  async goToTikTokHome(): Promise<void> {
+    if (this.config.app !== 'tiktok') {
+      throw new Error(
+        'TikTok Home navigation requires app=tiktok',
+      );
+    }
+
+    try {
+      const home =
+        await this.appium
+          .findElement(
+            'id',
+            'com.zhiliaoapp.musically:id/olw',
+          );
+
+      await this.appium
+        .clickElement(
+          home.elementId,
+        );
+
+      await this.sleep(
+        800,
+      );
+
+      return;
+    }
+    catch {
+      // Fallback to localized accessibility labels.
+    }
+
+    for (
+      const label of
+        [
+          'Início',
+          'Home',
+        ]
+    ) {
+      try {
+        const home =
+          await this.appium
+            .findElement(
+              'accessibility id',
+              label,
+            );
+
+        await this.appium
+          .clickElement(
+            home.elementId,
+          );
+
+        await this.sleep(
+          800,
+        );
+
+        return;
+      }
+      catch {
+        // Try next label.
+      }
+    }
+
+    throw new Error(
+      'TikTok Home navigation control was not found.',
+    );
+  }
+
+  /**
+   * Navigate to one exact TikTok username.
+   *
+   * Read-only in terms of account relationship:
+   * - does not follow;
+   * - does not unfollow;
+   * - does not like;
+   * - does not comment;
+   * - does not send messages.
+   *
+   * It only opens Search and navigates to an exact account.
+   */
+  async openTikTokProfileByUsername(
+    username: string,
+  ): Promise<boolean> {
+
+    if (this.config.app !== 'tiktok') {
+      throw new Error(
+        'TikTok profile navigation requires app=tiktok'
+      );
+    }
+
+    const normalizedUsername =
+      username
+        .trim()
+        .replace(/^@/, '');
+
+    if (
+      !/^[A-Za-z0-9._]{2,24}$/.test(
+        normalizedUsername,
+      )
+    ) {
+      throw new Error(
+        `Invalid TikTok username: ${username}`
+      );
+    }
+
+    const wait = async (
+      ms: number,
+    ): Promise<void> => {
+      await this.sleep(ms);
+    };
+
+    const findOptional =
+      async (
+        strategy: string,
+        selector: string,
+      ): Promise<
+        { elementId: string } | null
+      > => {
+
+        try {
+          return await this.appium
+            .findElement(
+              strategy,
+              selector,
+            );
+        }
+        catch {
+          return null;
+        }
+      };
+
+    const findSearchInput =
+      async (): Promise<
+        { elementId: string } | null
+      > => {
+
+        return (
+          await findOptional(
+            'id',
+            'com.zhiliaoapp.musically:id/htb',
+          )
+        ) ?? (
+          await findOptional(
+            'uiautomator',
+            'new UiSelector().className("android.widget.EditText")',
+          )
+        );
+      };
+
+    const findSearchButton =
+      async (): Promise<
+        { elementId: string } | null
+      > => {
+
+        return (
+          await findOptional(
+            'id',
+            'com.zhiliaoapp.musically:id/k9z',
+          )
+        ) ?? (
+          await findOptional(
+            'uiautomator',
+            'new UiSelector().description("Procurar")',
+          )
+        ) ?? (
+          await findOptional(
+            'uiautomator',
+            'new UiSelector().description("Search")',
+          )
+        );
+      };
+
+    /*
+     * A sessao usa noReset=true.
+     * Portanto o TikTok pode abrir exatamente na tela
+     * deixada pelo teste anterior.
+     *
+     * Primeiro verificamos se a busca JA esta aberta.
+     */
+    let searchInput =
+      await findSearchInput();
+
+    if (!searchInput) {
+
+      /*
+       * Remove apenas popups comuns conhecidos.
+       */
+      await this.dismissPopups();
+
+      /*
+       * Tenta usar a busca na tela atual.
+       * Se nao existir, volta gradualmente.
+       */
+      for (
+        let attempt = 0;
+        attempt < 4 && !searchInput;
+        attempt++
+      ) {
+
+        const searchButton =
+          await findSearchButton();
+
+        if (searchButton) {
+
+          await this.appium
+            .clickElement(
+              searchButton.elementId,
+            );
+
+          await wait(700);
+
+          searchInput =
+            await findSearchInput();
+
+          if (searchInput) {
+            break;
+          }
+        }
+
+        if (attempt < 3) {
+
+          await this.appium
+            .pressKey(4);
+
+          await wait(500);
+
+          searchInput =
+            await findSearchInput();
+        }
+      }
+    }
+
+    /*
+     * Recuperacao adicional:
+     * vai para Home e tenta abrir a busca.
+     *
+     * Isso e apenas navegacao.
+     */
+    if (!searchInput) {
+
+      const homeButton =
+        await findOptional(
+          'id',
+          'com.zhiliaoapp.musically:id/olw',
+        );
+
+      if (homeButton) {
+
+        await this.appium
+          .clickElement(
+            homeButton.elementId,
+          );
+
+        await wait(800);
+
+        const searchButton =
+          await findSearchButton();
+
+        if (searchButton) {
+
+          await this.appium
+            .clickElement(
+              searchButton.elementId,
+            );
+
+          await wait(700);
+
+          searchInput =
+            await findSearchInput();
+        }
+      }
+    }
+
+    if (!searchInput) {
+
+      throw new Error(
+        'TikTok search UI could not be reached safely',
+      );
+    }
+
+    /*
+     * Preenche a pesquisa.
+     */
+    await this.appium
+      .clickElement(
+        searchInput.elementId,
+      );
+
+    await this.appium
+      .clearElement(
+        searchInput.elementId,
+      );
+
+    await this.appium
+      .setClipboard(
+        `@${normalizedUsername}`,
+      );
+
+    // Android KEYCODE_PASTE
+    await this.appium
+      .pressKey(279);
+
+    await wait(500);
+
+    /*
+     * Executa pesquisa.
+     */
+    const submit =
+      await findOptional(
+        'id',
+        'com.zhiliaoapp.musically:id/tv_search_textview',
+      );
+
+    if (submit) {
+
+      await this.appium
+        .clickElement(
+          submit.elementId,
+        );
+    }
+    else {
+
+      // ENTER
+      await this.appium
+        .pressKey(66);
+    }
+
+    await wait(2200);
+
+    /*
+     * Se o TikTok mostrar abas de resultado, preferimos a aba
+     * de usuarios/contas antes de tocar no resultado.
+     */
+    const userTabSelectors = [
+      'new UiSelector().textContains("Usu")',
+      'new UiSelector().textContains("User")',
+      'new UiSelector().textContains("Pessoas")',
+      'new UiSelector().textContains("People")',
+      'new UiSelector().textContains("Conta")',
+      'new UiSelector().textContains("Account")',
+    ];
+
+    for (
+      const selector of userTabSelectors
+    ) {
+
+      const tab =
+        await findOptional(
+          'uiautomator',
+          selector,
+        );
+
+      if (tab) {
+
+        await this.appium
+          .clickElement(
+            tab.elementId,
+          );
+
+        await wait(1200);
+        break;
+      }
+    }
+
+    /*
+     * Usa o parser XML compartilhado e coberto por testes.
+     * Ele ignora o campo de pesquisa, exige o username exato
+     * e preserva os mesmos sinais de prioridade do fluxo anterior.
+     */
+    const resultsSource =
+      await this.appium
+        .getPageSource();
+
+    const {
+      candidate,
+      mentions,
+    } =
+      findTikTokProfileSearchCandidate(
+        resultsSource,
+        normalizedUsername,
+      );
+
+    if (!candidate) {
+      throw new Error(
+        `Exact TikTok username not found: @${normalizedUsername}. XML matches: ${JSON.stringify(mentions)}`,
+      );
+    }
+
+    if (!candidate.bounds) {
+      throw new Error(
+        `TikTok username found but bounds unavailable: @${normalizedUsername}`,
+      );
+    }
+
+    /*
+     * O TextView do username nem sempre e o elemento clicavel.
+     * O ponto de toque vem dos bounds do username exato encontrado,
+     * com apenas um clamp horizontal de seguranca.
+     */
+    const screen =
+      await this.getScreenSize();
+
+    const tapPoint =
+      getTikTokProfileTapPoint(
+        candidate.bounds,
+        screen.width,
+      );
+
+    await this.appium
+      .tap(
+        tapPoint.x,
+        tapPoint.y,
+      );
+
+    await wait(1800);
+
+    /*
+     * Confirma que saimos da tela de busca e que
+     * o username esta presente na pagina aberta.
+     */
+    const profileSource =
+      await this.appium
+        .getPageSource();
+
+    const profileLower =
+      profileSource
+        .toLocaleLowerCase(
+          'pt-BR',
+        );
+
+    if (
+      profileLower.includes(
+        'com.zhiliaoapp.musically:id/htb',
+      )
+    ) {
+      throw new Error(
+        `TikTok search result was found but profile did not open: @${normalizedUsername}`,
+      );
+    }
+
+    if (
+      !tikTokProfileSourceMatchesUsername(
+        profileSource,
+        normalizedUsername,
+      )
+    ) {
+      throw new Error(
+        `TikTok profile identity could not be confirmed: @${normalizedUsername}`,
+      );
+    }
+
+    return true;
+  }
   // ── AI Comment Generation ─────────────────────────────────────────
 
   private async generateComment(platform: MobileApp): Promise<string> {
@@ -622,19 +1705,112 @@ Rules:
 
   // ── Helpers ────────────────────────────────────────────────────────
 
-  private async dismissPopups(): Promise<void> {
-    for (const text of ['Allow', 'OK', 'Continue', 'Got it', 'Not now', 'Skip', 'Maybe later']) {
-      try {
-        const el = await this.appium.findElement('uiautomator', `new UiSelector().text("${text}")`);
-        const displayed = await this.appium.isElementDisplayed(el.elementId);
-        if (displayed) {
-          await this.appium.clickElement(el.elementId);
-          await this.sleep(500);
-        }
-      } catch { /* expected for most texts */ }
+  private async getScreenSize(): Promise<{ width: number; height: number }> {
+    if (this.screenSize) return this.screenSize;
+
+    try {
+      const detected = await this.appium.getWindowSize();
+      this.screenSize = detected;
+
+      this.log(
+        'system',
+        'info',
+        `Detected screen size: ${detected.width}x${detected.height}`
+      );
+
+      return detected;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+
+      const fallback = { width: 1080, height: 2400 };
+      this.screenSize = fallback;
+
+      this.log(
+        'system',
+        'info',
+        `Screen size detection failed, using 1080x2400 fallback: ${msg}`
+      );
+
+      return fallback;
     }
   }
 
+  private async tapRelative(xRatio: number, yRatio: number): Promise<void> {
+    const { width, height } = await this.getScreenSize();
+
+    const x = Math.round(width * xRatio);
+    const y = Math.round(height * yRatio);
+
+    await this.appium.tap(x, y);
+  }
+
+  private async swipeRelative(
+    xRatio: number,
+    startYRatio: number,
+    endYRatio: number,
+    duration: number
+  ): Promise<void> {
+    const { width, height } = await this.getScreenSize();
+
+    const x = Math.round(width * xRatio);
+    const startY = Math.round(height * startYRatio);
+    const endY = Math.round(height * endYRatio);
+
+    await this.appium.swipe(
+      x,
+      startY,
+      x,
+      endY,
+      duration
+    );
+  }
+  private async dismissPopups(): Promise<void> {
+    const popupTexts = [
+      'Allow',
+      'OK',
+      'Continue',
+      'Got it',
+      'Not now',
+      'Skip',
+      'Maybe later',
+
+      // pt-BR
+      'Permitir',
+      'Continuar',
+      'Entendi',
+      'Agora não',
+      'Pular',
+      'Talvez mais tarde',
+    ];
+
+    try {
+      const source = await this.appium.getPageSource();
+
+      for (const text of popupTexts) {
+        if (!source.includes(text)) continue;
+
+        try {
+          const el = await this.appium.findElement(
+            'uiautomator',
+            `new UiSelector().text("${text}")`
+          );
+
+          const displayed = await this.appium.isElementDisplayed(el.elementId);
+
+          if (displayed) {
+            await this.appium.clickElement(el.elementId);
+            this.log('system', 'info', `Dismissed popup: ${text}`);
+            await this.sleep(500);
+          }
+        } catch {
+          // Element changed/disappeared between source read and click.
+        }
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      this.log('system', 'info', `Popup scan skipped: ${msg}`);
+    }
+  }
   private incrementStat(action: MobileActionType): void {
     switch (action) {
       case 'like': this.stats.likes++; break;

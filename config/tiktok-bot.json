@@ -1,0 +1,69 @@
+{
+  "deviceId": null,
+  "appiumUrl": "http://127.0.0.1:4723",
+  "testMode": true,
+  "actions": {
+    "scroll": {
+      "enabled": true,
+      "intervalMinutes": 1,
+      "dailyLimit": 20
+    },
+    "like": {
+      "enabled": true,
+      "intervalMinutes": 15,
+      "dailyLimit": 30
+    },
+    "comment": {
+      "enabled": true,
+      "intervalMinutes": 60,
+      "dailyLimit": 5
+    },
+    "follow": {
+      "enabled": true,
+      "intervalMinutes": 30,
+      "dailyLimit": 10
+    },
+    "share": {
+      "enabled": false,
+      "intervalMinutes": 45,
+      "dailyLimit": 5
+    }
+  },
+  "activeHours": {
+    "weekday": {
+      "start": 0,
+      "end": 24
+    },
+    "weekend": {
+      "start": 0,
+      "end": 24
+    }
+  },
+  "content": {
+    "tone": "Natural, amigável e relevante",
+    "language": "pt-BR",
+    "topics": [
+      "tecnologia",
+      "produtos",
+      "dicas"
+    ],
+    "maxLength": 120
+  },
+  "safety": {
+    "minDelaySeconds": 60,
+    "maxActionsPerHour": 10,
+    "pauseOnErrorCount": 2,
+    "pauseDurationMinutes": 5
+  },
+  "automationCore": {
+    "enabled": true,
+    "followBackCheckHours": 48,
+    "hashtags": {
+      "enabled": false,
+      "include": [],
+      "exclude": [],
+      "matchMode": "any",
+      "maxCandidatesPerCycle": 20
+    }
+  }
+}

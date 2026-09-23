@@ -1,0 +1,954 @@
+{
+  "generatedAt": "2026-09-16T02:00:51.959Z",
+  "followers": {
+    "recognizedCount": 144,
+    "recognized": [
+      "0416jo",
+      "airtonraimundo3",
+      "alessandragomes447",
+      "alissonsnicoletti",
+      "altair.silveira8",
+      "althyere",
+      "ana.claudia4820",
+      "anakarolinemarchi6",
+      "anapaula8137o",
+      "anapauladossantos1528",
+      "aquela_do_ms",
+      "ariadna0985",
+      "arthumutum",
+      "arthurjosep",
+      "atospereira89",
+      "bokinha025_gqd30am",
+      "carolinaaraujo074",
+      "celiaklein0",
+      "cezarpaniaguamart",
+      "charles_abernathy",
+      "cidinhaoliveira8751",
+      "cidinhasantos944",
+      "cleide_moda_plusize",
+      "cristianogomesde1",
+      "cristianoooju",
+      "daianepalma4",
+      "daniel44520",
+      "danieletrindade1990",
+      "daniellyosilvaa",
+      "danlo20191",
+      "dayrossatti",
+      "deonilzaafonso",
+      "devil_may.cry01",
+      "dixx_ney067068",
+      "dlaier",
+      "dolcidiaegeo",
+      "domingosdossantosneto",
+      "dudinhaeduarda",
+      "dynjir33a2ll",
+      "edirdossantos700",
+      "elainecristina839",
+      "elanamagalhaes017",
+      "elanavitoria0017",
+      "eleandraporto",
+      "elisangelafreires6",
+      "eltinho000",
+      "elzasilvanascim2",
+      "enriqueamesty2",
+      "fabioroger47",
+      "fernandarodrigues068",
+      "fernando.investimento0",
+      "gabrielaortiz56",
+      "gabrielasilveraortiz",
+      "genilson.floriano",
+      "glauamaral.91",
+      "glauciaadrianadan",
+      "guilherme.filho.l",
+      "gunswiz",
+      "gunswiz0",
+      "hugomellogu",
+      "iala038",
+      "izabelcristina_43",
+      "j.berta",
+      "jandiraindica",
+      "jean.silva4052",
+      "jhefy.haruno",
+      "joaniraberta",
+      "josicavalcanti271",
+      "josiclarindo2",
+      "josivaldo.almirao",
+      "jpd_nascimento",
+      "jucirleisouzagomes",
+      "julianagayosogmail.comt5",
+      "kamila.lima351",
+      "kamilalima87",
+      "karolinyeinecke",
+      "kassilaalyne1",
+      "laurafleitas2708",
+      "lauramedina831",
+      "ledalto",
+      "leidianeborbacurti",
+      "leticiamorimoto",
+      "leticiateles29",
+      "liducenadeoliveirapinto",
+      "luan.nascimento.ofc",
+      "lucianadalto0",
+      "lucianapraciel",
+      "mai.steidel",
+      "maiconsadoski",
+      "maria.auxiliadora96450",
+      "maria.winckler.ro",
+      "marilzarodrigue42",
+      "mateusleonco",
+      "matheusfmoura",
+      "maya.liz40",
+      "miladyfreak",
+      "moniqueevellyn09",
+      "nahpsilvahotmailcom19880",
+      "nataliaworkt",
+      "natanygoncalves123",
+      "natyogawa97",
+      "neiaendymanu",
+      "nelsongrapa",
+      "nobrapela",
+      "oluaninacio",
+      "passarinho2977",
+      "paullynha4.6",
+      "paulo.henrique.da405",
+      "pollyanaalves600",
+      "priscilaolivei5",
+      "pvc_comunica",
+      "rafaoficial09",
+      "riikkee2",
+      "robsonferreirag36",
+      "rovinsonrsm",
+      "rutiklone8",
+      "samuca.guincho",
+      "sebastianovalle343",
+      "sergio.peruci",
+      "sergiofelix149",
+      "silvanaalves395",
+      "sioliveira010",
+      "slvhsntts",
+      "suelenmarks40422",
+      "tainararamos68",
+      "tatabarbosa3010",
+      "tchescovieira",
+      "theomenezes9402",
+      "thiago.magalhes.d4",
+      "thiagopereira6637",
+      "tierra_y_mar_crafts",
+      "titio._.tomioka",
+      "top_song_76",
+      "user4104059625192",
+      "user4519415362913",
+      "user7439088948733",
+      "user7524863219276",
+      "user79768054148007",
+      "user9528668465376",
+      "valdecirlopessouza",
+      "viniciusbrito847",
+      "williammartnez75",
+      "xscarface07",
+      "zeckaespinosa"
+    ],
+    "unmatched": [
+      {
+        "relation": "Amigos",
+        "displayName": "Gustavo Jaques281",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Amigos",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Gustavo Jaques281",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Amigos",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 2
+      }
+    ]
+  },
+  "following": {
+    "recognizedCount": 265,
+    "recognized": [
+      ".liv_e",
+      "0416jo",
+      "_brunomc",
+      "_luckzy",
+      "_musicasantigas_",
+      "a_menina_das_rifas.ofc",
+      "acampsemaus",
+      "acheiposteishopi",
+      "adilsin",
+      "adilsin_etnia",
+      "adrielemoraes7",
+      "airtonraimundo3",
+      "alessandragomes447",
+      "alinesantos_rh",
+      "alissonsnicoletti",
+      "allan.ferr",
+      "althyere",
+      "alvinproject2022",
+      "amandafitas",
+      "amandapraeles",
+      "ana",
+      "anakarolinemarchi6",
+      "anapaula8137o",
+      "anapauladossantos1528",
+      "anapaulasalina",
+      "anatomiaplena",
+      "apenas.fernanda",
+      "aquela_do_ms",
+      "ariadna0985",
+      "arilabtk",
+      "arrange.gametrack",
+      "arthumutum",
+      "arthur.oliveiraadv",
+      "arthurjosep",
+      "atacado25",
+      "atospereira89",
+      "azuldofusca",
+      "barbara_barbaridade",
+      "barbixas",
+      "barbixasfanclub",
+      "biscoito.sortudo",
+      "bokinha025_gqd30am",
+      "bountybreaker",
+      "boyceavenuetiktok",
+      "brunolnunes",
+      "camaradaboris",
+      "carolinaaraujo074",
+      "celiaklein0",
+      "cezarpaniaguamart",
+      "charles_abernathy",
+      "cheeseman.vr",
+      "christwodafur",
+      "cidinhaoliveira8751",
+      "cidinhasantos944",
+      "clara",
+      "classicalmusicart",
+      "cleide_moda_plusize",
+      "codetheworld.io",
+      "coffee_mates",
+      "conradiologia.br",
+      "coraubanne",
+      "cosbelleonorleono",
+      "cristianogomesde1",
+      "cristianoooju",
+      "crllzxz",
+      "curiosidadessfut",
+      "cutscenesx",
+      "dabala",
+      "daniel44520",
+      "danieletrindade1990",
+      "daniellyosilvaa",
+      "danlo20191",
+      "dasha_shpringer",
+      "dayrossatti",
+      "deisydosanjos",
+      "deonilzaafonso",
+      "dixx_ney067068",
+      "dlaier",
+      "dolcidiaegeo",
+      "domingostv_ofc",
+      "doutorashimano",
+      "dr.leandrovelasco",
+      "dudinhaeduarda",
+      "dudu_briques",
+      "dynjir33a2ll",
+      "edirdossantos700",
+      "edywds",
+      "elainecristina839",
+      "elanamagalhaes017",
+      "elanavitoria0017",
+      "eleandraporto",
+      "eletrika2k25",
+      "elisangelafreires6",
+      "eltinho000",
+      "elzasilvanascim2",
+      "escaleno_",
+      "eu.barbarabastos",
+      "eusimplifiquei",
+      "evolualabs",
+      "excelsemstress",
+      "fabioroger47",
+      "feliciomusic",
+      "fernandarodrigues068",
+      "ferrarirecomenda",
+      "filmesmaniaa",
+      "flavio.belardo",
+      "fps.camis",
+      "frases_pravc1",
+      "funcionario_clt",
+      "gabriel_crassh",
+      "gabrielaortiz56",
+      "gabrielasilveraortiz",
+      "gabrielly_modas",
+      "gabyalvestik",
+      "geisydalto",
+      "glauamaral.91",
+      "guilherme.filho.l",
+      "gunswiz",
+      "gunswiz0",
+      "gustavojaques281",
+      "hackattackimer",
+      "hugomellogu",
+      "idrc.mattyy",
+      "igor_picoli",
+      "indomave1s",
+      "insightsgpt",
+      "j.berta",
+      "jackblack",
+      "jadinamedeiros2",
+      "jandersonsantosoficial",
+      "jean.silva4052",
+      "jeanalessandrob",
+      "jhefy.haruno",
+      "josicavalcanti271",
+      "josiclarindo2",
+      "josivaldo.almirao",
+      "jpd_nascimento",
+      "jucirleisouzagomes",
+      "julianagayosogmail.comt5",
+      "julinn.knit",
+      "juu.abarbosa",
+      "jvxrmine",
+      "kamila.lima351",
+      "kamilalima87",
+      "karlos_araujo298",
+      "karolinyeinecke",
+      "kassilaalyne1",
+      "laralonghini.psi",
+      "lauramedina831",
+      "lctop_7",
+      "leaandroneves",
+      "leandro.branquinho",
+      "ledalto",
+      "leidianeborbacurti",
+      "leonaraoliveirapsi",
+      "leoquick1",
+      "leticiamorimoto",
+      "licenseskinz",
+      "liducenadeoliveirapinto",
+      "liswonder",
+      "lorrayneoliverz",
+      "luan",
+      "luan.nascimento.ofc",
+      "lucianadalto0",
+      "lucianapraciel",
+      "macrofying",
+      "mai.steidel",
+      "maiconsadoski",
+      "maiketv_",
+      "maisrenda_",
+      "mamonasassassinasoficial",
+      "maninhonovaes",
+      "manualdalabia.oficial",
+      "mapanerd",
+      "marcus_eni",
+      "maria.auxiliadora96450",
+      "marilzarodrigue42",
+      "mateusleonco",
+      "matheusfmoura",
+      "mattedimarlon",
+      "mauriciobianchi",
+      "maya.liz40",
+      "maytree_music",
+      "memekkj0",
+      "miladyfreak",
+      "momentsofgaming",
+      "moniqueevellyn09",
+      "moraes.jef",
+      "mykaa00",
+      "nahpsilvahotmailcom19880",
+      "nataliaworkt",
+      "natanygoncalves123",
+      "neiaendymanu",
+      "nelsongrapa",
+      "nobrapela",
+      "o_ze_ninguem",
+      "obonossauro",
+      "officiallyaccount209",
+      "oficialeddy",
+      "olharnaprofissao",
+      "oricardomello",
+      "osbarbixascortes",
+      "otto.ast",
+      "participationcertificate",
+      "paullynha4.6",
+      "paulo.henrique.da405",
+      "pedrinhuol",
+      "pedroarcafra",
+      "petrick",
+      "photo_tvoritel",
+      "physiobrain",
+      "pnplpineapple",
+      "psi.carolynedestefani",
+      "psicosergioo",
+      "r.editsofc",
+      "reidochatgpt",
+      "resinabusiness",
+      "riikkee2",
+      "rn.bags.studio",
+      "robsonferreirag36",
+      "rosangelaoliveira464",
+      "rovinsonrsm",
+      "rutiklone8",
+      "samuca.guincho",
+      "sebastianovalle343",
+      "sergio.peruci",
+      "sergiofelix149",
+      "sharshock",
+      "sickickmusic",
+      "silvaaztamires",
+      "silvana",
+      "sioliveira010",
+      "slvhsntts",
+      "suelenmarks40422",
+      "superachadosmil",
+      "svro.zx4rr",
+      "tainararamos68",
+      "tchescovieira",
+      "techlithium",
+      "thaiscristina626",
+      "the_twoz",
+      "thealeatorioo_",
+      "thiago.magalhes.d4",
+      "thiagopereira6637",
+      "tik_horror",
+      "tonyareda",
+      "top_song_76",
+      "tunatudo",
+      "uma_pessoa_bory_biuld",
+      "user4104059625192",
+      "user4519415362913",
+      "user69379657680",
+      "user7439088948733",
+      "user7524863219276",
+      "user79768054148007",
+      "user9528668465376",
+      "vanessada8a80",
+      "venommovie",
+      "victorbeser",
+      "viniciusbrito847",
+      "wallpaperw0rld",
+      "williammartnez75",
+      "wisdomfrs",
+      "xscarface07",
+      "zeckaespinosa"
+    ],
+    "unmatched": [
+      {
+        "relation": "Seguindo",
+        "displayName": "O Boticário",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "O Boticário",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/w_n",
+            "class": "android.widget.LinearLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/ngg",
+            "class": "android.widget.Button",
+            "text": "Visitar a loja",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/nfe",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 1
+      },
+      {
+        "relation": "Seguindo",
+        "displayName": "Zn brique",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Zn brique",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pyw",
+            "class": "android.widget.TextView",
+            "text": "10+ novas publicações",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 1
+      },
+      {
+        "relation": "Seguindo",
+        "displayName": "",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/w_n",
+            "class": "android.widget.LinearLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/ngg",
+            "class": "android.widget.Button",
+            "text": "Ver a vitrine",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/nfe",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 4
+      },
+      {
+        "relation": "Seguindo",
+        "displayName": "Daniel Pedreiro",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/j0_",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/uzs",
+            "class": "androidx.recyclerview.widget.RecyclerView",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Daniel Pedreiro",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pyw",
+            "class": "android.widget.TextView",
+            "text": "6 novas publicações",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 7
+      },
+      {
+        "relation": "Amigos",
+        "displayName": "Floraci Silveira641",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Amigos",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Floraci Silveira641",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Amigos",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 8
+      },
+      {
+        "relation": "Seguindo",
+        "displayName": "Dudu caminhoneiro 🚛💨💨",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Dudu caminhoneiro 🚛💨💨",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pyw",
+            "class": "android.widget.TextView",
+            "text": "2 novas publicações",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 14
+      },
+      {
+        "relation": "Seguindo",
+        "displayName": "Fatos Desconhecidos",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Fatos Desconhecidos",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/w_n",
+            "class": "android.widget.LinearLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/ngg",
+            "class": "android.widget.Button",
+            "text": "Ver a vitrine",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/nfe",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/gny",
+            "class": "android.view.View",
+            "text": "",
+            "description": ""
+          }
+        ],
+        "firstSeenRound": 32
+      },
+      {
+        "relation": "Seguindo",
+        "displayName": "Fin Draper Music",
+        "descUsername": "",
+        "username": "",
+        "recognized": false,
+        "elements": [
+          {
+            "id": "com.zhiliaoapp.musically:id/uzs",
+            "class": "androidx.recyclerview.widget.RecyclerView",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/bnj",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/io7",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/lwg",
+            "class": "android.widget.FrameLayout",
+            "text": "",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/txt_user_name",
+            "class": "android.widget.TextView",
+            "text": "Fin Draper Music",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pyw",
+            "class": "android.widget.TextView",
+            "text": "1 nova publicação",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/u68",
+            "class": "android.widget.Button",
+            "text": "Seguindo",
+            "description": ""
+          },
+          {
+            "id": "com.zhiliaoapp.musically:id/pb1",
+            "class": "android.widget.ImageView",
+            "text": "",
+            "description": "Mais"
+          }
+        ],
+        "firstSeenRound": 37
+      }
+    ]
+  }
+}

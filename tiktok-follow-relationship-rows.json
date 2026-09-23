@@ -1,0 +1,183 @@
+{
+  "generatedAt": "2026-09-16T01:44:26.203Z",
+  "scope": "Somente contas visíveis nas capturas XML atuais.",
+  "followers": [
+    {
+      "displayName": "Vitor,Breno e Théo",
+      "username": "theomenezes9402",
+      "relation": "Seguir de volta",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": ".",
+      "username": "izabelcristina_43",
+      "relation": "Seguir de volta",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "Maria/Antonio",
+      "username": "maria.winckler.ro",
+      "relation": "Seguir de volta",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "laurafleitas2708",
+      "username": "laurafleitas2708",
+      "relation": "Seguir de volta",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "Jean Pedro Siqueira",
+      "username": "xscarface07",
+      "relation": "Amigos",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "Passarinho",
+      "username": "passarinho2977",
+      "relation": "Seguir de volta",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "user47499905384",
+      "username": "fernando.investimento0",
+      "relation": "Seguir de volta",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "Samuca guincho",
+      "username": "samuca.guincho",
+      "relation": "Amigos",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "pollyana",
+      "username": "user9528668465376",
+      "relation": "Amigos",
+      "source": "txt_desc"
+    }
+  ],
+  "following": [
+    {
+      "displayName": "Super Achados Mil",
+      "username": "superachadosmil",
+      "relation": "Seguindo",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "Dudu_briques",
+      "username": "dudu_briques",
+      "relation": "Seguindo",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "ARRANGE GAMETRACKS",
+      "username": "arrange.gametrack",
+      "relation": "Seguindo",
+      "source": "txt_desc"
+    },
+    {
+      "displayName": "escaleno_",
+      "username": "escaleno_",
+      "relation": "Seguindo",
+      "source": "txt_user_name"
+    },
+    {
+      "displayName": "Adilsin",
+      "username": "adilsin",
+      "relation": "Seguindo",
+      "source": "txt_user_name"
+    }
+  ],
+  "comparison": {
+    "mutual": [],
+    "followBackCandidates": [
+      {
+        "displayName": "Vitor,Breno e Théo",
+        "username": "theomenezes9402",
+        "relation": "Seguir de volta",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": ".",
+        "username": "izabelcristina_43",
+        "relation": "Seguir de volta",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "Maria/Antonio",
+        "username": "maria.winckler.ro",
+        "relation": "Seguir de volta",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "laurafleitas2708",
+        "username": "laurafleitas2708",
+        "relation": "Seguir de volta",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "Jean Pedro Siqueira",
+        "username": "xscarface07",
+        "relation": "Amigos",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "Passarinho",
+        "username": "passarinho2977",
+        "relation": "Seguir de volta",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "user47499905384",
+        "username": "fernando.investimento0",
+        "relation": "Seguir de volta",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "Samuca guincho",
+        "username": "samuca.guincho",
+        "relation": "Amigos",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "pollyana",
+        "username": "user9528668465376",
+        "relation": "Amigos",
+        "source": "txt_desc"
+      }
+    ],
+    "notFollowingBackCandidates": [
+      {
+        "displayName": "Super Achados Mil",
+        "username": "superachadosmil",
+        "relation": "Seguindo",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "Dudu_briques",
+        "username": "dudu_briques",
+        "relation": "Seguindo",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "ARRANGE GAMETRACKS",
+        "username": "arrange.gametrack",
+        "relation": "Seguindo",
+        "source": "txt_desc"
+      },
+      {
+        "displayName": "escaleno_",
+        "username": "escaleno_",
+        "relation": "Seguindo",
+        "source": "txt_user_name"
+      },
+      {
+        "displayName": "Adilsin",
+        "username": "adilsin",
+        "relation": "Seguindo",
+        "source": "txt_user_name"
+      }
+    ]
+  }
+}

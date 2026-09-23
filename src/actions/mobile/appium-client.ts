@@ -143,6 +143,25 @@ export class AppiumClient {
     return res.value || '';
   }
 
+  async getWindowSize(): Promise<{ width: number; height: number }> {
+    const res = await this.request('GET', `${this.baseUrl}/window/rect`);
+    const rect = res.value ?? {};
+
+    const width = Number(rect.width);
+    const height = Number(rect.height);
+
+    if (
+      !Number.isFinite(width) ||
+      !Number.isFinite(height) ||
+      width <= 0 ||
+      height <= 0
+    ) {
+      throw new Error(`Invalid Appium window size: ${width}x${height}`);
+    }
+
+    return { width, height };
+  }
+
   // ─── App Management ─────────────────────────────────────
 
   async activateApp(appId: string): Promise<void> {
@@ -165,13 +184,25 @@ export class AppiumClient {
     await this.request('POST', `${this.baseUrl}/appium/device/press_keycode`, { keycode });
   }
 
-  async setClipboard(content: string): Promise<void> {
-    const b64 = Buffer.from(content).toString('base64');
-    await this.request('POST', `${this.baseUrl}/appium/device/set_clipboard`, {
-      content: b64, contentType: 'plaintext',
-    });
-  }
+  async setClipboard(text: string): Promise<void> {
+    const content = Buffer
+      .from(text, 'utf8')
+      .toString('base64');
 
+    await this.request(
+      'POST',
+      `${this.baseUrl}/execute/sync`,
+      {
+        script: 'mobile: setClipboard',
+        args: [
+          {
+            content,
+            contentType: 'plaintext',
+          },
+        ],
+      }
+    );
+  }
   async getClipboard(): Promise<string> {
     const res = await this.request('POST', `${this.baseUrl}/appium/device/get_clipboard`, { contentType: 'plaintext' });
     return Buffer.from(res.value || '', 'base64').toString('utf-8');

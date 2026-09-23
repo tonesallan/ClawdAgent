@@ -1,574 +1,1856 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useAuthStore } from '../stores/auth';
 import {
-  Plus, Trash2, Loader2, AlertTriangle, X, CheckCircle,
-  XCircle, Clock, ShieldAlert, RefreshCw, Eye, EyeOff,
-  Play, Square, Pause, ScrollText, Bot, Zap, Lock, Radio,
-  Heart, MessageCircle, Bookmark, UserPlus
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
+
+import {
+  AlertTriangle,
+  CheckCircle,
+  Loader2,
+  Pause,
+  Play,
+  RefreshCw,
+  ScrollText,
+  ShieldAlert,
+  Smartphone,
+  Square,
+  Wifi,
+  WifiOff,
+  Zap,
 } from 'lucide-react';
 
-interface TikTokAccount {
-  id: string;
-  name: string;
-  handle?: string;
-  userId?: string;
-  cookieCount: number;
-  cookieFormat: string;
-  status: 'untested' | 'active' | 'failed' | 'suspended' | 'locked';
-  profileName?: string;
-  lastVerified?: string;
-  lastError?: string;
-  createdAt: string;
-}
+import {
+  useAuthStore,
+} from '../stores/auth';
 
-interface ParsePreview {
-  valid: boolean;
-  format: string;
-  cookieCount: number;
-  cookieNames: string[];
-  userId?: string;
-  missing: string[];
-  warnings: string[];
+interface MobileConnection {
+  connected: boolean;
+  url: string;
   error?: string;
 }
 
-interface AgentStatus {
-  accountId: string;
-  state: 'stopped' | 'running' | 'paused' | 'error';
-  sessionId: string | null;
+interface MobileDevice {
+  id: string;
+  status: string;
+  model: string;
+  device: string;
+  product: string;
+}
+
+interface MobileAgentStats {
+  likes: number;
+  comments: number;
+  follows: number;
+  scrolls: number;
+  shares: number;
+  errors: number;
+  totalActions: number;
+  actionsThisHour: number;
+  lastActionAt: string | null;
+}
+
+interface MobileAgentStatus {
+  id: string;
+  app: string;
+  deviceId: string;
+  state:
+    | 'stopped'
+    | 'running'
+    | 'paused'
+    | 'error';
   currentAction: string | null;
-  stats: {
-    likes: number; comments: number; follows: number; saves: number;
-    errors: number; totalActions: number; actionsThisHour: number;
-    lastActionAt: string | null;
-  };
+  stats: MobileAgentStats;
   lastError: string | null;
   startedAt: string | null;
-  config?: Record<string, unknown>;
+  lastAction: string | null;
+  lastActionTime: string | null;
+  nextActionTime: string | null;
+  config: {
+    testMode?: boolean;
+  };
 }
 
-interface AgentLog {
+interface MobileAgentLog {
   timestamp: string;
   action: string;
-  status: 'success' | 'error' | 'skipped' | 'info';
+  status:
+    | 'success'
+    | 'error'
+    | 'skipped'
+    | 'info';
   message: string;
+  details?: string;
 }
 
-const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; bg: string; label: string }> = {
-  active:    { icon: CheckCircle,  color: 'text-green-400',  bg: 'bg-green-500/10', label: 'Active' },
-  untested:  { icon: Clock,        color: 'text-yellow-400', bg: 'bg-yellow-500/10', label: 'Untested' },
-  failed:    { icon: XCircle,      color: 'text-red-400',    bg: 'bg-red-500/10',    label: 'Failed' },
-  suspended: { icon: ShieldAlert,  color: 'text-orange-400', bg: 'bg-orange-500/10', label: 'Suspended' },
-  locked:    { icon: Lock,         color: 'text-purple-400', bg: 'bg-purple-500/10', label: 'Locked' },
-};
+interface TikTokRuntimeStatus {
+  state:
+    | 'stopped'
+    | 'running'
+    | 'paused';
+  started: boolean;
+  paused: boolean;
+  tickActive: boolean;
+  intervalMs: number;
+  registeredProviders: string[];
+  lastRunStartedAt: string | null;
+  lastRunCompletedAt: string | null;
+  lastResult: {
+    scanned: number;
+    processed: number;
+    succeeded: number;
+    failed: number;
+    skipped: number;
+  } | null;
+  lastError: string | null;
+}
 
-const ACTION_COLORS: Record<string, string> = {
-  like: 'text-pink-400',
-  comment: 'text-blue-400',
-  follow: 'text-sky-400',
-  save: 'text-amber-400',
-  system: 'text-zinc-400',
-};
+interface TikTokProviderStatus {
+  providers: Array<{
+    name:
+      | 'android'
+      | 'web'
+      | 'dry-run';
+    label: string;
+    mode: string;
+  }>;
+  registeredProviders: string[];
+  mobileProvider: {
+    registered: boolean;
+    active: boolean;
+    agentCount: number;
+    activeAgentCount: number;
+    mode: 'android-appium';
+  };
+  mobileAgents: MobileAgentStatus[];
+  runtime: TikTokRuntimeStatus;
+}
+
+interface RelationshipObservationResult {
+  provider: string;
+  targetKey: string;
+  relationship: string;
+  observedAt: string;
+  details?: {
+    readOnly?: boolean;
+    source?: string;
+    navigationPerformed?: boolean;
+    username?: string;
+    deviceId?: string;
+  };
+}
+
+interface TikTokManualReviewItem {
+  id: string;
+  kind:
+    | 'discovery'
+    | 'unfollow';
+  accountKey: string;
+  provider: string;
+  targetKey: string | null;
+  username: string | null;
+  displayName: string | null;
+  reason: string | null;
+  query: string | null;
+  hashtags: string[];
+  createdAt: string;
+}
+
+interface TikTokManualReviewResponse {
+  reviews:
+    TikTokManualReviewItem[];
+  counts: {
+    total: number;
+    discovery: number;
+    unfollow: number;
+  };
+}
+
+interface TikTokCoreOverview {
+  actions: {
+    total: number;
+    byStatus:
+      Array<{
+        key: string;
+        count: number;
+      }>;
+    byType:
+      Array<{
+        key: string;
+        count: number;
+      }>;
+    byProvider:
+      Array<{
+        key: string;
+        count: number;
+      }>;
+  };
+  relationships: {
+    total: number;
+    protectedCount: number;
+    processedCount: number;
+    byState:
+      Array<{
+        key: string;
+        count: number;
+      }>;
+  };
+  history:
+    Array<{
+      id: string;
+      actionId: string;
+      accountKey: string | null;
+      actionType: string | null;
+      targetUsername: string | null;
+      targetDisplayName: string | null;
+      status: string;
+      provider: string | null;
+      error: string | null;
+      event: unknown;
+      createdAt: string;
+    }>;
+  recentRelationships:
+    Array<{
+      id: string;
+      accountKey: string;
+      targetKey: string;
+      username: string | null;
+      displayName: string | null;
+      relationshipState: string;
+      followsUs: boolean | null;
+      followedByUs: boolean;
+      followedByUsAt: string | null;
+      followBackCheckAt: string | null;
+      lastCheckedAt: string | null;
+      protected: boolean;
+      processed: boolean;
+      updatedAt: string;
+    }>;
+}
+
+const ACTION_OPTIONS = [
+  'like',
+  'comment',
+  'follow',
+  'share',
+  'scroll',
+];
 
 export default function TikTokTab() {
-  const { token } = useAuthStore();
-  const [accounts, setAccounts] = useState<TikTokAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showAdd, setShowAdd] = useState(false);
-  const [newName, setNewName] = useState('');
-  const [newCookies, setNewCookies] = useState('');
-  const [addLoading, setAddLoading] = useState(false);
-  const [preview, setPreview] = useState<ParsePreview | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [showCookies, setShowCookies] = useState(false);
-  const [verifyingId, setVerifyingId] = useState<string | null>(null);
-  // Agent state
-  const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
-  const [agentLogs, setAgentLogs] = useState<AgentLog[]>([]);
-  const [agentLoading, setAgentLoading] = useState(false);
-  const [showLogs, setShowLogs] = useState(false);
-  const [autoScroll, setAutoScroll] = useState(true);
-  // Agent config form
-  const [configActions, setConfigActions] = useState<string[]>(['like', 'comment', 'follow', 'save']);
-  const [configTone, setConfigTone] = useState('AI and tech enthusiast. Authentic, curious, and friendly. Speaks like a real TikTok user who genuinely loves AI tools. Short, punchy comments that add value. Never robotic or generic.');
-  const [configLang, setConfigLang] = useState('English');
-  const [configTopics, setConfigTopics] = useState('AI agents, AI automation, ChatGPT, Claude, AI tools, tech, no-code, productivity');
-  const [configHashtags, setConfigHashtags] = useState('#AI, #AIagents, #automation, #ChatGPT, #Tech');
-  const [configTargets, setConfigTargets] = useState('');
-  const [configTestMode, setConfigTestMode] = useState(false);
-  const logsPanelRef = useRef<HTMLDivElement>(null);
+  const {
+    token,
+  } = useAuthStore();
 
-  const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
-
-  const fetchAccounts = useCallback(async () => {
-    try {
-      const res = await fetch('/api/tiktok/accounts', { headers });
-      const data = await res.json();
-      setAccounts(data.accounts ?? []);
-    } catch { setError('Failed to load accounts'); }
-    finally { setLoading(false); }
-  }, [token]);
-
-  const fetchAgentStatus = useCallback(async () => {
-    try {
-      const res = await fetch('/api/tiktok-agent/agents', { headers });
-      const data = await res.json();
-      const agents = data.agents ?? [];
-      setAgentStatus(agents.length > 0 ? agents[0] : null);
-    } catch { /* silent */ }
-  }, [token]);
-
-  const fetchAgentLogs = useCallback(async () => {
-    if (!agentStatus) return;
-    try {
-      const res = await fetch(`/api/tiktok-agent/agents/${agentStatus.accountId}/logs?limit=100`, { headers });
-      const data = await res.json();
-      setAgentLogs(data.logs ?? []);
-    } catch { /* silent */ }
-  }, [token, agentStatus?.accountId]);
-
-  useEffect(() => { fetchAccounts(); fetchAgentStatus(); }, [fetchAccounts, fetchAgentStatus]);
-
-  // Auto-refresh logs every 5s when agent is running
-  useEffect(() => {
-    if (!agentStatus || agentStatus.state === 'stopped') return;
-    fetchAgentLogs();
-    const interval = setInterval(() => {
-      fetchAgentLogs();
-      fetchAgentStatus();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [agentStatus?.accountId, agentStatus?.state, fetchAgentLogs, fetchAgentStatus]);
-
-  // Auto-scroll logs
-  useEffect(() => {
-    if (autoScroll && logsPanelRef.current) {
-      logsPanelRef.current.scrollTop = logsPanelRef.current.scrollHeight;
-    }
-  }, [agentLogs, autoScroll]);
-
-  // Auto-open logs when agent starts
-  useEffect(() => {
-    if (agentStatus && agentStatus.state === 'running') setShowLogs(true);
-  }, [agentStatus?.state]);
-
-  const previewCookies = async () => {
-    if (!newCookies.trim()) return;
-    setPreviewLoading(true);
-    try {
-      const res = await fetch('/api/tiktok/parse-preview', {
-        method: 'POST', headers, body: JSON.stringify({ cookies: newCookies }),
-      });
-      setPreview(await res.json());
-    } catch { setPreview(null); }
-    finally { setPreviewLoading(false); }
+  const headers = {
+    Authorization:
+      `Bearer ${token}`,
+    'Content-Type':
+      'application/json',
   };
 
-  const addAccount = async () => {
-    if (!newName.trim() || !newCookies.trim()) return;
-    setAddLoading(true);
-    try {
-      const res = await fetch('/api/tiktok/accounts', {
-        method: 'POST', headers, body: JSON.stringify({ name: newName, cookies: newCookies }),
-      });
-      if (!res.ok) { const d = await res.json(); setError(d.error); return; }
-      setShowAdd(false); setNewName(''); setNewCookies(''); setPreview(null);
-      fetchAccounts();
-    } catch { setError('Failed to add account'); }
-    finally { setAddLoading(false); }
-  };
+  const [
+    error,
+    setError,
+  ] = useState('');
 
-  const deleteAccount = async (id: string) => {
-    if (!confirm('Delete this TikTok account?')) return;
-    await fetch(`/api/tiktok/accounts/${id}`, { method: 'DELETE', headers });
-    fetchAccounts();
-  };
+  const [
+    connection,
+    setConnection,
+  ] = useState<
+    MobileConnection |
+    null
+  >(null);
 
-  const verifyAccount = async (id: string) => {
-    setVerifyingId(id);
-    try {
-      const res = await fetch(`/api/tiktok/accounts/${id}/verify`, { method: 'POST', headers });
-      const data = await res.json();
-      if (!data.success) setError(data.error || 'Verification failed');
-      fetchAccounts();
-    } catch { setError('Verification failed'); }
-    finally { setVerifyingId(null); }
-  };
+  const [
+    devices,
+    setDevices,
+  ] = useState<
+    MobileDevice[]
+  >([]);
 
-  const startAgent = async (accountId: string) => {
-    setAgentLoading(true);
-    try {
-      const res = await fetch('/api/tiktok-agent/agents', {
-        method: 'POST', headers,
-        body: JSON.stringify({
-          accountId,
-          config: {
-            actions: configActions,
-            content: {
-              tone: configTone,
-              language: configLang,
-              topics: configTopics.split(',').map(s => s.trim()).filter(Boolean),
-              hashtags: configHashtags.split(',').map(s => s.trim()).filter(Boolean),
-              targetAccounts: configTargets ? configTargets.split(',').map(s => s.trim()).filter(Boolean) : [],
-              maxLength: 150,
-            },
-            safety: {
-              minDelaySeconds: 180,
-              maxActionsPerHour: 5,
-              pauseOnErrorCount: 2,
-              pauseDurationMinutes: 120,
-            },
-            testMode: configTestMode,
+  const [
+    mobileAgents,
+    setMobileAgents,
+  ] = useState<
+    MobileAgentStatus[]
+  >([]);
+
+  const [
+    selectedDevice,
+    setSelectedDevice,
+  ] = useState('');
+
+  const [
+    selectedAgentId,
+    setSelectedAgentId,
+  ] = useState('');
+
+  const [
+    appiumUrl,
+    setAppiumUrl,
+  ] = useState(
+    'http://localhost:4723',
+  );
+
+  const [
+    agentLoading,
+    setAgentLoading,
+  ] = useState(
+    false,
+  );
+
+  const [
+    agentActions,
+    setAgentActions,
+  ] = useState<
+    string[]
+  >([
+    'like',
+    'comment',
+    'follow',
+    'scroll',
+  ]);
+
+  const [
+    agentTestMode,
+    setAgentTestMode,
+  ] = useState(
+    true,
+  );
+
+  const [
+    minDelaySeconds,
+    setMinDelaySeconds,
+  ] = useState(
+    180,
+  );
+
+  const [
+    maxActionsPerHour,
+    setMaxActionsPerHour,
+  ] = useState(
+    5,
+  );
+
+  const [
+    agentLogs,
+    setAgentLogs,
+  ] = useState<
+    MobileAgentLog[]
+  >([]);
+
+  const [
+    providerStatus,
+    setProviderStatus,
+  ] = useState<
+    TikTokProviderStatus |
+    null
+  >(null);
+
+  const [
+    runtimeLoading,
+    setRuntimeLoading,
+  ] = useState(
+    false,
+  );
+
+  const [
+    relationshipUsername,
+    setRelationshipUsername,
+  ] = useState('');
+
+  const [
+    relationshipObservation,
+    setRelationshipObservation,
+  ] = useState<
+    RelationshipObservationResult |
+    null
+  >(null);
+
+  const [
+    relationshipChecking,
+    setRelationshipChecking,
+  ] = useState(
+    false,
+  );
+
+  const [
+    coreOverview,
+    setCoreOverview,
+  ] = useState<
+    TikTokCoreOverview |
+    null
+  >(null);
+
+  const [
+    manualReviews,
+    setManualReviews,
+  ] = useState<
+    TikTokManualReviewResponse |
+    null
+  >(null);
+
+  const [
+    reviewLoadingId,
+    setReviewLoadingId,
+  ] = useState<
+    string |
+    null
+  >(null);
+
+  const fetchConnection =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/mobile-agent/connection',
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          const data =
+            await response.json();
+
+          setConnection(
+            data,
+          );
+
+          if (
+            data.url
+          ) {
+            setAppiumUrl(
+              data.url,
+            );
+          }
+        }
+        catch {
+          setConnection(
+            null,
+          );
+        }
+      },
+      [
+        token,
+      ],
+    );
+
+  const fetchDevices =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/mobile-agent/devices',
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          const data =
+            await response.json();
+
+          const nextDevices =
+            data.devices ??
+            [];
+
+          setDevices(
+            nextDevices,
+          );
+
+          if (
+            !selectedDevice &&
+            nextDevices.length >
+              0
+          ) {
+            setSelectedDevice(
+              nextDevices[0].id,
+            );
+          }
+        }
+        catch {
+          // Keep previous device state.
+        }
+      },
+      [
+        token,
+        selectedDevice,
+      ],
+    );
+
+  const fetchAgents =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/mobile-agent/agents',
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          const data =
+            await response.json();
+
+          const tiktokAgents:
+            MobileAgentStatus[] =
+              (
+                data.agents ??
+                []
+              )
+                .filter(
+                  (
+                    agent:
+                      MobileAgentStatus,
+                  ) =>
+                    agent.app ===
+                    'tiktok',
+                );
+
+          setMobileAgents(
+            tiktokAgents,
+          );
+
+          if (
+            tiktokAgents.length >
+              0 &&
+            !tiktokAgents.some(
+              agent =>
+                agent.id ===
+                selectedAgentId,
+            )
+          ) {
+            setSelectedAgentId(
+              tiktokAgents[0]
+                .id,
+            );
+          }
+        }
+        catch {
+          // Keep previous state.
+        }
+      },
+      [
+        token,
+        selectedAgentId,
+      ],
+    );
+
+  const fetchProviderStatus =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/tiktok/provider-status',
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          setProviderStatus(
+            await response
+              .json(),
+          );
+        }
+        catch {
+          // Keep previous state.
+        }
+      },
+      [
+        token,
+      ],
+    );
+
+  const fetchCoreOverview =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/tiktok/core/overview?limit=50',
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          setCoreOverview(
+            await response
+              .json(),
+          );
+        }
+        catch {
+          // Keep previous state.
+        }
+      },
+      [
+        token,
+      ],
+    );
+
+  const fetchManualReviews =
+    useCallback(
+      async () => {
+        try {
+          const response =
+            await fetch(
+              '/api/tiktok/reviews',
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          setManualReviews(
+            await response
+              .json(),
+          );
+        }
+        catch {
+          // Keep previous state.
+        }
+      },
+      [
+        token,
+      ],
+    );
+
+  const fetchAgentLogs =
+    useCallback(
+      async (
+        agentId:
+          string,
+      ) => {
+        if (!agentId) {
+          setAgentLogs(
+            [],
+          );
+          return;
+        }
+
+        try {
+          const response =
+            await fetch(
+              `/api/mobile-agent/agents/${encodeURIComponent(agentId)}/logs?limit=100`,
+              {
+                headers,
+              },
+            );
+
+          if (!response.ok) {
+            return;
+          }
+
+          const data =
+            await response
+              .json();
+
+          setAgentLogs(
+            data.logs ??
+            [],
+          );
+        }
+        catch {
+          // Keep previous logs.
+        }
+      },
+      [
+        token,
+      ],
+    );
+
+  const refreshAll =
+    useCallback(
+      async () => {
+        await Promise.all([
+          fetchConnection(),
+          fetchDevices(),
+          fetchAgents(),
+          fetchProviderStatus(),
+          fetchCoreOverview(),
+          fetchManualReviews(),
+        ]);
+      },
+      [
+        fetchConnection,
+        fetchDevices,
+        fetchAgents,
+        fetchProviderStatus,
+        fetchCoreOverview,
+        fetchManualReviews,
+      ],
+    );
+
+  useEffect(
+    () => {
+      void refreshAll();
+    },
+    [
+      refreshAll,
+    ],
+  );
+
+  useEffect(
+    () => {
+      if (
+        selectedAgentId
+      ) {
+        void fetchAgentLogs(
+          selectedAgentId,
+        );
+      }
+    },
+    [
+      selectedAgentId,
+      fetchAgentLogs,
+    ],
+  );
+
+  useEffect(
+    () => {
+      const interval =
+        setInterval(
+          () => {
+            void Promise.all([
+              fetchAgents(),
+              fetchProviderStatus(),
+              fetchCoreOverview(),
+              fetchManualReviews(),
+            ]);
+
+            if (
+              selectedAgentId
+            ) {
+              void fetchAgentLogs(
+                selectedAgentId,
+              );
+            }
           },
-        }),
-      });
-      if (!res.ok) { const d = await res.json(); setError(d.error); return; }
-      fetchAgentStatus();
-    } catch { setError('Failed to start agent'); }
-    finally { setAgentLoading(false); }
-  };
+          5000,
+        );
 
-  const stopAgent = async () => {
-    if (!agentStatus) return;
-    setAgentLoading(true);
-    try {
-      await fetch(`/api/tiktok-agent/agents/${agentStatus.accountId}/stop`, { method: 'POST', headers });
-      setAgentStatus(null); setAgentLogs([]);
-    } catch { setError('Failed to stop agent'); }
-    finally { setAgentLoading(false); }
-  };
+      return () =>
+        clearInterval(
+          interval,
+        );
+    },
+    [
+      fetchAgents,
+      fetchProviderStatus,
+      fetchCoreOverview,
+      fetchManualReviews,
+      fetchAgentLogs,
+      selectedAgentId,
+    ],
+  );
 
-  const pauseAgent = async () => {
-    if (!agentStatus) return;
-    await fetch(`/api/tiktok-agent/agents/${agentStatus.accountId}/pause`, { method: 'POST', headers });
-    fetchAgentStatus();
-  };
+  const activeAgent =
+    mobileAgents.find(
+      agent =>
+        agent.id ===
+        selectedAgentId,
+    ) ??
+    mobileAgents[0] ??
+    null;
 
-  const resumeAgent = async () => {
-    if (!agentStatus) return;
-    await fetch(`/api/tiktok-agent/agents/${agentStatus.accountId}/resume`, { method: 'POST', headers });
-    fetchAgentStatus();
-  };
+  const startMobileAgent =
+    async () => {
+      setAgentLoading(
+        true,
+      );
 
-  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="w-6 h-6 animate-spin text-zinc-400" /></div>;
+      setError(
+        '',
+      );
+
+      try {
+        const response =
+          await fetch(
+            '/api/mobile-agent/agents',
+            {
+              method:
+                'POST',
+              headers,
+              body:
+                JSON.stringify({
+                  app:
+                    'tiktok',
+                  deviceId:
+                    selectedDevice ||
+                    undefined,
+                  appiumUrl,
+                  config: {
+                    actions:
+                      agentActions,
+                    testMode:
+                      agentTestMode,
+                    safety: {
+                      minDelaySeconds,
+                      maxActionsPerHour,
+                      pauseOnErrorCount:
+                        2,
+                      pauseDurationMinutes:
+                        120,
+                    },
+                    content: {
+                      tone:
+                        'Authentic, friendly, engaged',
+                      language:
+                        'pt-BR',
+                      topics: [
+                        'AI',
+                        'technology',
+                      ],
+                      maxLength:
+                        150,
+                    },
+                  },
+                }),
+            },
+          );
+
+        const data =
+          await response
+            .json();
+
+        if (!response.ok) {
+          setError(
+            data.error ??
+            'Failed to start Android TikTok agent',
+          );
+          return;
+        }
+
+        setSelectedAgentId(
+          data.status.id,
+        );
+
+        await Promise.all([
+          fetchAgents(),
+          fetchProviderStatus(),
+        ]);
+      }
+      catch (
+        err:
+          unknown
+      ) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : String(
+                err,
+              ),
+        );
+      }
+      finally {
+        setAgentLoading(
+          false,
+        );
+      }
+    };
+
+  const controlMobileAgent =
+    async (
+      action:
+        'pause'
+        | 'resume'
+        | 'stop',
+      agentId:
+        string,
+    ) => {
+      setAgentLoading(
+        true,
+      );
+
+      setError(
+        '',
+      );
+
+      try {
+        const response =
+          await fetch(
+            `/api/mobile-agent/agents/${encodeURIComponent(agentId)}/${action}`,
+            {
+              method:
+                'POST',
+              headers,
+            },
+          );
+
+        const data =
+          await response
+            .json();
+
+        if (!response.ok) {
+          setError(
+            data.error ??
+            `Failed to ${action} mobile agent`,
+          );
+          return;
+        }
+
+        if (
+          action ===
+          'stop'
+        ) {
+          setSelectedAgentId(
+            '',
+          );
+          setAgentLogs(
+            [],
+          );
+        }
+
+        await Promise.all([
+          fetchAgents(),
+          fetchProviderStatus(),
+        ]);
+      }
+      catch (
+        err:
+          unknown
+      ) {
+        setError(
+          err instanceof Error
+            ? err.message
+            : String(
+                err,
+              ),
+        );
+      }
+      finally {
+        setAgentLoading(
+          false,
+        );
+      }
+    };
+
+  const controlRuntime =
+    async (
+      action:
+        'start'
+        | 'pause'
+        | 'resume'
+        | 'stop',
+    ) => {
+      setRuntimeLoading(
+        true,
+      );
+
+      setError(
+        '',
+      );
+
+      try {
+        const response =
+          await fetch(
+            `/api/tiktok/runtime/${action}`,
+            {
+              method:
+                'POST',
+              headers,
+            },
+          );
+
+        const data =
+          await response
+            .json();
+
+        if (!response.ok) {
+          setError(
+            data.error ??
+            `Runtime ${action} failed`,
+          );
+          return;
+        }
+
+        await fetchProviderStatus();
+      }
+      catch {
+        setError(
+          `Runtime ${action} failed`,
+        );
+      }
+      finally {
+        setRuntimeLoading(
+          false,
+        );
+      }
+    };
+
+  const checkRelationship =
+    async () => {
+      const username =
+        relationshipUsername
+          .trim()
+          .replace(
+            /^@/,
+            '',
+          );
+
+      if (!username) {
+        return;
+      }
+
+      if (!activeAgent) {
+        setError(
+          'Start the TikTok Android agent before checking a relationship.',
+        );
+        return;
+      }
+
+      setRelationshipChecking(
+        true,
+      );
+
+      setRelationshipObservation(
+        null,
+      );
+
+      setError(
+        '',
+      );
+
+      try {
+        const response =
+          await fetch(
+            '/api/tiktok/provider/check-relationship',
+            {
+              method:
+                'POST',
+              headers,
+              body:
+                JSON.stringify({
+                  provider:
+                    'android',
+                  accountKey:
+                    activeAgent.id,
+                  username,
+                }),
+            },
+          );
+
+        const data =
+          await response
+            .json();
+
+        if (!response.ok) {
+          setError(
+            data.error ??
+            'Android relationship check failed',
+          );
+          return;
+        }
+
+        setRelationshipObservation(
+          data.observation,
+        );
+
+        await fetchCoreOverview();
+      }
+      catch {
+        setError(
+          'Android relationship check failed',
+        );
+      }
+      finally {
+        setRelationshipChecking(
+          false,
+        );
+      }
+    };
+
+  const resolveDiscoveryReview =
+    async (
+      reviewId:
+        string,
+      decision:
+        'approved'
+        | 'rejected',
+    ) => {
+      setReviewLoadingId(
+        reviewId,
+      );
+
+      try {
+        const response =
+          await fetch(
+            `/api/tiktok/reviews/${reviewId}/discovery-decision`,
+            {
+              method:
+                'POST',
+              headers,
+              body:
+                JSON.stringify({
+                  decision,
+                }),
+            },
+          );
+
+        const data =
+          await response
+            .json();
+
+        if (!response.ok) {
+          setError(
+            data.error ??
+            'Failed to resolve discovery review',
+          );
+          return;
+        }
+
+        await Promise.all([
+          fetchManualReviews(),
+          fetchCoreOverview(),
+        ]);
+      }
+      finally {
+        setReviewLoadingId(
+          null,
+        );
+      }
+    };
+
+  const cancelUnfollowReview =
+    async (
+      reviewId:
+        string,
+    ) => {
+      if (
+        !confirm(
+          'Cancel this pending UNFOLLOW review? No TikTok unfollow will be executed.',
+        )
+      ) {
+        return;
+      }
+
+      setReviewLoadingId(
+        reviewId,
+      );
+
+      try {
+        const response =
+          await fetch(
+            `/api/tiktok/reviews/${reviewId}/cancel-unfollow`,
+            {
+              method:
+                'POST',
+              headers,
+            },
+          );
+
+        const data =
+          await response
+            .json();
+
+        if (!response.ok) {
+          setError(
+            data.error ??
+            'Failed to cancel UNFOLLOW review',
+          );
+          return;
+        }
+
+        await Promise.all([
+          fetchManualReviews(),
+          fetchCoreOverview(),
+        ]);
+      }
+      finally {
+        setReviewLoadingId(
+          null,
+        );
+      }
+    };
+
+  const runtime =
+    providerStatus
+      ?.runtime;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 p-4">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <span className="text-2xl">🎵</span> TikTok Agent
-          </h1>
-          <p className="text-zinc-400 text-sm mt-1">Autonomous engagement — like, comment, follow, save</p>
+          <h2 className="text-xl font-semibold text-white flex items-center gap-2">
+            <Smartphone className="w-5 h-5 text-pink-400" />
+            TikTok — Android only
+          </h2>
+          <p className="text-sm text-zinc-500 mt-1">
+            Operacao exclusiva pelo app Android via Appium/ADB.
+          </p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-sm font-medium transition-colors">
-          <Plus className="w-4 h-4" /> Add Account
+
+        <button
+          onClick={() => void refreshAll()}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-sm text-zinc-300"
+        >
+          <RefreshCw className="w-4 h-4" />
+          Refresh
         </button>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm">
-          <AlertTriangle className="w-4 h-4 shrink-0" /> {error}
-          <button onClick={() => setError('')} className="ml-auto"><X className="w-4 h-4" /></button>
+        <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-400 flex items-start gap-2">
+          <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+          {error}
         </div>
       )}
 
-      {/* Agent Status Bar */}
-      {agentStatus && (
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-3">
-              <Bot className="w-5 h-5 text-pink-400" />
-              <span className="font-medium text-white">TikTok Agent</span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                agentStatus.state === 'running' ? 'bg-green-500/20 text-green-400' :
-                agentStatus.state === 'paused' ? 'bg-yellow-500/20 text-yellow-400' :
-                agentStatus.state === 'error' ? 'bg-red-500/20 text-red-400' :
-                'bg-zinc-500/20 text-zinc-400'
-              }`}>
-                {agentStatus.state === 'running' && <Radio className="w-3 h-3 inline mr-1 animate-pulse" />}
-                {agentStatus.state}
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                {connection?.connected
+                  ? <Wifi className="w-4 h-4 text-green-400" />
+                  : <WifiOff className="w-4 h-4 text-red-400" />}
+                Android / Appium
+              </h3>
+              <p className="text-xs text-zinc-500 mt-1">
+                {connection?.connected
+                  ? 'Appium connected'
+                  : 'Appium not connected'}
+              </p>
+            </div>
+
+            <span className={'px-2 py-1 rounded-full text-xs ' + (
+              providerStatus?.mobileProvider.registered
+                ? 'bg-green-500/15 text-green-400'
+                : 'bg-zinc-800 text-zinc-500'
+            )}>
+              Provider {providerStatus?.mobileProvider.registered ? 'android' : 'offline'}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Appium URL
+              </label>
+              <input
+                value={appiumUrl}
+                onChange={event => setAppiumUrl(event.target.value)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs text-zinc-400 mb-1">
+                Android device
+              </label>
+              <select
+                value={selectedDevice}
+                onChange={event => setSelectedDevice(event.target.value)}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+              >
+                <option value="">Auto-detect</option>
+                {devices.map(device => (
+                  <option key={device.id} value={device.id}>
+                    {device.id} — {device.model} ({device.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {activeAgent ? (
+            <div className="mt-4 border border-zinc-800 rounded-lg p-3 bg-zinc-950/50">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className={'w-2 h-2 rounded-full ' + (
+                      activeAgent.state === 'running'
+                        ? 'bg-green-400 animate-pulse'
+                        : activeAgent.state === 'paused'
+                          ? 'bg-yellow-400'
+                          : 'bg-red-400'
+                    )} />
+                    <span className="text-sm text-white font-medium">
+                      {activeAgent.deviceId}
+                    </span>
+                    <span className="text-xs text-zinc-500">
+                      {activeAgent.state}
+                    </span>
+                    {activeAgent.config.testMode && (
+                      <span className="px-2 py-0.5 rounded bg-yellow-500/10 text-yellow-400 text-xs">
+                        TEST MODE
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="mt-2 text-xs text-zinc-500">
+                    action: {activeAgent.currentAction ?? 'idle'} · total: {activeAgent.stats.totalActions} · hour: {activeAgent.stats.actionsThisHour}
+                  </div>
+
+                  {activeAgent.lastError && (
+                    <div className="mt-1 text-xs text-red-400">
+                      {activeAgent.lastError}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  {activeAgent.state === 'running' && (
+                    <button
+                      onClick={() => void controlMobileAgent('pause', activeAgent.id)}
+                      disabled={agentLoading}
+                      className="px-3 py-1.5 rounded bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-xs font-medium flex items-center gap-1.5"
+                    >
+                      <Pause className="w-3 h-3" />
+                      Pause
+                    </button>
+                  )}
+
+                  {activeAgent.state === 'paused' && (
+                    <button
+                      onClick={() => void controlMobileAgent('resume', activeAgent.id)}
+                      disabled={agentLoading}
+                      className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-xs font-medium flex items-center gap-1.5"
+                    >
+                      <Play className="w-3 h-3" />
+                      Resume
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => void controlMobileAgent('stop', activeAgent.id)}
+                    disabled={agentLoading}
+                    className="px-3 py-1.5 rounded bg-red-600 hover:bg-red-700 disabled:opacity-50 text-xs font-medium flex items-center gap-1.5"
+                  >
+                    <Square className="w-3 h-3" />
+                    Stop
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 space-y-3">
+              <div>
+                <label className="block text-xs text-zinc-400 mb-2">
+                  Actions
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {ACTION_OPTIONS.map(action => (
+                    <button
+                      key={action}
+                      onClick={() => {
+                        setAgentActions(previous =>
+                          previous.includes(action)
+                            ? previous.filter(item => item !== action)
+                            : [...previous, action],
+                        );
+                      }}
+                      className={'px-2.5 py-1 rounded text-xs font-medium ' + (
+                        agentActions.includes(action)
+                          ? 'bg-pink-600 text-white'
+                          : 'bg-zinc-800 text-zinc-400'
+                      )}
+                    >
+                      {action}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Min delay (seconds)
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={minDelaySeconds}
+                    onChange={event => setMinDelaySeconds(Number(event.target.value))}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs text-zinc-400 mb-1">
+                    Max actions/hour
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={maxActionsPerHour}
+                    onChange={event => setMaxActionsPerHour(Number(event.target.value))}
+                    className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white"
+                  />
+                </div>
+
+                <label className="flex items-end gap-2 pb-2 text-sm text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={agentTestMode}
+                    onChange={event => setAgentTestMode(event.target.checked)}
+                  />
+                  Test mode
+                </label>
+              </div>
+
+              <button
+                onClick={() => void startMobileAgent()}
+                disabled={agentLoading || !connection?.connected || agentActions.length === 0}
+                className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-sm font-medium flex items-center gap-2"
+              >
+                {agentLoading
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : <Play className="w-4 h-4" />}
+                Start TikTok on Android
+              </button>
+            </div>
+          )}
+        </div>
+
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+          <div className="flex items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 className="text-sm font-medium text-white flex items-center gap-2">
+                <Zap className="w-4 h-4 text-sky-400" />
+                Automation Core
+              </h3>
+              <p className="text-xs text-zinc-500 mt-1">
+                Android relationship checks + persistent 48h follow-back scheduler
+              </p>
+            </div>
+
+            <span className={'px-2 py-1 rounded-full text-xs ' + (
+              runtime?.state === 'running'
+                ? 'bg-green-500/15 text-green-400'
+                : runtime?.state === 'paused'
+                  ? 'bg-yellow-500/15 text-yellow-400'
+                  : 'bg-zinc-800 text-zinc-400'
+            )}>
+              {runtime?.state ?? 'unknown'}
+            </span>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {runtime?.state === 'stopped' && (
+              <button
+                onClick={() => void controlRuntime('start')}
+                disabled={runtimeLoading}
+                className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-xs font-medium"
+              >
+                Start core
+              </button>
+            )}
+
+            {runtime?.state === 'running' && (
+              <button
+                onClick={() => void controlRuntime('pause')}
+                disabled={runtimeLoading}
+                className="px-3 py-1.5 rounded bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 text-xs font-medium"
+              >
+                Pause core
+              </button>
+            )}
+
+            {runtime?.state === 'paused' && (
+              <button
+                onClick={() => void controlRuntime('resume')}
+                disabled={runtimeLoading}
+                className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-xs font-medium"
+              >
+                Resume core
+              </button>
+            )}
+
+            {runtime?.state !== 'stopped' && (
+              <button
+                onClick={() => void controlRuntime('stop')}
+                disabled={runtimeLoading}
+                className="px-3 py-1.5 rounded bg-red-600 hover:bg-red-700 disabled:opacity-50 text-xs font-medium"
+              >
+                Stop core
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs mb-4">
+            <div className="bg-zinc-950/60 rounded p-2">
+              <div className="text-zinc-600">Provider</div>
+              <div className="text-zinc-300">
+                {runtime?.registeredProviders.join(', ') || '—'}
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/60 rounded p-2">
+              <div className="text-zinc-600">Tick</div>
+              <div className="text-zinc-300">
+                {runtime?.tickActive ? 'active' : 'idle'}
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/60 rounded p-2">
+              <div className="text-zinc-600">Processed</div>
+              <div className="text-zinc-300">
+                {runtime?.lastResult?.processed ?? '—'}
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/60 rounded p-2">
+              <div className="text-zinc-600">Failed</div>
+              <div className={runtime?.lastResult?.failed ? 'text-red-400' : 'text-zinc-300'}>
+                {runtime?.lastResult?.failed ?? '—'}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs text-zinc-400 mb-1">
+              Read-only relationship check on phone
+            </label>
+
+            <div className="flex gap-2">
+              <input
+                value={relationshipUsername}
+                onChange={event => setRelationshipUsername(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === 'Enter') {
+                    void checkRelationship();
+                  }
+                }}
+                placeholder="@username"
+                className="min-w-0 flex-1 bg-zinc-800 border border-zinc-700 rounded px-3 py-2 text-sm text-white placeholder-zinc-600"
+              />
+
+              <button
+                onClick={() => void checkRelationship()}
+                disabled={relationshipChecking || !activeAgent || !relationshipUsername.trim()}
+                className="px-3 py-2 rounded bg-sky-600 hover:bg-sky-700 disabled:bg-zinc-700 disabled:text-zinc-500 text-xs font-medium"
+              >
+                {relationshipChecking
+                  ? <Loader2 className="w-4 h-4 animate-spin" />
+                  : 'Check'}
+              </button>
+            </div>
+
+            {relationshipObservation && (
+              <div className="mt-3 border border-zinc-800 rounded p-3 bg-zinc-950/60 text-xs">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-zinc-500">
+                    @{relationshipObservation.details?.username ?? relationshipUsername.replace(/^@/, '')}
+                  </span>
+                  <span className="text-sky-400 font-medium">
+                    {relationshipObservation.relationship}
+                  </span>
+                </div>
+
+                <div className="mt-1 text-zinc-600">
+                  provider={relationshipObservation.provider} · device={relationshipObservation.details?.deviceId ?? activeAgent?.deviceId ?? '—'} · read-only
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {activeAgent && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <ScrollText className="w-4 h-4 text-green-400" />
+              <span className="text-sm font-medium text-white">
+                Android live logs
               </span>
             </div>
-            <div className="flex items-center gap-2">
-              {agentStatus.state === 'running' && (
-                <button onClick={pauseAgent} className="p-1.5 rounded hover:bg-zinc-800 text-yellow-400" title="Pause"><Pause className="w-4 h-4" /></button>
-              )}
-              {agentStatus.state === 'paused' && (
-                <button onClick={resumeAgent} className="p-1.5 rounded hover:bg-zinc-800 text-green-400" title="Resume"><Play className="w-4 h-4" /></button>
-              )}
-              <button onClick={stopAgent} disabled={agentLoading} className="p-1.5 rounded hover:bg-zinc-800 text-red-400" title="Stop">
-                {agentLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Square className="w-4 h-4" />}
-              </button>
-              <button onClick={() => setShowLogs(!showLogs)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400" title="Toggle logs">
-                <ScrollText className="w-4 h-4" />
-              </button>
-            </div>
+            <span className="text-xs text-zinc-600">
+              {agentLogs.length}
+            </span>
           </div>
 
-          {/* Stats */}
-          <div className="grid grid-cols-6 gap-3 text-center">
-            <div className="bg-zinc-800/50 rounded-lg p-2">
-              <div className="text-lg font-bold text-pink-400">{agentStatus.stats.likes}</div>
-              <div className="text-xs text-zinc-500">Likes</div>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2">
-              <div className="text-lg font-bold text-blue-400">{agentStatus.stats.comments}</div>
-              <div className="text-xs text-zinc-500">Comments</div>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2">
-              <div className="text-lg font-bold text-sky-400">{agentStatus.stats.follows}</div>
-              <div className="text-xs text-zinc-500">Follows</div>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2">
-              <div className="text-lg font-bold text-amber-400">{agentStatus.stats.saves}</div>
-              <div className="text-xs text-zinc-500">Saves</div>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2">
-              <div className="text-lg font-bold text-white">{agentStatus.stats.totalActions}</div>
-              <div className="text-xs text-zinc-500">Total</div>
-            </div>
-            <div className="bg-zinc-800/50 rounded-lg p-2">
-              <div className="text-lg font-bold text-red-400">{agentStatus.stats.errors}</div>
-              <div className="text-xs text-zinc-500">Errors</div>
-            </div>
-          </div>
-
-          {agentStatus.lastError && (
-            <div className="mt-2 text-xs text-red-400 bg-red-500/5 rounded p-2 truncate">{agentStatus.lastError}</div>
-          )}
-
-          {/* Live Logs Panel */}
-          {showLogs && (
-            <div className="mt-3 border border-zinc-700 rounded-lg overflow-hidden">
-              {/* Config summary bar */}
-              {agentStatus.config && (
-                <div className="px-3 py-1.5 bg-zinc-800/80 border-b border-zinc-700 flex items-center gap-3 text-xs text-zinc-400 overflow-x-auto">
-                  <span className="flex items-center gap-1"><Zap className="w-3 h-3 text-pink-400" /> {(agentStatus.config as Record<string, unknown>).actions ? String((agentStatus.config as Record<string, unknown>).actions) : 'like,follow'}</span>
-                  <span>|</span>
-                  <span>{agentStatus.stats.actionsThisHour}/{5} this hour</span>
-                </div>
-              )}
-              <div className="flex items-center justify-between px-3 py-1.5 bg-zinc-800/50 border-b border-zinc-700">
-                <span className="text-xs text-zinc-400 flex items-center gap-1">
-                  <Radio className="w-3 h-3 text-green-400 animate-pulse" /> Live Logs ({agentLogs.length})
+          <div className="max-h-64 overflow-y-auto bg-zinc-950 font-mono text-xs">
+            {agentLogs.length === 0 ? (
+              <div className="p-4 text-center text-zinc-600">
+                No mobile-agent logs yet.
+              </div>
+            ) : agentLogs.map((log, index) => (
+              <div
+                key={index}
+                className="px-3 py-1.5 border-b border-zinc-800/60 flex items-start gap-2"
+              >
+                <span className="text-zinc-600 shrink-0">
+                  {new Date(log.timestamp).toLocaleTimeString()}
                 </span>
-                <button onClick={() => setAutoScroll(!autoScroll)} className={`text-xs px-2 py-0.5 rounded ${autoScroll ? 'bg-green-500/20 text-green-400' : 'bg-zinc-700 text-zinc-400'}`}>
-                  Auto-scroll {autoScroll ? 'ON' : 'OFF'}
-                </button>
+                <span className={
+                  log.status === 'success'
+                    ? 'text-green-400'
+                    : log.status === 'error'
+                      ? 'text-red-400'
+                      : log.status === 'skipped'
+                        ? 'text-yellow-400'
+                        : 'text-zinc-500'
+                }>
+                  {log.status}
+                </span>
+                <span className="text-sky-400">
+                  {log.action}
+                </span>
+                <span className="text-zinc-300">
+                  {log.message}
+                  {log.details ? ' — ' + log.details : ''}
+                </span>
               </div>
-              <div ref={logsPanelRef} className="max-h-64 overflow-y-auto bg-zinc-950 font-mono text-xs">
-                {agentLogs.length === 0 ? (
-                  <div className="p-4 text-center text-zinc-500">Waiting for agent actions...</div>
-                ) : agentLogs.map((log, i) => (
-                  <div key={i} className={`px-3 py-1 border-b border-zinc-800/50 flex items-start gap-2 ${log.status === 'error' ? 'bg-red-500/5' : ''}`}>
-                    <span className="text-zinc-600 shrink-0">{new Date(log.timestamp).toLocaleTimeString()}</span>
-                    <span className={`shrink-0 ${
-                      log.status === 'success' ? 'text-green-400' :
-                      log.status === 'error' ? 'text-red-400' :
-                      log.status === 'skipped' ? 'text-yellow-400' :
-                      'text-zinc-500'
-                    }`}>
-                      {log.status === 'success' ? '✓' : log.status === 'error' ? '✗' : log.status === 'skipped' ? '⊘' : '•'}
-                    </span>
-                    <span className={`shrink-0 font-medium ${ACTION_COLORS[log.action] ?? 'text-zinc-400'}`}>{log.action}</span>
-                    <span className="text-zinc-300 truncate">{log.message}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Accounts List */}
-      {accounts.length === 0 && !showAdd ? (
-        <div className="text-center py-12">
-          <div className="text-4xl mb-4">🎵</div>
-          <h3 className="text-lg font-medium text-white mb-2">No TikTok accounts yet</h3>
-          <p className="text-zinc-400 text-sm mb-4">Add your TikTok cookies to start the autonomous agent</p>
-          <button onClick={() => setShowAdd(true)} className="px-4 py-2 bg-pink-600 hover:bg-pink-700 rounded-lg text-sm font-medium transition-colors">
-            <Plus className="w-4 h-4 inline mr-1" /> Add Account
-          </button>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {accounts.map(account => {
-            const statusCfg = STATUS_CONFIG[account.status] || STATUS_CONFIG.untested;
-            const StatusIcon = statusCfg.icon;
-            const isRunning = agentStatus?.accountId === account.id && agentStatus.state !== 'stopped';
+      {manualReviews && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4 text-yellow-400" />
+              <span className="text-sm font-medium text-white">
+                Manual Review Queue
+              </span>
+            </div>
 
-            return (
-              <div key={account.id} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-lg ${statusCfg.bg}`}>
-                      <StatusIcon className={`w-5 h-5 ${statusCfg.color}`} />
+            <div className="flex gap-2 text-xs">
+              <span className="px-2 py-1 rounded bg-zinc-800 text-zinc-400">
+                total {manualReviews.counts.total}
+              </span>
+              <span className="px-2 py-1 rounded bg-sky-500/10 text-sky-400">
+                discovery {manualReviews.counts.discovery}
+              </span>
+              <span className="px-2 py-1 rounded bg-yellow-500/10 text-yellow-400">
+                unfollow {manualReviews.counts.unfollow}
+              </span>
+            </div>
+          </div>
+
+          {manualReviews.reviews.length === 0 ? (
+            <div className="p-4 text-center text-xs text-zinc-600">
+              No pending reviews.
+            </div>
+          ) : (
+            <div className="divide-y divide-zinc-800">
+              {manualReviews.reviews.map(review => (
+                <div key={review.id} className="p-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className={'px-2 py-0.5 rounded-full text-xs ' + (
+                        review.kind === 'discovery'
+                          ? 'bg-sky-500/15 text-sky-400'
+                          : 'bg-yellow-500/15 text-yellow-400'
+                      )}>
+                        {review.kind === 'discovery' ? 'DISCOVERY' : 'UNFOLLOW REVIEW'}
+                      </span>
+                      <span className="text-xs text-zinc-600">
+                        {review.provider}
+                      </span>
                     </div>
-                    <div>
-                      <div className="font-medium text-white flex items-center gap-2">
-                        {account.name}
-                        {account.handle && <span className="text-zinc-400 text-sm">@{account.handle}</span>}
-                        {isRunning && <span className="text-xs bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded-full">Agent running</span>}
-                      </div>
-                      <div className="text-xs text-zinc-500 mt-0.5">
-                        {account.cookieCount} cookies ({account.cookieFormat}) | {statusCfg.label}
-                        {account.lastVerified && ` | Verified ${new Date(account.lastVerified).toLocaleString()}`}
-                      </div>
-                      {account.lastError && <div className="text-xs text-red-400 mt-1">{account.lastError}</div>}
+
+                    <div className="mt-2 text-sm text-zinc-200">
+                      {review.username
+                        ? '@' + review.username
+                        : review.displayName ?? review.targetKey ?? review.id}
+                    </div>
+
+                    <div className="mt-1 text-xs text-zinc-500">
+                      {review.kind === 'discovery'
+                        ? review.query ?? 'Discovery candidate'
+                        : 'No follow-back after waiting period. Automatic unfollow remains disabled.'}
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => verifyAccount(account.id)} disabled={verifyingId === account.id}
-                      className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-white" title="Verify login">
-                      {verifyingId === account.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
-                    </button>
-                    {!isRunning && account.status === 'active' && (
-                      <button onClick={() => startAgent(account.id)} disabled={agentLoading}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-700 rounded-lg text-xs font-medium transition-colors">
-                        {agentLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-                        Start Agent
+                  <div className="flex gap-2">
+                    {review.kind === 'discovery' ? (
+                      <>
+                        <button
+                          onClick={() => void resolveDiscoveryReview(review.id, 'approved')}
+                          disabled={reviewLoadingId === review.id}
+                          className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-700 disabled:opacity-50 text-xs font-medium"
+                        >
+                          Approve
+                        </button>
+
+                        <button
+                          onClick={() => void resolveDiscoveryReview(review.id, 'rejected')}
+                          disabled={reviewLoadingId === review.id}
+                          className="px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-xs font-medium"
+                        >
+                          Reject
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        onClick={() => void cancelUnfollowReview(review.id)}
+                        disabled={reviewLoadingId === review.id}
+                        className="px-3 py-1.5 rounded bg-zinc-700 hover:bg-zinc-600 disabled:opacity-50 text-xs font-medium"
+                      >
+                        Cancel review
                       </button>
                     )}
-                    <button onClick={() => deleteAccount(account.id)} className="p-1.5 rounded hover:bg-zinc-800 text-zinc-400 hover:text-red-400" title="Delete">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Agent Config (shown when no agent is running) */}
-      {!agentStatus && accounts.some(a => a.status === 'active') && (
-        <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-          <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2"><Zap className="w-4 h-4 text-pink-400" /> Agent Configuration</h3>
+      {coreOverview && (
+        <div className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden">
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-sky-400" />
+              <span className="text-sm font-medium text-white">
+                Persistent Core History
+              </span>
+            </div>
+            <span className="text-xs text-zinc-600">
+              Android
+            </span>
+          </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">Actions</label>
-              <div className="flex flex-wrap gap-2">
-                {['like', 'comment', 'follow', 'save'].map(action => (
-                  <button key={action} onClick={() => {
-                    setConfigActions(prev => prev.includes(action) ? prev.filter(a => a !== action) : [...prev, action]);
-                  }} className={`px-2.5 py-1 rounded text-xs font-medium transition-colors flex items-center gap-1 ${
-                    configActions.includes(action) ? 'bg-pink-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-white'
-                  }`}>
-                    {action === 'like' && <Heart className="w-3 h-3" />}
-                    {action === 'comment' && <MessageCircle className="w-3 h-3" />}
-                    {action === 'follow' && <UserPlus className="w-3 h-3" />}
-                    {action === 'save' && <Bookmark className="w-3 h-3" />}
-                    {action}
-                  </button>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-4 border-b border-zinc-800">
+            <div className="bg-zinc-950/60 rounded p-3 text-center">
+              <div className="text-lg font-bold text-white">
+                {coreOverview.actions.total}
+              </div>
+              <div className="text-xs text-zinc-500">
+                Actions
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/60 rounded p-3 text-center">
+              <div className="text-lg font-bold text-sky-400">
+                {coreOverview.relationships.total}
+              </div>
+              <div className="text-xs text-zinc-500">
+                Relationships
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/60 rounded p-3 text-center">
+              <div className="text-lg font-bold text-green-400">
+                {coreOverview.relationships.processedCount}
+              </div>
+              <div className="text-xs text-zinc-500">
+                Processed
+              </div>
+            </div>
+
+            <div className="bg-zinc-950/60 rounded p-3 text-center">
+              <div className="text-lg font-bold text-yellow-400">
+                {coreOverview.relationships.protectedCount}
+              </div>
+              <div className="text-xs text-zinc-500">
+                Protected
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2">
+            <div className="border-b lg:border-b-0 lg:border-r border-zinc-800">
+              <div className="px-4 py-2 text-xs text-zinc-500">
+                Recent action events
+              </div>
+
+              <div className="max-h-64 overflow-y-auto bg-zinc-950/40">
+                {coreOverview.history.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-zinc-600">
+                    No persisted action events yet.
+                  </div>
+                ) : coreOverview.history.map(item => (
+                  <div key={item.id} className="px-4 py-2 border-t border-zinc-800/60 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="min-w-0">
+                        <span className="text-zinc-300">
+                          {item.actionType ?? 'action'}
+                        </span>
+                        <span className="ml-2 text-sky-400">
+                          {item.provider ?? '—'}
+                        </span>
+                        <span className="ml-2 text-zinc-500">
+                          {item.status}
+                        </span>
+                      </div>
+
+                      <span className="text-zinc-600 shrink-0">
+                        {new Date(item.createdAt).toLocaleTimeString()}
+                      </span>
+                    </div>
+
+                    <div className="mt-1 text-zinc-600 truncate">
+                      {item.targetUsername
+                        ? '@' + item.targetUsername
+                        : item.targetDisplayName ?? item.actionId}
+                    </div>
+
+                    {item.error && (
+                      <div className="mt-1 text-red-400 truncate">
+                        {item.error}
+                      </div>
+                    )}
+                  </div>
                 ))}
               </div>
             </div>
 
             <div>
-              <label className="block text-xs text-zinc-400 mb-1">Language</label>
-              <input value={configLang} onChange={e => setConfigLang(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white" />
-            </div>
-
-            <div className="col-span-2">
-              <label className="block text-xs text-zinc-400 mb-1">Tone / Persona</label>
-              <textarea value={configTone} onChange={e => setConfigTone(e.target.value)} rows={2}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white" />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">Topics (comma-separated)</label>
-              <input value={configTopics} onChange={e => setConfigTopics(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white" />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">Hashtags (comma-separated)</label>
-              <input value={configHashtags} onChange={e => setConfigHashtags(e.target.value)}
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white" />
-            </div>
-
-            <div>
-              <label className="block text-xs text-zinc-400 mb-1">Target Accounts (comma-separated, optional)</label>
-              <input value={configTargets} onChange={e => setConfigTargets(e.target.value)} placeholder="@OpenAI, @AnthropicAI, ..."
-                className="w-full bg-zinc-800 border border-zinc-700 rounded px-3 py-1.5 text-sm text-white placeholder-zinc-600" />
-            </div>
-
-            <div className="flex items-center gap-2">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={configTestMode} onChange={e => setConfigTestMode(e.target.checked)}
-                  className="rounded bg-zinc-800 border-zinc-600" />
-                <span className="text-sm text-zinc-400">Test Mode (log only, no real actions)</span>
-              </label>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Add Account Modal */}
-      {showAdd && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6 w-full max-w-lg mx-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-medium text-white">Add TikTok Account</h3>
-              <button onClick={() => { setShowAdd(false); setPreview(null); }} className="text-zinc-400 hover:text-white"><X className="w-5 h-5" /></button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1">Account Name</label>
-                <input value={newName} onChange={e => setNewName(e.target.value)} placeholder="My TikTok"
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600" />
+              <div className="px-4 py-2 text-xs text-zinc-500">
+                Recent relationships
               </div>
 
-              <div>
-                <label className="block text-sm text-zinc-400 mb-1 flex items-center justify-between">
-                  Cookies
-                  <button onClick={() => setShowCookies(!showCookies)} className="text-xs text-zinc-500 hover:text-zinc-300 flex items-center gap-1">
-                    {showCookies ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                    {showCookies ? 'Hide' : 'Show'}
-                  </button>
-                </label>
-                <textarea value={newCookies} onChange={e => { setNewCookies(e.target.value); setPreview(null); }}
-                  placeholder='Paste cookies from Cookie Editor extension (JSON) or as "name=value; name2=value2"'
-                  rows={4} style={showCookies ? {} : { WebkitTextSecurity: 'disc' } as React.CSSProperties}
-                  className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white placeholder-zinc-600 font-mono" />
-                <p className="text-xs text-zinc-500 mt-1">Required: <code className="text-pink-400">sessionid</code>. Recommended: tt_webid, msToken</p>
-              </div>
-
-              {newCookies.trim() && (
-                <button onClick={previewCookies} disabled={previewLoading}
-                  className="text-xs text-zinc-400 hover:text-white flex items-center gap-1">
-                  {previewLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Eye className="w-3 h-3" />}
-                  Preview cookies
-                </button>
-              )}
-
-              {preview && (
-                <div className={`p-3 rounded-lg border text-sm ${preview.valid ? 'bg-green-500/10 border-green-500/20' : 'bg-red-500/10 border-red-500/20'}`}>
-                  <div className="flex items-center gap-2 mb-1">
-                    {preview.valid ? <CheckCircle className="w-4 h-4 text-green-400" /> : <XCircle className="w-4 h-4 text-red-400" />}
-                    <span className={preview.valid ? 'text-green-400' : 'text-red-400'}>
-                      {preview.valid ? 'Valid' : 'Invalid'} — {preview.cookieCount} cookies ({preview.format})
-                    </span>
+              <div className="max-h-64 overflow-y-auto bg-zinc-950/40">
+                {coreOverview.recentRelationships.length === 0 ? (
+                  <div className="p-4 text-center text-xs text-zinc-600">
+                    No persisted relationships yet.
                   </div>
-                  {preview.missing.length > 0 && <div className="text-red-400 text-xs">Missing: {preview.missing.join(', ')}</div>}
-                  {preview.warnings.map((w, i) => <div key={i} className="text-yellow-400 text-xs mt-1">{w}</div>)}
-                </div>
-              )}
+                ) : coreOverview.recentRelationships.map(item => (
+                  <div key={item.id} className="px-4 py-2 border-t border-zinc-800/60 text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-zinc-300">
+                        {item.username
+                          ? '@' + item.username
+                          : item.displayName ?? item.targetKey}
+                      </span>
 
-              <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => { setShowAdd(false); setPreview(null); }} className="px-4 py-2 text-sm text-zinc-400 hover:text-white">Cancel</button>
-                <button onClick={addAccount} disabled={addLoading || !newName.trim() || !newCookies.trim()}
-                  className="px-4 py-2 bg-pink-600 hover:bg-pink-700 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors">
-                  {addLoading ? <Loader2 className="w-4 h-4 animate-spin inline mr-1" /> : <Plus className="w-4 h-4 inline mr-1" />}
-                  Add Account
-                </button>
+                      <span className="text-sky-400">
+                        {item.relationshipState}
+                      </span>
+                    </div>
+
+                    <div className="mt-1 text-zinc-600">
+                      following={item.followedByUs ? 'yes' : 'no'} · follows-us={
+                        item.followsUs === null
+                          ? 'unknown'
+                          : item.followsUs
+                            ? 'yes'
+                            : 'no'
+                      } · processed={item.processed ? 'yes' : 'no'}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

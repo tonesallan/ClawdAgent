@@ -7,9 +7,269 @@ import { checkOllamaModels, getAgentModelMapping, OLLAMA_MODELS } from '../../..
 import { getDb } from '../../../memory/database.js';
 import { usageLogs, messages, tasks } from '../../../memory/schema.js';
 import { getApprovalGate } from '../../../core/approval-gate.js';
+import {
+  listTikTokActionsByTypeAcrossAccounts,
+  type TikTokAction,
+} from '../../../memory/repositories/tiktok-actions.js';
+import {
+  TIKTOK_ACTION_STATUSES,
+  TIKTOK_ACTION_TYPES,
+} from '../../../tiktok/domain.js';
+import {
+  resolveTikTokDiscoveryReview,
+} from '../../../tiktok/hashtag-review-queue.js';
 import type { Skill } from '../../../core/skills-engine.js';
 import type { ModelOption } from '../../../core/model-router.js';
 
+const TIKTOK_REVIEW_APPROVAL_PREFIX =
+  'tiktok-review:';
+
+function getTimestamp(
+  value: unknown,
+  fallback = Date.now(),
+): number {
+
+  if (
+    value instanceof Date
+  ) {
+    return value.getTime();
+  }
+
+  if (
+    typeof value === 'number' &&
+    Number.isFinite(value)
+  ) {
+    return value;
+  }
+
+  if (
+    typeof value === 'string'
+  ) {
+
+    const parsed =
+      new Date(
+        value,
+      ).getTime();
+
+    if (
+      Number.isFinite(
+        parsed,
+      )
+    ) {
+      return parsed;
+    }
+  }
+
+  return fallback;
+}
+
+function getTikTokReviewDescription(
+  action: TikTokAction,
+): string {
+
+  const payload =
+    (
+      action.payload ??
+      {}
+    ) as Record<string, unknown>;
+
+  const candidate =
+    (
+      payload.candidate ??
+      {}
+    ) as Record<string, unknown>;
+
+  const query =
+    typeof payload.query === 'string'
+      ? payload.query
+      : '';
+
+  const usernameValue =
+    candidate.username ??
+    candidate.authorUsername ??
+    candidate.author;
+
+  const username =
+    typeof usernameValue === 'string'
+      ? usernameValue
+      : '';
+
+  const hashtagValue =
+    candidate.hashtags;
+
+  const hashtags =
+    Array.isArray(
+      hashtagValue,
+    )
+      ? hashtagValue
+          .filter(
+            item =>
+              typeof item === 'string',
+          )
+          .map(
+            item =>
+              `#${String(item).replace(/^#/, '')}`,
+          )
+          .join(' ')
+      : '';
+
+  const details =
+    [
+      query,
+      username
+        ? `@${username.replace(/^@/, '')}`
+        : '',
+      hashtags,
+    ]
+      .filter(
+        Boolean,
+      )
+      .join(' · ');
+
+  return details
+    ? `TikTok discovery candidate: ${details}`
+    : 'TikTok discovery candidate awaiting human review';
+}
+
+function mapTikTokReviewToDashboardApproval(
+  action: TikTokAction,
+): Record<string, unknown> {
+
+  const payload =
+    (
+      action.payload ??
+      {}
+    ) as Record<string, unknown>;
+
+  const result =
+    (
+      action.result ??
+      {}
+    ) as Record<string, unknown>;
+
+  const createdAt =
+    getTimestamp(
+      action.createdAt,
+    );
+
+  const reviewedAt =
+    getTimestamp(
+      result.reviewedAt,
+      getTimestamp(
+        action.updatedAt,
+        createdAt,
+      ),
+    );
+
+  let status:
+    | 'pending'
+    | 'approved'
+    | 'denied' =
+      'pending';
+
+  if (
+    action.status ===
+    TIKTOK_ACTION_STATUSES.SUCCESS
+  ) {
+    status =
+      'approved';
+  }
+  else if (
+    action.status ===
+    TIKTOK_ACTION_STATUSES.CANCELLED
+  ) {
+    status =
+      'denied';
+  }
+
+  return {
+    id:
+      `${TIKTOK_REVIEW_APPROVAL_PREFIX}${action.id}`,
+
+    agentId:
+      `tiktok:${action.accountKey}`,
+
+    action:
+      TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW,
+
+    description:
+      getTikTokReviewDescription(
+        action,
+      ),
+
+    riskCategory:
+      'tiktok_discovery_review',
+
+    riskScore:
+      0,
+
+    estimatedCost:
+      0,
+
+    createdAt,
+
+    /*
+     * Persistent review.
+     *
+     * The database action itself has no expiry/executeAt.
+     * This distant timestamp exists only for compatibility
+     * with the generic dashboard approval presentation.
+     */
+    expiresAt:
+      4102444800000,
+
+    status,
+
+    resolvedBy:
+      status === 'pending'
+        ? undefined
+        : 'tiktok-review',
+
+    resolvedAt:
+      status === 'pending'
+        ? undefined
+        : reviewedAt,
+
+    source:
+      'tiktok',
+
+    persistent:
+      true,
+
+    accountKey:
+      action.accountKey,
+
+    tiktokActionId:
+      action.id,
+
+    provider:
+      action.provider,
+
+    payload,
+
+    result,
+  };
+}
+
+function getTikTokReviewActionId(
+  dashboardApprovalId: string,
+): string | null {
+
+  if (
+    !dashboardApprovalId.startsWith(
+      TIKTOK_REVIEW_APPROVAL_PREFIX,
+    )
+  ) {
+    return null;
+  }
+
+  const actionId =
+    dashboardApprovalId.slice(
+      TIKTOK_REVIEW_APPROVAL_PREFIX.length,
+    );
+
+  return actionId || null;
+}
 // In-memory activity log (capped at 50 entries)
 const activityLog: Array<{ time: string; type: string; message: string; agent?: string; platform?: string }> = [];
 
@@ -438,28 +698,363 @@ export function setupDashboardRoutes(deps: {
   });
 
   // ── Approval Gate endpoints ────────────────────────────────────────
-  router.get('/approvals', (_req, res) => {
-    const gate = getApprovalGate();
-    res.json({ pending: gate.getPending(), stats: gate.getStats() });
+  router.get('/approvals', async (_req, res) => {
+
+    const gate =
+      getApprovalGate();
+
+    const gatePending =
+      gate.getPending();
+
+    const gateStats =
+      gate.getStats();
+
+    try {
+
+      const [
+        tiktokPending,
+        tiktokResolved,
+      ] =
+        await Promise.all([
+          listTikTokActionsByTypeAcrossAccounts(
+            TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW,
+            [
+              TIKTOK_ACTION_STATUSES.PENDING,
+            ],
+            200,
+          ),
+
+          listTikTokActionsByTypeAcrossAccounts(
+            TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW,
+            [
+              TIKTOK_ACTION_STATUSES.SUCCESS,
+              TIKTOK_ACTION_STATUSES.CANCELLED,
+            ],
+            500,
+          ),
+        ]);
+
+      const todayStart =
+        new Date();
+
+      todayStart.setHours(
+        0,
+        0,
+        0,
+        0,
+      );
+
+      const todayTs =
+        todayStart.getTime();
+
+      const approvedToday =
+        tiktokResolved.filter(
+          action =>
+            action.status ===
+              TIKTOK_ACTION_STATUSES.SUCCESS &&
+            getTimestamp(
+              (
+                action.result as
+                  Record<string, unknown> |
+                  null
+              )?.reviewedAt,
+              getTimestamp(
+                action.updatedAt,
+                0,
+              ),
+            ) >= todayTs,
+        ).length;
+
+      const deniedToday =
+        tiktokResolved.filter(
+          action =>
+            action.status ===
+              TIKTOK_ACTION_STATUSES.CANCELLED &&
+            getTimestamp(
+              (
+                action.result as
+                  Record<string, unknown> |
+                  null
+              )?.reviewedAt,
+              getTimestamp(
+                action.updatedAt,
+                0,
+              ),
+            ) >= todayTs,
+        ).length;
+
+      res.json({
+        pending: [
+          ...gatePending,
+          ...tiktokPending.map(
+            mapTikTokReviewToDashboardApproval,
+          ),
+        ],
+
+        stats: {
+          pending:
+            gateStats.pending +
+            tiktokPending.length,
+
+          approvedToday:
+            gateStats.approvedToday +
+            approvedToday,
+
+          deniedToday:
+            gateStats.deniedToday +
+            deniedToday,
+        },
+      });
+    }
+    catch (err: any) {
+
+      /*
+       * Do not break legacy approvals if the TikTok
+       * persistence layer is temporarily unavailable.
+       */
+      res.json({
+        pending:
+          gatePending,
+
+        stats:
+          gateStats,
+
+        tiktokError:
+          err?.message ??
+          String(
+            err,
+          ),
+      });
+    }
   });
 
-  router.get('/approvals/history', (_req, res) => {
-    const gate = getApprovalGate();
-    res.json(gate.getHistory());
+  router.get('/approvals/history', async (_req, res) => {
+
+    const gate =
+      getApprovalGate();
+
+    try {
+
+      const tiktokResolved =
+        await listTikTokActionsByTypeAcrossAccounts(
+          TIKTOK_ACTION_TYPES.DISCOVERY_REVIEW,
+          [
+            TIKTOK_ACTION_STATUSES.SUCCESS,
+            TIKTOK_ACTION_STATUSES.CANCELLED,
+          ],
+          100,
+        );
+
+      const combined = [
+        ...gate.getHistory(),
+        ...tiktokResolved.map(
+          mapTikTokReviewToDashboardApproval,
+        ),
+      ];
+
+      combined.sort(
+        (
+          left: any,
+          right: any,
+        ) =>
+          (
+            right.resolvedAt ??
+            right.createdAt ??
+            0
+          ) -
+          (
+            left.resolvedAt ??
+            left.createdAt ??
+            0
+          ),
+      );
+
+      res.json(
+        combined.slice(
+          0,
+          100,
+        ),
+      );
+    }
+    catch {
+
+      res.json(
+        gate.getHistory(),
+      );
+    }
   });
 
-  router.post('/approvals/:id/approve', (req, res) => {
-    const gate = getApprovalGate();
-    const ok = gate.approve(req.params.id, 'web-admin');
-    res.json({ ok, id: req.params.id, action: 'approved' });
+  router.post('/approvals/:id/approve', async (req, res) => {
+
+    const tiktokActionId =
+      getTikTokReviewActionId(
+        req.params.id,
+      );
+
+    if (
+      tiktokActionId
+    ) {
+
+      try {
+
+        const action =
+          await resolveTikTokDiscoveryReview(
+            tiktokActionId,
+            'approved',
+            'approved_via_dashboard',
+          );
+
+        res.json({
+          ok:
+            true,
+
+          id:
+            req.params.id,
+
+          action:
+            'approved',
+
+          source:
+            'tiktok',
+
+          tiktokActionId:
+            action.id,
+
+          engagementCreated:
+            false,
+
+          engagementExecuted:
+            false,
+        });
+      }
+      catch (err: any) {
+
+        res.status(
+          409,
+        ).json({
+          ok:
+            false,
+
+          id:
+            req.params.id,
+
+          source:
+            'tiktok',
+
+          error:
+            err?.message ??
+            String(
+              err,
+            ),
+        });
+      }
+
+      return;
+    }
+
+    const gate =
+      getApprovalGate();
+
+    const ok =
+      gate.approve(
+        req.params.id,
+        'web-admin',
+      );
+
+    res.json({
+      ok,
+      id:
+        req.params.id,
+      action:
+        'approved',
+    });
   });
 
-  router.post('/approvals/:id/deny', (req, res) => {
-    const gate = getApprovalGate();
-    const ok = gate.deny(req.params.id, 'web-admin');
-    res.json({ ok, id: req.params.id, action: 'denied' });
-  });
+  router.post('/approvals/:id/deny', async (req, res) => {
 
+    const tiktokActionId =
+      getTikTokReviewActionId(
+        req.params.id,
+      );
+
+    if (
+      tiktokActionId
+    ) {
+
+      try {
+
+        const action =
+          await resolveTikTokDiscoveryReview(
+            tiktokActionId,
+            'rejected',
+            'rejected_via_dashboard',
+          );
+
+        res.json({
+          ok:
+            true,
+
+          id:
+            req.params.id,
+
+          action:
+            'denied',
+
+          source:
+            'tiktok',
+
+          tiktokActionId:
+            action.id,
+
+          engagementCreated:
+            false,
+
+          engagementExecuted:
+            false,
+        });
+      }
+      catch (err: any) {
+
+        res.status(
+          409,
+        ).json({
+          ok:
+            false,
+
+          id:
+            req.params.id,
+
+          source:
+            'tiktok',
+
+          error:
+            err?.message ??
+            String(
+              err,
+            ),
+        });
+      }
+
+      return;
+    }
+
+    const gate =
+      getApprovalGate();
+
+    const ok =
+      gate.deny(
+        req.params.id,
+        'web-admin',
+      );
+
+    res.json({
+      ok,
+      id:
+        req.params.id,
+      action:
+        'denied',
+    });
+  });
   router.get('/containers', async (_req, res) => {
     try {
       const { exec } = await import('child_process');

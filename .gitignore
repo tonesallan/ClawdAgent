@@ -90,6 +90,7 @@ ai-quote-generator/
 
 # Local helper files
 .lh/
+.runtime/
 tsc-*.txt
 
 # Uploads
