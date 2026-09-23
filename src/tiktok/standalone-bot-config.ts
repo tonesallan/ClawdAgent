@@ -145,11 +145,11 @@ export const standaloneTikTokBotConfigSchema =
       .default({
         weekday: {
           start: 0,
-            end: 24,
+          end: 24,
         },
         weekend: {
           start: 0,
-            end: 24,
+          end: 24,
         },
       }),
     content: z
@@ -184,7 +184,7 @@ export const standaloneTikTokBotConfigSchema =
           .int()
           .min(20)
           .max(500)
-          .default(120),
+          .default(5),
       })
       .default({
         tone:
