@@ -1285,6 +1285,10 @@ export async function runStandaloneTikTokBot(): Promise<void> {
         .start();
     }
 
+    await refreshPersistentPanelData(
+      true,
+    );
+
     writeStatus();
 
     statusTimer =
@@ -1312,6 +1316,8 @@ export async function runStandaloneTikTokBot(): Promise<void> {
 
                   return;
                 }
+
+                await refreshPersistentPanelData();
 
                 writeStatus();
               }
