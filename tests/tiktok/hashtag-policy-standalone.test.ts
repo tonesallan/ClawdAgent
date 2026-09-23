@@ -2,7 +2,18 @@ import {
   describe,
   expect,
   it,
+  vi,
 } from 'vitest';
+
+vi.mock(
+  '../../src/memory/repositories/tiktok-configuration.js',
+  () => ({
+    getTikTokConfigurationValue:
+      vi.fn(),
+    setTikTokConfigurationValue:
+      vi.fn(),
+  }),
+);
 
 import {
   evaluateTikTokHashtags,
