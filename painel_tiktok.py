@@ -212,6 +212,7 @@ class TikTokBotPanel(tk.Tk):
         runtime.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
 
         labels = (
+            ("Conta / agente", self.account_state),
             ("Ação atual", self.current_action),
             ("Última ação", self.last_action),
             ("Próxima ação", self.next_action),
@@ -227,6 +228,7 @@ class TikTokBotPanel(tk.Tk):
         core_labels = (
             ("Estado", self.core_state),
             ("Tick", self.core_tick),
+            ("Intervalo", self.core_interval),
             ("Último tick", self.core_last_tick),
             ("Resultado", self.core_result),
         )
