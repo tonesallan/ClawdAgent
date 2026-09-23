@@ -728,28 +728,164 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     ) {
       return;
     }
-  
+
     shuttingDown =
       true;
-  
+
     console.log('');
     console.log(
       `Stopping TikTok bot: ${reason}`,
     );
-  
+
     if (
       statusTimer
     ) {
       clearInterval(
         statusTimer,
       );
+
       statusTimer =
+        null;
+    }
+
+    try {
+      if (
+        automationRuntime
+      ) {
+        await automationRuntime
+          .stop();
+
+        automationRuntime =
+          null;
+      }
+
+      await agent.stop();
+    }
+    finally {
+      if (
+        databaseInitialized
+      ) {
+        await closeDatabase();
+      }
+
+      for (
+        const runtimeFile of
+          [
+            stopPath,
+            commandPath,
+          ]
+      ) {
+        if (
+          existsSync(
+            runtimeFile,
+          )
+        ) {
+          rmSync(
+            runtimeFile,
+            {
+              force: true,
+            },
+          );
+        }
+      }
+
+      writeStatus(
+        'stopped',
+      );
+
+      console.log(
+        'TIKTOK_BOT_STOPPED=YES',
+      );
+
+      resolveDone?.();
+    }
+  }
+
+  process.on(
+    'SIGINT',
+    () => {
+      void shutdown(
+        'Ctrl+C',
+      );
+    },
+  );
+
+  process.on(
+    'SIGTERM',
+    () => {
+      void shutdown(
+        'SIGTERM',
+      );
+    },
+  );
+
+  console.log(
+    '============================================================',
+  );
+  console.log(
+    ' TIKTOK BOT - ANDROID / APPIUM',
+  );
+  console.log(
+    '============================================================',
+  );
+  console.log(
+    `DEVICE=${deviceId}`,
+  );
+  console.log(
+    `APPIUM=${config.appiumUrl}`,
+  );
+  console.log(
+    `MODE=${config.testMode ? 'TEST' : 'REAL'}`,
+  );
+  console.log(
+    `ACTIONS=${enabledActions.join(',')}`,
+  );
+  console.log(
+    `MIN_DELAY_SECONDS=${config.safety.minDelaySeconds}`,
+  );
+  console.log(
+    `MAX_ACTIONS_PER_HOUR=${config.safety.maxActionsPerHour}`,
+  );
+  console.log(
+    `FOLLOW_BACK_CHECK_HOURS=${config.automationCore.followBackCheckHours}`,
+  );
+  console.log(
+    'Stop with Ctrl+C, panel, or .\\PARAR_TIKTOK_BOT.ps1',
+  );
+  console.log(
+    '============================================================',
+  );
+  console.log('');
+
+  try {
+    await agent.start();
+
+    if (
+      databaseInitialized &&
+      config.automationCore.enabled
+    ) {
+      automationRuntime =
+        createTikTokRuntime();
+
+      automationRuntime
+        .start();
+    }
+
+    writeStatus();
+
+    statusTimer =
       setInterval(
         () => {
           void (
             async () => {
               try {
                 await handleControlCommand();
+
+                if (
+                  shuttingDown
+                ) {
+                  return;
+                }
 
                 if (
                   existsSync(
@@ -783,7 +919,7 @@ export async function runStandaloneTikTokBot(): Promise<void> {
         },
         1000,
       );
-  
+
     await done;
   }
   catch (
@@ -794,15 +930,15 @@ export async function runStandaloneTikTokBot(): Promise<void> {
       error instanceof Error
         ? error.message
         : String(error);
-  
+
     console.error(
       `TIKTOK_BOT_ERROR=${message}`,
     );
-  
+
     await shutdown(
       'startup/runtime error',
     );
-  
+
     process.exitCode =
       1;
   }
