@@ -103,3 +103,30 @@ Para conexão por USB ou ADB Wi-Fi, deixe `deviceId` como `null` quando houver a
 ## Segurança
 
 O launcher não adiciona qualquer bypass de CAPTCHA, bloqueio, detecção ou restrição do TikTok. Se a plataforma interromper a sessão ou exigir ação manual, pare o bot e resolva isso no aparelho.
+
+
+## Painel standalone
+
+O bot também possui um painel desktop próprio, sem login e sem depender do Dashboard geral do ClawdAgent.
+
+Abra com:
+
+```powershell
+.\ABRIR_PAINEL_TIKTOK.ps1
+```
+
+O painel permite:
+
+- iniciar em TESTE ou REAL;
+- pausar, retomar e parar;
+- acompanhar Android/ADB e Appium;
+- ligar/desligar scroll, like, comment, follow e share;
+- configurar intervalo e limite diário por ação;
+- configurar delay mínimo, máximo por hora, pausa por erros, warmup e horários;
+- configurar idioma, tom, tópicos e tamanho dos comentários;
+- configurar follow-back (48h por padrão);
+- configurar filtros de hashtag com ANY/ALL, inclusão e exclusão;
+- acompanhar ação atual, última/próxima ação, contadores, erros e logs;
+- acompanhar o Automation Core e os ticks de CHECK_FOLLOW_BACK.
+
+O UNFOLLOW continua deliberadamente manual: quando a checagem de follow-back identifica uma conta que ainda não retornou o follow, o core cria apenas uma revisão pendente. O scheduler não executa UNFOLLOW automaticamente.
