@@ -455,15 +455,24 @@ export async function runStandaloneTikTokBot(): Promise<void> {
   
   let databaseInitialized =
     false;
-  
-  if (
+
+  let databaseError:
+    string | null =
+      null;
+
+  const databaseRequired =
     !config.testMode &&
     enabledActions.includes(
       'follow',
-    )
+    );
+
+  if (
+    databaseRequired ||
+    config.automationCore.enabled
   ) {
     try {
       await initDatabase();
+
       databaseInitialized =
         true;
     }
@@ -471,13 +480,21 @@ export async function runStandaloneTikTokBot(): Promise<void> {
       error:
         unknown
     ) {
-      const message =
+      databaseError =
         error instanceof Error
           ? error.message
           : String(error);
-  
-      throw new Error(
-        `Real FOLLOW is enabled, but the persistence database could not be initialized: ${message}`,
+
+      if (
+        databaseRequired
+      ) {
+        throw new Error(
+          `Real FOLLOW is enabled, but the persistence database could not be initialized: ${databaseError}`,
+        );
+      }
+
+      console.warn(
+        `TikTok persistent panel data is unavailable: ${databaseError}`,
       );
     }
   }
