@@ -68,6 +68,7 @@ class TikTokBotPanel(tk.Tk):
         style.configure("TLabel", background="#10131a", foreground="#e8ecf3")
         style.configure("Card.TLabel", background="#171c26", foreground="#e8ecf3")
         style.configure("Title.TLabel", background="#10131a", foreground="#ffffff", font=("Segoe UI Semibold", 18))
+        style.configure("HeaderMuted.TLabel", background="#10131a", foreground="#9ca8bb")
         style.configure("Muted.TLabel", background="#171c26", foreground="#9ca8bb")
         style.configure("Status.TLabel", background="#171c26", foreground="#7bd88f", font=("Segoe UI Semibold", 11))
         style.configure("TCheckbutton", background="#171c26", foreground="#e8ecf3")
@@ -136,7 +137,7 @@ class TikTokBotPanel(tk.Tk):
         ttk.Label(
             header,
             text="Android real • Appium/ADB • painel standalone",
-            foreground="#9ca8bb",
+            style="HeaderMuted.TLabel",
         ).pack(side="left", padx=(14, 0), pady=(5, 0))
 
         ttk.Button(header, text="Salvar configuração", command=self.save_config).pack(side="right")
