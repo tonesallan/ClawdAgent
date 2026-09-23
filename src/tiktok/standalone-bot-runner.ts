@@ -41,6 +41,12 @@ import {
   getTikTokProviderControlStatus,
 } from './provider-control-service.js';
 import {
+  tikTokProviderRegistry,
+} from './provider-registry.js';
+import {
+  createLiveAndroidTikTokProvider,
+} from './providers/live-android-tiktok-provider.js';
+import {
   createTikTokRuntime,
   type TikTokRuntime,
 } from './runtime.js';
@@ -563,6 +569,16 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     MobileAgent.createAgent(
       agentConfig,
     );
+
+  if (
+    !tikTokProviderRegistry.has(
+      'android',
+    )
+  ) {
+    tikTokProviderRegistry.register(
+      createLiveAndroidTikTokProvider(),
+    );
+  }
   
   let shuttingDown =
     false;
