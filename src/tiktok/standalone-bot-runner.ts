@@ -20,6 +20,16 @@ import {
   initDatabase,
 } from '../memory/database.js';
 import {
+  setTikTokConfigurationValue,
+} from '../memory/repositories/tiktok-configuration.js';
+import {
+  setTikTokHashtagConfiguration,
+} from './hashtag-policy.js';
+import {
+  createTikTokRuntime,
+  type TikTokRuntime,
+} from './runtime.js';
+import {
   buildStandaloneTikTokAgentConfig,
   getEnabledStandaloneTikTokActions,
   parseStandaloneTikTokBotConfig,
@@ -52,6 +62,12 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     resolve(
       runtimeDir,
       'tiktok-bot.stop',
+    );
+
+  const commandPath =
+    resolve(
+      runtimeDir,
+      'tiktok-bot.command.json',
     );
   
   mkdirSync(
@@ -451,6 +467,40 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     }
   }
   
+  let automationRuntime:
+    TikTokRuntime | null =
+      null;
+
+  if (
+    databaseInitialized &&
+    config.automationCore.enabled
+  ) {
+    await setTikTokConfigurationValue(
+      'follow_back_check_hours',
+      config.automationCore
+        .followBackCheckHours,
+      'Standalone TikTok panel follow-back delay.',
+    );
+
+    await setTikTokHashtagConfiguration({
+      enabled:
+        config.automationCore
+          .hashtags.enabled,
+      include:
+        config.automationCore
+          .hashtags.include,
+      exclude:
+        config.automationCore
+          .hashtags.exclude,
+      matchMode:
+        config.automationCore
+          .hashtags.matchMode,
+      maxCandidatesPerCycle:
+        config.automationCore
+          .hashtags.maxCandidatesPerCycle,
+    });
+  }
+
   if (
     existsSync(
       stopPath,
@@ -464,6 +514,19 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     );
   }
   
+  if (
+    existsSync(
+      commandPath,
+    )
+  ) {
+    rmSync(
+      commandPath,
+      {
+        force: true,
+      },
+    );
+  }
+
   const agent =
     MobileAgent.createAgent(
       agentConfig,
@@ -532,6 +595,40 @@ export async function runStandaloneTikTokBot(): Promise<void> {
             current.lastError,
           stats:
             current.stats,
+          logs:
+            agent.getLogs(200),
+          automationCore:
+            automationRuntime
+              ? automationRuntime
+                  .getStatus()
+              : {
+                  state:
+                    'stopped',
+                  started:
+                    false,
+                  paused:
+                    false,
+                  tickActive:
+                    false,
+                  intervalMs:
+                    60_000,
+                  registeredProviders:
+                    [],
+                  lastRunStartedAt:
+                    null,
+                  lastRunCompletedAt:
+                    null,
+                  lastResult:
+                    null,
+                  lastError:
+                    null,
+                },
+          followBackCheckHours:
+            config.automationCore
+              .followBackCheckHours,
+          hashtagFilters:
+            config.automationCore
+              .hashtags,
           updatedAt:
             new Date()
               .toISOString(),
@@ -543,6 +640,85 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     );
   }
   
+  async function handleControlCommand():
+    Promise<void> {
+    if (
+      !existsSync(
+        commandPath,
+      )
+    ) {
+      return;
+    }
+
+    let command:
+      string | null =
+        null;
+
+    try {
+      const payload =
+        JSON.parse(
+          readFileSync(
+            commandPath,
+            'utf8',
+          ),
+        ) as {
+          command?: unknown;
+        };
+
+      command =
+        typeof payload.command ===
+          'string'
+          ? payload.command
+              .trim()
+              .toLowerCase()
+          : null;
+    }
+    finally {
+      rmSync(
+        commandPath,
+        {
+          force: true,
+        },
+      );
+    }
+
+    if (
+      command === 'pause'
+    ) {
+      agent.pause();
+      automationRuntime
+        ?.pause();
+
+      console.log(
+        'TIKTOK_BOT_PAUSED=YES',
+      );
+
+      return;
+    }
+
+    if (
+      command === 'resume'
+    ) {
+      agent.resume();
+      automationRuntime
+        ?.resume();
+
+      console.log(
+        'TIKTOK_BOT_RESUMED=YES',
+      );
+
+      return;
+    }
+
+    if (
+      command === 'stop'
+    ) {
+      await shutdown(
+        'control command',
+      );
+    }
+  }
+
   async function shutdown(
     reason:
       string,
@@ -572,6 +748,16 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     }
   
     try {
+      if (
+        automationRuntime
+      ) {
+        await automationRuntime
+          .stop();
+
+        automationRuntime =
+          null;
+      }
+
       await agent.stop();
     }
     finally {
@@ -661,14 +847,29 @@ export async function runStandaloneTikTokBot(): Promise<void> {
   
   try {
     await agent.start();
-  
+
+    if (
+      databaseInitialized &&
+      config.automationCore.enabled
+    ) {
+      automationRuntime =
+        createTikTokRuntime();
+
+      automationRuntime
+        .start();
+    }
+
     writeStatus();
   
     statusTimer =
       setInterval(
         () => {
-          try {
-            writeStatus();
+          void (
+            async () => {
+              try {
+                await handleControlCommand();
+
+                writeStatus();
   
             if (
               existsSync(
@@ -680,21 +881,24 @@ export async function runStandaloneTikTokBot(): Promise<void> {
               );
             }
           }
-          catch (
-            error:
-              unknown
-          ) {
-            const message =
-              error instanceof Error
-                ? error.message
-                : String(error);
-  
-            console.error(
-              `Status monitor error: ${message}`,
-            );
-          }
+              }
+              catch (
+                error:
+                  unknown
+              ) {
+                const message =
+                  error instanceof Error
+                    ? error.message
+                    : String(error);
+
+                console.error(
+                  `Status monitor error: ${message}`,
+                );
+              }
+            }
+          )();
         },
-        2000,
+        1000,
       );
   
     await done;
