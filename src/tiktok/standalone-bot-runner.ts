@@ -23,8 +23,23 @@ import {
   setTikTokConfigurationValue,
 } from '../memory/repositories/tiktok-configuration.js';
 import {
+  listRecentTikTokActionsAcrossAccounts,
+} from '../memory/repositories/tiktok-actions.js';
+import {
+  listRecentTikTokRelationships,
+} from '../memory/repositories/tiktok-relationships.js';
+import {
   setTikTokHashtagConfiguration,
 } from './hashtag-policy.js';
+import {
+  cancelTikTokUnfollowReview,
+  listPendingTikTokManualReviews,
+  resolveTikTokManualDiscoveryReview,
+} from './manual-review-service.js';
+import {
+  checkTikTokProviderRelationship,
+  getTikTokProviderControlStatus,
+} from './provider-control-service.js';
 import {
   createTikTokRuntime,
   type TikTokRuntime,
