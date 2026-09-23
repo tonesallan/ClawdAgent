@@ -90,6 +90,8 @@ O arquivo `config/tiktok-bot.json` começa em `testMode=true` e usa os limites t
 
 - delay mínimo global: 60 s;
 - máximo por hora: 10;
+- pausa após 2 erros consecutivos: 5 min;
+- horário ativo padrão: 24 horas por dia;
 - scroll: intervalo 1 min, limite 20/dia;
 - like: intervalo 15 min, limite 30/dia;
 - comentário: intervalo 60 min, limite 5/dia;
