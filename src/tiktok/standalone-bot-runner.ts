@@ -575,10 +575,6 @@ export async function runStandaloneTikTokBot(): Promise<void> {
       await agent.stop();
     }
     finally {
-      MobileAgent.removeAgent(
-        agentConfig.id,
-      );
-  
       if (
         databaseInitialized
       ) {
