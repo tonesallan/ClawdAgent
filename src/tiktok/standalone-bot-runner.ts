@@ -756,6 +756,19 @@ export async function runStandaloneTikTokBot(): Promise<void> {
           hashtagFilters:
             config.automationCore
               .hashtags,
+          providerControl:
+            getTikTokProviderControlStatus(),
+          database: {
+            connected:
+              databaseInitialized,
+            error:
+              persistentDataError,
+          },
+          manualReviews,
+          recentActions,
+          recentRelationships,
+          persistentDataUpdatedAt,
+          lastControlResult,
           updatedAt:
             new Date()
               .toISOString(),
