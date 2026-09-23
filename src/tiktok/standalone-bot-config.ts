@@ -133,23 +133,23 @@ export const standaloneTikTokBotConfigSchema =
       .object({
         weekday:
           hourRangeSchema.default({
-            start: 8,
-            end: 22,
+            start: 0,
+            end: 24,
           }),
         weekend:
           hourRangeSchema.default({
-            start: 10,
-            end: 23,
+            start: 0,
+            end: 24,
           }),
       })
       .default({
         weekday: {
-          start: 8,
-          end: 22,
+          start: 0,
+            end: 24,
         },
         weekend: {
-          start: 10,
-          end: 23,
+          start: 0,
+            end: 24,
         },
       }),
     content: z
@@ -230,7 +230,7 @@ export const standaloneTikTokBotConfigSchema =
         pauseOnErrorCount:
           2,
         pauseDurationMinutes:
-          120,
+          5,
       }),
   })
     .strict();
