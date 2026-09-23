@@ -16,6 +16,13 @@ export interface TikTokHashtagConfiguration {
   include: string[];
 
   /**
+   * include matching mode:
+   * - any: at least one include hashtag must match;
+   * - all: every configured include hashtag must match.
+   */
+  matchMode: 'any' | 'all';
+
+  /**
    * Any exclude hashtag rejects the candidate.
    */
   exclude: string[];
@@ -54,6 +61,8 @@ const DEFAULT_CONFIGURATION:
     enabled: false,
 
     include: [],
+
+    matchMode: 'any',
 
     exclude: [],
 
@@ -178,6 +187,11 @@ export function normalizeTikTokHashtagConfiguration(
         raw.include,
       ),
 
+    matchMode:
+      raw.matchMode === 'all'
+        ? 'all'
+        : 'any',
+
     exclude:
       normalizeTikTokHashtagList(
         raw.exclude,
@@ -289,12 +303,20 @@ export function evaluateTikTokHashtags(
   }
 
   const included =
-    normalizedHashtags.some(
-      hashtag =>
-        configuration.include.includes(
-          hashtag,
-        ),
-    );
+    configuration.matchMode ===
+      'all'
+      ? configuration.include.every(
+          hashtag =>
+            normalizedHashtags.includes(
+              hashtag,
+            ),
+        )
+      : normalizedHashtags.some(
+          hashtag =>
+            configuration.include.includes(
+              hashtag,
+            ),
+        );
 
   return {
     accepted:
