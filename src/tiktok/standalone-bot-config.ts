@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import type {
-  MobileActionType,
   MobileAgentConfig,
 } from '../actions/mobile/mobile-agent.js';
 
@@ -251,7 +250,7 @@ export function parseStandaloneTikTokBotConfig(
 export function getEnabledStandaloneTikTokActions(
   config:
     StandaloneTikTokBotConfig,
-): MobileActionType[] {
+): StandaloneTikTokAction[] {
   return STANDALONE_TIKTOK_ACTIONS
     .filter(
       action =>
