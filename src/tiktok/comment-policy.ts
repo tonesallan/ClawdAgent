@@ -21,6 +21,7 @@ export interface TikTokFollowExchangeConfig {
   commentEnabled: boolean;
   commentTemplates: string[];
   useAiVariation: boolean;
+  allowRepeatedTemplates: boolean;
   replaceNormalComment: boolean;
   bypassNormalContentFilters: boolean;
   likeCommentsEnabled: boolean;
