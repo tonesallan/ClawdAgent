@@ -43,6 +43,130 @@ FEED_TAB_OPTIONS = {
 FEED_TAB_DISPLAY = {value: label for label, value in FEED_TAB_OPTIONS.items()}
 
 
+class ScrollableTab(ttk.Frame):
+    def __init__(self, parent: ttk.Widget) -> None:
+        super().__init__(parent, style="Card.TFrame")
+
+        self.canvas = tk.Canvas(
+            self,
+            bg="#171c26",
+            highlightthickness=0,
+            borderwidth=0,
+            relief="flat",
+        )
+        self.scrollbar = ttk.Scrollbar(
+            self,
+            orient="vertical",
+            command=self.canvas.yview,
+        )
+        self.content = ttk.Frame(
+            self.canvas,
+            style="Card.TFrame",
+        )
+
+        self._window_id = self.canvas.create_window(
+            (0, 0),
+            window=self.content,
+            anchor="nw",
+        )
+
+        self.canvas.configure(
+            yscrollcommand=self.scrollbar.set,
+        )
+
+        self.canvas.pack(
+            side="left",
+            fill="both",
+            expand=True,
+        )
+        self.scrollbar.pack(
+            side="right",
+            fill="y",
+        )
+
+        self.content.bind(
+            "<Configure>",
+            self._on_content_configure,
+        )
+        self.canvas.bind(
+            "<Configure>",
+            self._on_canvas_configure,
+        )
+
+        self.bind_all(
+            "<MouseWheel>",
+            self._on_mousewheel,
+            add="+",
+        )
+        self.bind_all(
+            "<Button-4>",
+            self._on_mousewheel,
+            add="+",
+        )
+        self.bind_all(
+            "<Button-5>",
+            self._on_mousewheel,
+            add="+",
+        )
+
+    def _on_content_configure(self, _event: tk.Event) -> None:
+        self.canvas.configure(
+            scrollregion=self.canvas.bbox("all"),
+        )
+
+    def _on_canvas_configure(self, event: tk.Event) -> None:
+        self.canvas.itemconfigure(
+            self._window_id,
+            width=event.width,
+        )
+
+    def _event_is_inside(self, widget: tk.Misc) -> bool:
+        current: tk.Misc | None = widget
+
+        while current is not None:
+            if current is self or current is self.content or current is self.canvas:
+                return True
+
+            current = getattr(
+                current,
+                "master",
+                None,
+            )
+
+        return False
+
+    def _on_mousewheel(self, event: tk.Event) -> str | None:
+        widget = getattr(
+            event,
+            "widget",
+            None,
+        )
+
+        if not isinstance(widget, tk.Misc):
+            return None
+
+        if not self._event_is_inside(widget):
+            return None
+
+        if getattr(event, "num", None) == 4:
+            delta = -1
+        elif getattr(event, "num", None) == 5:
+            delta = 1
+        else:
+            raw_delta = int(getattr(event, "delta", 0))
+            if raw_delta == 0:
+                return None
+
+            delta = -1 if raw_delta > 0 else 1
+
+        self.canvas.yview_scroll(
+            delta,
+            "units",
+        )
+
+        return "break"
+
+
 class TikTokBotPanel(tk.Tk):
     def __init__(self) -> None:
         super().__init__()
@@ -357,13 +481,20 @@ class TikTokBotPanel(tk.Tk):
         self.logs_text.configure(yscrollcommand=scroll.set)
 
     def _build_actions_tab(self) -> None:
+        scrollable = ScrollableTab(self.tab_actions)
+        scrollable.pack(
+            fill="both",
+            expand=True,
+        )
+        body = scrollable.content
+
         ttk.Label(
-            self.tab_actions,
+            body,
             text="Escolha as ações do bot e seus limites individuais.",
             style="Card.TLabel",
         ).pack(anchor="w", padx=14, pady=(14, 8))
 
-        feed = ttk.LabelFrame(self.tab_actions, text="Aba do TikTok para interação")
+        feed = ttk.LabelFrame(body, text="Aba do TikTok para interação")
         feed.pack(fill="x", padx=14, pady=(4, 10))
         feed.columnconfigure(1, weight=1)
         feed.columnconfigure(3, weight=1)
@@ -403,7 +534,7 @@ class TikTokBotPanel(tk.Tk):
             wraplength=1080,
         ).grid(row=2, column=0, columnspan=4, sticky="w", padx=10, pady=(3, 9))
 
-        table = ttk.Frame(self.tab_actions, style="Card.TFrame")
+        table = ttk.Frame(body, style="Card.TFrame")
         table.pack(fill="x", padx=14, pady=6)
 
         headers = ("Ação", "Ativa", "Intervalo (min)", "Limite diário")
@@ -426,7 +557,7 @@ class TikTokBotPanel(tk.Tk):
             ttk.Entry(table, textvariable=interval, width=14).grid(row=row, column=2, sticky="w", padx=8)
             ttk.Entry(table, textvariable=daily, width=14).grid(row=row, column=3, sticky="w", padx=8)
 
-        follow_guard = ttk.LabelFrame(self.tab_actions, text="Segurança específica para FOLLOW")
+        follow_guard = ttk.LabelFrame(body, text="Segurança específica para FOLLOW")
         follow_guard.pack(fill="x", padx=14, pady=(12, 6))
         follow_guard.columnconfigure(1, weight=1)
         follow_guard.columnconfigure(3, weight=1)
@@ -502,7 +633,7 @@ class TikTokBotPanel(tk.Tk):
         ).grid(row=7, column=0, columnspan=4, sticky="w", padx=10, pady=(4, 10))
 
         ttk.Label(
-            self.tab_actions,
+            body,
             text=(
                 "No modo TESTE, curtidas/comentários/follows são simulados. "
                 "No modo REAL, as ações habilitadas são executadas no aparelho."
@@ -512,7 +643,14 @@ class TikTokBotPanel(tk.Tk):
         ).pack(anchor="w", padx=14, pady=16)
 
     def _build_config_tab(self) -> None:
-        outer = ttk.Frame(self.tab_config, style="Card.TFrame")
+        scrollable = ScrollableTab(self.tab_config)
+        scrollable.pack(
+            fill="both",
+            expand=True,
+        )
+        body = scrollable.content
+
+        outer = ttk.Frame(body, style="Card.TFrame")
         outer.pack(fill="both", expand=True, padx=12, pady=12)
         outer.columnconfigure(0, weight=1)
         outer.columnconfigure(1, weight=1)
