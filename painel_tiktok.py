@@ -182,6 +182,8 @@ class TikTokBotPanel(tk.Tk):
         self._last_control_result_key = ""
         self._connection_refresh_inflight = False
         self._closing = False
+        self._stopping = False
+        self._pending_start_mode: str | None = None
 
         self.action_vars: dict[str, dict[str, tk.Variable]] = {}
 
@@ -371,7 +373,7 @@ class TikTokBotPanel(tk.Tk):
         ttk.Button(controls, text="▶ Iniciar REAL", command=lambda: self.start_bot("real")).pack(side="left", padx=6)
         ttk.Button(controls, text="⏸ Pausar", command=lambda: self.send_command("pause")).pack(side="left", padx=6)
         ttk.Button(controls, text="▶ Retomar", command=lambda: self.send_command("resume")).pack(side="left", padx=6)
-        ttk.Button(controls, text="■ Parar", command=lambda: self.send_command("stop")).pack(side="left", padx=6)
+        ttk.Button(controls, text="■ Parar", command=self.stop_bot).pack(side="left", padx=6)
         ttk.Button(controls, text="↻ Atualizar conexões", command=self.refresh_connections).pack(side="right", padx=10)
 
         notebook = ttk.Notebook(root)
@@ -1369,8 +1371,23 @@ class TikTokBotPanel(tk.Tk):
 
     def start_bot(self, mode: str) -> None:
         if self.process and self.process.poll() is None:
-            messagebox.showwarning("TikTok Bot", "O bot já está em execução.")
+            state = self.bot_state.get().lower()
+
+            if self._stopping or state in ("stopped", "stopping", "error"):
+                self._pending_start_mode = mode
+                self._append_log(
+                    f"[PAINEL] A execução anterior ainda está finalizando. "
+                    f"O modo {mode.upper()} iniciará automaticamente assim que o processo encerrar."
+                )
+                return
+
+            messagebox.showwarning(
+                "TikTok Bot",
+                "O bot já está em execução. Pare a execução atual antes de iniciar outra.",
+            )
             return
+
+        self._pending_start_mode = None
 
         if not self.save_config(quiet=True):
             return
@@ -1437,6 +1454,55 @@ class TikTokBotPanel(tk.Tk):
 
         code = process.wait()
         self.output_queue.put(f"[PAINEL] Processo finalizado com exit code {code}.")
+        self.after(0, lambda: self._on_bot_process_finished(process, code))
+
+    def _on_bot_process_finished(
+        self,
+        process: subprocess.Popen[str],
+        _exit_code: int,
+    ) -> None:
+        if self.process is not process:
+            return
+
+        self.process = None
+        self._stopping = False
+
+        pending_mode = self._pending_start_mode
+        self._pending_start_mode = None
+
+        if pending_mode and not self._closing:
+            self._append_log(
+                f"[PAINEL] Processo anterior encerrado. Iniciando modo {pending_mode.upper()} agora."
+            )
+            self.after(150, lambda: self.start_bot(pending_mode))
+
+    def stop_bot(self) -> None:
+        process_running = bool(
+            self.process
+            and self.process.poll() is None
+        )
+        state = self.bot_state.get().lower()
+
+        if self._stopping:
+            self._append_log("[PAINEL] O bot já está em processo de parada.")
+            return
+
+        if state == "stopped" and not process_running:
+            self._append_log("[PAINEL] O bot já está parado.")
+            return
+
+        if state == "stopped" and process_running:
+            self._stopping = True
+            self._append_log(
+                "[PAINEL] O bot já parou; aguardando apenas a finalização do processo anterior."
+            )
+            return
+
+        self._stopping = True
+        self.bot_state.set("stopping")
+        self._pending_start_mode = None
+        self.send_command("stop")
+        self._append_log("[PAINEL] Parada solicitada. Aguarde a finalização do processo.")
 
     def _drain_output_queue(self) -> None:
         try:
@@ -1933,8 +1999,8 @@ class TikTokBotPanel(tk.Tk):
             if answer is None:
                 return
 
-            if answer:
-                self.send_command("stop")
+            if answer and not self._stopping:
+                self.stop_bot()
 
         self._closing = True
         self.destroy()
