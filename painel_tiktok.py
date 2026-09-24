@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import re
 import shutil
 import subprocess
 import threading
@@ -261,6 +262,7 @@ class TikTokBotPanel(tk.Tk):
         self.weekend_start = tk.StringVar(value="0")
         self.weekend_end = tk.StringVar(value="24")
         self.warmup_seconds = tk.StringVar(value="")
+        self.ignore_live = tk.BooleanVar(value=True)
 
         self.follow_safety_enabled = tk.BooleanVar(value=True)
         self.follow_max_hour = tk.StringVar(value="10")
@@ -336,6 +338,7 @@ class TikTokBotPanel(tk.Tk):
             "commentLikes": tk.StringVar(value="0"),
             "followExchangeDetections": tk.StringVar(value="0"),
             "commentSkips": tk.StringVar(value="0"),
+            "liveSkips": tk.StringVar(value="0"),
         }
 
     def _build_ui(self) -> None:
@@ -370,8 +373,8 @@ class TikTokBotPanel(tk.Tk):
         controls = ttk.Frame(root, style="Card.TFrame")
         controls.pack(fill="x", pady=(0, 10), ipady=7)
 
-        ttk.Button(controls, text="▶ Iniciar TESTE", command=lambda: self.start_bot("test")).pack(side="left", padx=(10, 6))
-        ttk.Button(controls, text="▶ Iniciar REAL", command=lambda: self.start_bot("real")).pack(side="left", padx=6)
+        ttk.Button(controls, text="▶ TESTE (simulação)", command=lambda: self.start_bot("test")).pack(side="left", padx=(10, 6))
+        ttk.Button(controls, text="▶ REAL (executa ações)", command=lambda: self.start_bot("real")).pack(side="left", padx=6)
         ttk.Button(controls, text="⏸ Pausar", command=lambda: self.send_command("pause")).pack(side="left", padx=6)
         ttk.Button(controls, text="▶ Retomar", command=lambda: self.send_command("resume")).pack(side="left", padx=6)
         ttk.Button(controls, text="■ Parar", command=self.stop_bot).pack(side="left", padx=6)
@@ -452,6 +455,7 @@ class TikTokBotPanel(tk.Tk):
             ("Likes comentários", "commentLikes"),
             ("Troca-follow detectada", "followExchangeDetections"),
             ("Comentários ignorados", "commentSkips"),
+            ("LIVE ignoradas", "liveSkips"),
             ("Erros", "errors"),
             ("Total", "totalActions"),
             ("Nesta hora", "actionsThisHour"),
@@ -674,8 +678,27 @@ class TikTokBotPanel(tk.Tk):
         self._entry_row(hours, 2, "Fim de semana início", self.weekend_start)
         self._entry_row(hours, 3, "Fim de semana fim", self.weekend_end)
 
+        feed_filter = ttk.LabelFrame(outer, text="Filtro do feed")
+        feed_filter.grid(row=2, column=0, sticky="nsew", padx=6, pady=6)
+
+        ttk.Checkbutton(
+            feed_filter,
+            text="Ignorar LIVE: ao detectar transmissão ao vivo, pular imediatamente",
+            variable=self.ignore_live,
+        ).grid(row=0, column=0, sticky="w", padx=10, pady=(8, 4))
+
+        ttk.Label(
+            feed_filter,
+            text=(
+                "Quando ativo, LIVE não recebe curtida, comentário, follow nem conta como ação. "
+                "O bot desliza para o próximo vídeo imediatamente, sem aplicar o delay global."
+            ),
+            style="Muted.TLabel",
+            wraplength=520,
+        ).grid(row=1, column=0, sticky="w", padx=10, pady=(2, 10))
+
         comment_box = ttk.LabelFrame(outer, text="Política de comentários")
-        comment_box.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=6, pady=6)
+        comment_box.grid(row=0, column=1, rowspan=3, sticky="nsew", padx=6, pady=6)
         comment_box.rowconfigure(0, weight=1)
         comment_box.columnconfigure(0, weight=1)
 
@@ -1009,6 +1032,94 @@ class TikTokBotPanel(tk.Tk):
         parent.columnconfigure(1, weight=1)
 
     @staticmethod
+    def _mojibake_score(value: str) -> int:
+        markers = (
+            "Ã",
+            "Â",
+            "ðŸ",
+            "â",
+            "ï¿½",
+            "�",
+        )
+        return sum(value.count(marker) for marker in markers)
+
+    @classmethod
+    def _repair_mojibake_text(cls, value: str) -> str:
+        if cls._mojibake_score(value) == 0:
+            return value
+
+        best = value
+        best_score = cls._mojibake_score(best)
+
+        for _ in range(3):
+            improved = False
+
+            for encoding in ("cp1252", "latin1"):
+                try:
+                    candidate = best.encode(encoding).decode("utf-8")
+                except (UnicodeEncodeError, UnicodeDecodeError):
+                    continue
+
+                score = cls._mojibake_score(candidate)
+
+                if score < best_score:
+                    best = candidate
+                    best_score = score
+                    improved = True
+
+            if not improved:
+                break
+
+        return best
+
+    @classmethod
+    def _repair_mojibake_value(cls, value: object) -> object:
+        if isinstance(value, str):
+            return cls._repair_mojibake_text(value)
+
+        if isinstance(value, list):
+            return [cls._repair_mojibake_value(item) for item in value]
+
+        if isinstance(value, dict):
+            return {
+                key: cls._repair_mojibake_value(item)
+                for key, item in value.items()
+            }
+
+        return value
+
+    @staticmethod
+    def _clean_special_comment_template(value: str) -> str:
+        return re.sub(
+            r"^\s*coment[aá]rios\s+especiais\s*:\s*",
+            "",
+            value,
+            flags=re.IGNORECASE,
+        ).strip()
+
+    def _repair_loaded_config(self, data: dict[str, object]) -> tuple[dict[str, object], bool]:
+        repaired = self._repair_mojibake_value(data)
+
+        if not isinstance(repaired, dict):
+            return data, False
+
+        content = repaired.get("content")
+        if isinstance(content, dict):
+            policy = content.get("commentPolicy")
+            if isinstance(policy, dict):
+                exchange = policy.get("followExchange")
+                if isinstance(exchange, dict):
+                    templates = exchange.get("commentTemplates")
+                    if isinstance(templates, list):
+                        exchange["commentTemplates"] = [
+                            self._clean_special_comment_template(str(item))
+                            for item in templates
+                            if str(item).strip()
+                        ]
+
+        return repaired, repaired != data
+
+    @staticmethod
     def _csv(value: str) -> list[str]:
         return [item.strip().lstrip("#") for item in value.split(",") if item.strip()]
 
@@ -1038,6 +1149,25 @@ class TikTokBotPanel(tk.Tk):
     def load_config(self) -> None:
         try:
             data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+
+            repaired_data, repaired = self._repair_loaded_config(data)
+
+            if repaired:
+                RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+                backup = RUNTIME_DIR / f"tiktok-bot.before-encoding-fix-{int(time.time())}.json"
+                shutil.copy2(CONFIG_PATH, backup)
+
+                temp = CONFIG_PATH.with_name(CONFIG_PATH.name + ".encoding-fix.tmp")
+                temp.write_text(
+                    json.dumps(repaired_data, indent=2, ensure_ascii=False) + "\n",
+                    encoding="utf-8",
+                )
+                temp.replace(CONFIG_PATH)
+                data = repaired_data
+
+                self._append_log(
+                    f"[PAINEL] Caracteres UTF-8 corrigidos automaticamente. Backup: {backup.name}"
+                )
         except Exception as exc:
             messagebox.showerror("Configuração", f"Não foi possível abrir {CONFIG_PATH}\n\n{exc}")
             return
@@ -1085,6 +1215,7 @@ class TikTokBotPanel(tk.Tk):
         self.weekend_end.set(str(weekend.get("end", 24)))
 
         content = data.get("content", {})
+        self.ignore_live.set(bool(content.get("ignoreLive", True)))
         self.language.set(str(content.get("language", "pt-BR")))
         self.tone.set(str(content.get("tone", "Natural, amigável e relevante")))
         self.topics.set(", ".join(content.get("topics", ["tecnologia", "produtos", "dicas"])))
@@ -1218,10 +1349,11 @@ class TikTokBotPanel(tk.Tk):
                 raise ValueError("Informe pelo menos um tópico para comentários.")
 
             data["content"] = {
-                "tone": self.tone.get().strip() or "Natural, amigável e relevante",
-                "language": self.language.get().strip() or "pt-BR",
-                "topics": topics,
+                "tone": self._repair_mojibake_text(self.tone.get().strip()) or "Natural, amigável e relevante",
+                "language": self._repair_mojibake_text(self.language.get().strip()) or "pt-BR",
+                "topics": [self._repair_mojibake_text(item) for item in topics],
                 "maxLength": self._int(self.max_length.get(), "Máx. caracteres", 20, 500),
+                "ignoreLive": bool(self.ignore_live.get()),
                 "commentPolicy": {
                     "friendsOnly": bool(self.comment_friends_only.get()),
                     "requireVideoContext": bool(self.comment_require_context.get()),
@@ -1251,7 +1383,15 @@ class TikTokBotPanel(tk.Tk):
                         "minMatchedComments": self._int(self.follow_exchange_min_matches.get(), "Mín. comentários com sinais", 1, 100),
                         "minConfidence": self._int(self.follow_exchange_confidence.get(), "Confiança mínima", 0, 100) / 100,
                         "commentEnabled": bool(self.follow_exchange_comment_enabled.get()),
-                        "commentTemplates": self._semicolon(self.follow_exchange_templates.get()),
+                        "commentTemplates": [
+                            self._clean_special_comment_template(
+                                self._repair_mojibake_text(item)
+                            )
+                            for item in self._semicolon(self.follow_exchange_templates.get())
+                            if self._clean_special_comment_template(
+                                self._repair_mojibake_text(item)
+                            )
+                        ],
                         "useAiVariation": bool(self.follow_exchange_ai_variation.get()),
                         "allowRepeatedTemplates": bool(self.follow_exchange_allow_repeated_templates.get()),
                         "replaceNormalComment": bool(self.follow_exchange_replace_normal.get()),
