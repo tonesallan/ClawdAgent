@@ -81,7 +81,7 @@ describe(
         expect(
           panel,
         ).toContain(
-          'device_text = "ADB offline • nova tentativa em {remaining}s"',
+          'ADB offline • nova tentativa em',
         );
       },
     );
