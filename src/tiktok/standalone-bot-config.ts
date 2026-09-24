@@ -381,6 +381,9 @@ export const standaloneTikTokBotConfigSchema =
                 useAiVariation: z
                   .boolean()
                   .default(false),
+                allowRepeatedTemplates: z
+                  .boolean()
+                  .default(true),
                 replaceNormalComment: z
                   .boolean()
                   .default(true),
@@ -433,6 +436,7 @@ export const standaloneTikTokBotConfigSchema =
                   'Apoiando por aqui ✨',
                 ],
                 useAiVariation: false,
+                allowRepeatedTemplates: true,
                 replaceNormalComment: true,
                 bypassNormalContentFilters: true,
                 likeCommentsEnabled: false,
@@ -487,6 +491,7 @@ export const standaloneTikTokBotConfigSchema =
                 'Apoiando por aqui ✨',
               ],
               useAiVariation: false,
+              allowRepeatedTemplates: true,
               replaceNormalComment: true,
               bypassNormalContentFilters: true,
               likeCommentsEnabled: false,
