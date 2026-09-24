@@ -297,6 +297,9 @@ export const standaloneTikTokBotConfigSchema =
           .min(20)
           .max(500)
           .default(120),
+        ignoreLive: z
+          .boolean()
+          .default(true),
         commentPolicy: z
           .object({
             friendsOnly: z
@@ -575,6 +578,8 @@ export const standaloneTikTokBotConfigSchema =
         ],
         maxLength:
           120,
+        ignoreLive:
+          true,
         commentPolicy: {
           friendsOnly: false,
           requireVideoContext: true,
