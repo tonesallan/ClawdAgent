@@ -81,6 +81,10 @@ describe(
         });
 
         expect(
+          config.content.ignoreLive,
+        ).toBe(true);
+
+        expect(
           config.content.commentPolicy,
         ).toMatchObject({
           friendsOnly:
@@ -250,6 +254,10 @@ describe(
           ensureBeforeEachAction:
             true,
         });
+
+        expect(
+          mobile.content.ignoreLive,
+        ).toBe(true);
 
         expect(
           mobile.content.commentPolicy,
