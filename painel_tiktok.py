@@ -4,6 +4,7 @@ import json
 import os
 import queue
 import shutil
+import socket
 import subprocess
 import threading
 import time
@@ -188,6 +189,8 @@ class TikTokBotPanel(tk.Tk):
         self._last_status_mtime = 0.0
         self._last_control_result_key = ""
         self._connection_refresh_inflight = False
+        self._last_adb_start_attempt = 0.0
+        self._adb_recovery_interval_seconds = 30.0
         self._closing = False
         self._stopping = False
         self._pending_start_mode: str | None = None
@@ -384,7 +387,11 @@ class TikTokBotPanel(tk.Tk):
         ttk.Button(controls, text="⏸ Pausar", command=lambda: self.send_command("pause")).pack(side="left", padx=6)
         ttk.Button(controls, text="▶ Retomar", command=lambda: self.send_command("resume")).pack(side="left", padx=6)
         ttk.Button(controls, text="■ Parar", command=self.stop_bot).pack(side="left", padx=6)
-        ttk.Button(controls, text="↻ Atualizar conexões", command=self.refresh_connections).pack(side="right", padx=10)
+        ttk.Button(
+            controls,
+            text="↻ Atualizar conexões",
+            command=lambda: self.refresh_connections(force_adb_start=True),
+        ).pack(side="right", padx=10)
 
         notebook = ttk.Notebook(root)
         notebook.pack(fill="both", expand=True)
@@ -2036,14 +2043,26 @@ class TikTokBotPanel(tk.Tk):
         discovered = shutil.which("adb")
         return discovered or "adb"
 
+    @staticmethod
+    def _is_local_port_open(
+        host: str,
+        port: int,
+        timeout: float = 0.35,
+    ) -> bool:
+        try:
+            with socket.create_connection((host, port), timeout=timeout):
+                return True
+        except OSError:
+            return False
+
     def _connection_monitor_tick(self) -> None:
         if self._closing:
             return
 
-        self.refresh_connections()
+        self.refresh_connections(force_adb_start=False)
         self.after(5000, self._connection_monitor_tick)
 
-    def refresh_connections(self) -> None:
+    def refresh_connections(self, force_adb_start: bool = False) -> None:
         if self._connection_refresh_inflight:
             return
 
@@ -2055,31 +2074,119 @@ class TikTokBotPanel(tk.Tk):
 
             try:
                 adb_command = self._resolve_adb_command()
-                out = subprocess.check_output(
-                    [adb_command, "devices"],
-                    cwd=str(ROOT),
-                    text=True,
-                    encoding="utf-8",
-                    errors="replace",
-                    timeout=5,
-                )
-                devices = []
-                for line in out.splitlines()[1:]:
-                    parts = line.split()
-                    if len(parts) >= 2 and parts[1] == "device":
-                        devices.append(parts[0])
-                if devices:
-                    device_text = ", ".join(devices)
+                adb_server_online = self._is_local_port_open("127.0.0.1", 5037)
+
+                if not adb_server_online:
+                    now = time.monotonic()
+                    cooldown_elapsed = (
+                        now - self._last_adb_start_attempt
+                        >= self._adb_recovery_interval_seconds
+                    )
+
+                    should_attempt_start = force_adb_start or cooldown_elapsed
+
+                    if should_attempt_start:
+                        self._last_adb_start_attempt = now
+
+                        self.after(
+                            0,
+                            lambda: self.device_state.set("reconectando..."),
+                        )
+
+                        try:
+                            subprocess.run(
+                                [adb_command, "start-server"],
+                                cwd=str(ROOT),
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                                timeout=5,
+                                check=False,
+                                creationflags=(
+                                    subprocess.CREATE_NO_WINDOW
+                                    if os.name == "nt"
+                                    else 0
+                                ),
+                            )
+                        except Exception:
+                            pass
+
+                        adb_server_online = self._is_local_port_open(
+                            "127.0.0.1",
+                            5037,
+                            timeout=0.6,
+                        )
+
+                if adb_server_online:
+                    try:
+                        completed = subprocess.run(
+                            [adb_command, "devices"],
+                            cwd=str(ROOT),
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL,
+                            text=True,
+                            encoding="utf-8",
+                            errors="replace",
+                            timeout=5,
+                            check=False,
+                            creationflags=(
+                                subprocess.CREATE_NO_WINDOW
+                                if os.name == "nt"
+                                else 0
+                            ),
+                        )
+
+                        devices: list[str] = []
+
+                        for line in completed.stdout.splitlines()[1:]:
+                            parts = line.split()
+
+                            if len(parts) >= 2 and parts[1] == "device":
+                                devices.append(parts[0])
+
+                        if devices:
+                            device_text = ", ".join(devices)
+                        else:
+                            device_text = "ADB online • nenhum aparelho"
+                    except Exception:
+                        device_text = "ADB online • consulta falhou"
+                else:
+                    remaining = max(
+                        0,
+                        int(
+                            self._adb_recovery_interval_seconds
+                            - (
+                                time.monotonic()
+                                - self._last_adb_start_attempt
+                            )
+                        ),
+                    )
+
+                    if remaining > 0 and not force_adb_start:
+                        device_text = f"ADB offline • nova tentativa em {remaining}s"
+                    else:
+                        device_text = "ADB offline"
             except Exception:
                 device_text = "ADB indisponível"
 
             try:
                 config = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
-                url = str(config.get("appiumUrl", "http://127.0.0.1:4723")).rstrip("/") + "/status"
+                url = str(
+                    config.get("appiumUrl", "http://127.0.0.1:4723")
+                ).rstrip("/") + "/status"
+
                 with urlopen(url, timeout=3) as response:
                     if 200 <= response.status < 300:
-                        payload = json.loads(response.read().decode("utf-8", errors="replace") or "{}")
-                        value = payload.get("value", payload) if isinstance(payload, dict) else {}
+                        payload = json.loads(
+                            response.read().decode("utf-8", errors="replace")
+                            or "{}"
+                        )
+
+                        value = (
+                            payload.get("value", payload)
+                            if isinstance(payload, dict)
+                            else {}
+                        )
+
                         ready = value.get("ready") if isinstance(value, dict) else None
                         appium_text = "online" if ready is not False else "ocupado"
             except Exception:
@@ -2087,6 +2194,7 @@ class TikTokBotPanel(tk.Tk):
 
             def apply_result() -> None:
                 self._connection_refresh_inflight = False
+
                 if self._closing:
                     return
 
