@@ -2424,44 +2424,246 @@ export class MobileAgent {
   }
 
   private async openTikTokCommentsPanel(): Promise<void> {
-    try {
-      await this.appium.findElement(
-        'id',
-        'com.zhiliaoapp.musically:id/ejc',
-      );
+    const panelIsOpen =
+      async (): Promise<boolean> => {
+        const probes: Array<
+          [
+            strategy:
+              string,
+            selector:
+              string,
+          ]
+        > = [
+          [
+            'id',
+            'com.zhiliaoapp.musically:id/ejc',
+          ],
+          [
+            'uiautomator',
+            'new UiSelector().className("android.widget.EditText")',
+          ],
+          [
+            'uiautomator',
+            'new UiSelector().textContains("Coment")',
+          ],
+          [
+            'uiautomator',
+            'new UiSelector().textContains("Comment")',
+          ],
+        ];
+
+        for (
+          const [
+            strategy,
+            selector,
+          ] of probes
+        ) {
+          try {
+            const element =
+              await this.appium
+                .findElement(
+                  strategy,
+                  selector,
+                );
+
+            if (
+              await this.appium
+                .isElementDisplayed(
+                  element.elementId,
+                )
+            ) {
+              return true;
+            }
+          }
+          catch {
+            // Try next panel marker.
+          }
+        }
+
+        return false;
+      };
+
+    if (
+      await panelIsOpen()
+    ) {
       return;
     }
-    catch {
-      // Open below.
-    }
 
-    let button;
-    try {
-      button = await this.appium.findElement(
+    const selectors: Array<
+      [
+        strategy:
+          string,
+        selector:
+          string,
+        label:
+          string,
+      ]
+    > = [
+      [
         'uiautomator',
         'new UiSelector().descriptionStartsWith("Leia ou adicione comentários")',
-      );
-    }
-    catch {
-      button = await this.appium.findElement(
+        'pt-BR Leia ou adicione comentários',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionContains("Coment")',
+        'pt-BR content-desc Coment',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionContains("coment")',
+        'pt-BR content-desc coment',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().textContains("Coment")',
+        'pt-BR text Coment',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().textContains("coment")',
+        'pt-BR text coment',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionContains("Comment")',
+        'EN content-desc Comment',
+      ],
+      [
         'uiautomator',
         'new UiSelector().descriptionContains("comment")',
-      );
-    }
-
-    await this.appium.clickElement(button.elementId);
-    await this.sleep(1200);
-
-    try {
-      await this.appium.findElement(
-        'id',
-        'com.zhiliaoapp.musically:id/ejc',
-      );
-    }
-    catch {
-      await this.appium.findElement(
+        'EN content-desc comment',
+      ],
+      [
         'uiautomator',
-        'new UiSelector().className("android.widget.EditText")',
+        'new UiSelector().textContains("Comment")',
+        'EN text Comment',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().textContains("comment")',
+        'EN text comment',
+      ],
+      [
+        'xpath',
+        '//*[contains(@content-desc,"Coment") or contains(@content-desc,"coment") or contains(@content-desc,"Comment") or contains(@content-desc,"comment") or contains(@text,"Coment") or contains(@text,"coment") or contains(@text,"Comment") or contains(@text,"comment")]',
+        'generic comment XPath',
+      ],
+    ];
+
+    let button:
+      {
+        elementId:
+          string;
+      } |
+      null =
+        null;
+
+    let matchedLabel =
+      '';
+
+    for (
+      const [
+        strategy,
+        selector,
+        label,
+      ] of selectors
+    ) {
+      try {
+        const candidate =
+          await this.appium
+            .findElement(
+              strategy,
+              selector,
+            );
+
+        if (
+          await this.appium
+            .isElementDisplayed(
+              candidate.elementId,
+            )
+        ) {
+          button =
+            candidate;
+
+          matchedLabel =
+            label;
+
+          break;
+        }
+      }
+      catch {
+        // Try the next selector.
+      }
+    }
+
+    if (
+      !button
+    ) {
+      const source =
+        await this.appium
+          .getPageSource();
+
+      const visibleLabels =
+        [
+          ...source.matchAll(
+            /(?:text|content-desc)="([^"]{1,80})"/g,
+          ),
+        ]
+          .map(
+            match =>
+              match[1]
+                ?.trim(),
+          )
+          .filter(
+            (
+              value,
+            ): value is string =>
+              Boolean(
+                value,
+              ),
+          )
+          .filter(
+            (
+              value,
+              index,
+              values,
+            ) =>
+              values.indexOf(
+                value,
+              ) ===
+              index,
+          )
+          .slice(
+            0,
+            40,
+          );
+
+      throw new Error(
+        `TikTok comments control not found. Visible labels: ${visibleLabels.join(' | ') || 'none'}`,
+      );
+    }
+
+    await this.appium
+      .clickElement(
+        button.elementId,
+      );
+
+    this.log(
+      'comment',
+      'info',
+      `TikTok comments control opened using: ${matchedLabel}`,
+    );
+
+    await this.sleep(
+      1200,
+    );
+
+    if (
+      !await panelIsOpen()
+    ) {
+      throw new Error(
+        `TikTok comments panel did not become visible after using ${matchedLabel}.`,
       );
     }
   }
