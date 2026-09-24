@@ -184,6 +184,7 @@ class TikTokBotPanel(tk.Tk):
         self._closing = False
         self._stopping = False
         self._pending_start_mode: str | None = None
+        self._process_started_at_epoch = 0.0
 
         self.action_vars: dict[str, dict[str, tk.Variable]] = {}
 
@@ -1435,6 +1436,10 @@ class TikTokBotPanel(tk.Tk):
                 bufsize=1,
                 creationflags=flags,
             )
+            self._process_started_at_epoch = time.time()
+            self._stopping = False
+            self.bot_state.set("starting")
+            self.bot_mode.set(mode.upper())
         except Exception as exc:
             messagebox.showerror("TikTok Bot", f"Falha ao iniciar:\n\n{exc}")
             return
@@ -1465,6 +1470,7 @@ class TikTokBotPanel(tk.Tk):
             return
 
         self.process = None
+        self._process_started_at_epoch = 0.0
         self._stopping = False
 
         pending_mode = self._pending_start_mode
@@ -1608,11 +1614,29 @@ class TikTokBotPanel(tk.Tk):
         try:
             if STATUS_PATH.exists():
                 mtime = STATUS_PATH.stat().st_mtime
-                if mtime != self._last_status_mtime:
+
+                process_running = bool(
+                    self.process
+                    and self.process.poll() is None
+                )
+                waiting_for_new_status = (
+                    process_running
+                    and self.bot_state.get().lower() == "starting"
+                    and self._process_started_at_epoch > 0
+                    and mtime < self._process_started_at_epoch
+                )
+
+                if not waiting_for_new_status and mtime != self._last_status_mtime:
                     self._last_status_mtime = mtime
                     self._read_status()
             else:
-                self.bot_state.set("stopped")
+                process_running = bool(
+                    self.process
+                    and self.process.poll() is None
+                )
+
+                if not process_running:
+                    self.bot_state.set("stopped")
         except Exception as exc:
             self._append_log(f"[PAINEL] Falha ao ler status: {exc}")
 
