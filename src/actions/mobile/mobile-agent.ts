@@ -30,6 +30,32 @@ import type {
 import {
   registerConfirmedAndroidFollow,
 } from '../../tiktok/android-follow-registration.js';
+import {
+  centerOfTikTokBounds,
+  extractVisibleTikTokCommentsFromXml,
+} from '../../tiktok/android-comment-thread.js';
+import type {
+  TikTokVisibleComment,
+} from '../../tiktok/android-comment-thread.js';
+import {
+  buildTikTokVideoKey,
+  commentMatchesFollowExchangeSignals,
+  detectTikTokFollowExchange,
+  evaluateTikTokCommentBaseEligibility,
+  evaluateTikTokCommentContentFilters,
+  getTikTokCommentStyleInstruction,
+  pickTikTokFollowExchangeTemplate,
+  validateGeneratedTikTokComment,
+} from '../../tiktok/comment-policy.js';
+import type {
+  TikTokCommentHistoryEntry,
+  TikTokCommentKind,
+  TikTokCommentPolicyConfig,
+  TikTokFollowExchangeDetection,
+} from '../../tiktok/comment-policy.js';
+import {
+  TikTokCommentHistoryStore,
+} from '../../tiktok/comment-history-store.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -49,10 +75,7 @@ export interface MobileAgentConfig {
     language: string;
     topics: string[];
     maxLength: number;
-    commentPolicy?: {
-      friendsOnly: boolean;
-      requireVideoContext: boolean;
-    };
+    commentPolicy?: TikTokCommentPolicyConfig;
   };
   safety: { minDelaySeconds: number; maxActionsPerHour: number; pauseOnErrorCount: number; pauseDurationMinutes: number };
   testMode: boolean;
@@ -79,6 +102,7 @@ export interface MobileAgentStatus {
   lastActionTime: string | null;
   nextActionTime: string | null;
   config: MobileAgentConfig;
+  commentHistory: TikTokCommentHistoryEntry[];
 }
 
 export interface MobileAgentStats {
@@ -92,6 +116,9 @@ export interface MobileAgentStats {
   errors: number;
   totalActions: number;
   actionsThisHour: number;
+  commentLikes: number;
+  followExchangeDetections: number;
+  commentSkips: number;
   lastActionAt: string | null;
 }
 
@@ -131,6 +158,7 @@ export class MobileAgent {
   private appium: AppiumClient;
   private aiClient: AIClient;
   private screenSize: { width: number; height: number } | null = null;
+  private commentHistoryStore = new TikTokCommentHistoryStore();
 
   private constructor(config: MobileAgentConfig) {
     this.config = config;
@@ -245,6 +273,7 @@ export class MobileAgent {
     this.startedAt = new Date().toISOString();
     this.consecutiveErrors = 0;
     this.stats = this.freshStats();
+    await this.commentHistoryStore.load();
     this.log('system', 'info', `Starting mobile agent: ${this.config.app} on device ${this.config.deviceId}`);
 
     try {
@@ -323,6 +352,7 @@ export class MobileAgent {
       stats: { ...this.stats }, lastError: this.lastError,
       startedAt: this.startedAt, lastAction, lastActionTime: this.stats.lastActionAt,
       nextActionTime, config: this.config,
+      commentHistory: this.commentHistoryStore.list(100),
     };
   }
 
@@ -541,231 +571,7 @@ export class MobileAgent {
         break;
       }
       case 'comment': {
-        const policy =
-          this.getTikTokCommentPolicy();
-
-        let videoContext =
-          await this.getTikTokCurrentVideoContext();
-
-        if (
-          policy.requireVideoContext &&
-          !hasMeaningfulTikTokVideoContext(
-            videoContext,
-          )
-        ) {
-          this.log(
-            'comment',
-            'skipped',
-            'TikTok comment skipped: current video has no reliable caption/hashtag context',
-          );
-
-          return;
-        }
-
-        if (
-          policy.friendsOnly
-        ) {
-          const inspection =
-            await this.inspectTikTokCurrentCreatorRelationship(
-              videoContext,
-            );
-
-          if (
-            inspection.relationship !==
-              'friends'
-          ) {
-            this.log(
-              'comment',
-              'skipped',
-              `TikTok comment skipped: creator relationship is ${inspection.relationship}, friends required`,
-            );
-
-            return;
-          }
-
-          if (
-            !inspection.restored ||
-            !inspection.restoredContext
-          ) {
-            this.log(
-              'comment',
-              'skipped',
-              'TikTok comment skipped: could not safely return to the same video after friends check',
-            );
-
-            return;
-          }
-
-          videoContext = {
-            ...inspection.restoredContext,
-            creatorUsername:
-              inspection.username ??
-              inspection.restoredContext
-                .creatorUsername,
-          };
-        }
-
-        const commentText =
-          await this.generateComment(
-            'tiktok',
-            videoContext,
-          );
-
-        if (
-          commentText ===
-            'SKIP_COMMENT'
-        ) {
-          this.log(
-            'comment',
-            'skipped',
-            'TikTok comment skipped: AI found the visible video context insufficient for a relevant comment',
-          );
-
-          return;
-        }
-
-        if (
-          this.config.testMode
-        ) {
-          const creator =
-            videoContext
-              .creatorUsername
-              ? `@${videoContext.creatorUsername}`
-              : 'creator unknown';
-
-          this.log(
-            'comment',
-            'success',
-            `[TEST] Would post TikTok comment on ${creator}: "${commentText}"`,
-            JSON.stringify({
-              caption:
-                videoContext.caption,
-              hashtags:
-                videoContext.hashtags,
-              friendsOnly:
-                policy.friendsOnly,
-            }),
-          );
-
-          return;
-        }
-
-        try {
-          let commentButton;
-
-          try {
-            commentButton = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().descriptionStartsWith("Leia ou adicione comentários")'
-            );
-          } catch {
-            commentButton = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().descriptionContains("comment")'
-            );
-          }
-
-          await this.appium.clickElement(
-            commentButton.elementId
-          );
-
-          await this.sleep(1200);
-
-          let commentInput;
-
-          try {
-            commentInput = await this.appium.findElement(
-              'id',
-              'com.zhiliaoapp.musically:id/ejc'
-            );
-          } catch {
-            commentInput = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().className("android.widget.EditText")'
-            );
-          }
-
-          await this.appium.clickElement(
-            commentInput.elementId
-          );
-
-          // TikTok ignores sendKeys in this field.
-          // Clear, use the Appium clipboard and paste via Android.
-          await this.appium.clearElement(
-            commentInput.elementId
-          );
-
-          await this.sleep(300);
-
-          await this.appium.setClipboard(commentText);
-
-          // Android KEYCODE_PASTE
-          await this.appium.pressKey(279);
-
-          await this.sleep(800);
-
-          const source = await this.appium.getPageSource();
-
-          const inputLine = source
-            .split(/\r?\n/)
-            .find(line =>
-              line.includes('com.zhiliaoapp.musically:id/ejc')
-            );
-
-          if (!inputLine) {
-            throw new Error(
-              'TikTok comment field could not be validated'
-            );
-          }
-
-          const sendLine = source
-            .split(/\r?\n/)
-            .find(line =>
-              line.includes('com.zhiliaoapp.musically:id/d1u')
-            );
-
-          if (
-            !sendLine ||
-            !sendLine.includes('enabled="true"')
-          ) {
-            throw new Error(
-              'TikTok comment send button is disabled'
-            );
-          }
-
-          const sendButton =
-            await this.appium.findElement(
-              'id',
-              'com.zhiliaoapp.musically:id/d1u'
-            );
-
-          await this.appium.clickElement(
-            sendButton.elementId
-          );
-
-          await this.sleep(1500);
-
-          this.log(
-            'comment',
-            'success',
-            `Posted TikTok comment: "${commentText.slice(0, 60)}"`
-          );
-        } catch (err: unknown) {
-          const msg =
-            err instanceof Error
-              ? err.message
-              : String(err);
-
-          this.log(
-            'comment',
-            'error',
-            'TikTok comment failed',
-            msg
-          );
-
-          throw err;
-        }
-
+        await this.executeTikTokCommentAction();
         break;
       }
       case 'follow': {
@@ -1784,21 +1590,69 @@ export class MobileAgent {
 
     return true;
   }
-  private getTikTokCommentPolicy(): {
-    friendsOnly: boolean;
-    requireVideoContext: boolean;
-  } {
+  private getTikTokCommentPolicy():
+    TikTokCommentPolicyConfig {
+    const configured =
+      this.config.content
+        .commentPolicy;
+
+    if (configured) {
+      return configured;
+    }
+
     return {
-      friendsOnly:
-        this.config.content
-          .commentPolicy
-          ?.friendsOnly ??
-        false,
-      requireVideoContext:
-        this.config.content
-          .commentPolicy
-          ?.requireVideoContext ??
-        true,
+      friendsOnly: false,
+      requireVideoContext: true,
+      minLength: 8,
+      maxEmojis: 2,
+      stylePreset: 'natural',
+      previewOnly: false,
+      requiredKeywords: [],
+      excludedKeywords: [],
+      keywordMatchMode: 'any',
+      requiredHashtags: [],
+      excludedHashtags: [],
+      hashtagMatchMode: 'any',
+      allowedProfiles: [],
+      blockedProfiles: [],
+      profileCooldownHours: 12,
+      duplicateVideoWindowHours: 72,
+      maxCommentsPerProfilePerDay: 2,
+      avoidRecentCommentSimilarity: true,
+      similarityThreshold: 0.8,
+      recentCommentComparisonCount: 20,
+      followExchange: {
+        enabled: false,
+        indicatorPhrases: [
+          'sigo de volta',
+          'sigo todos de volta',
+          'segue que sigo',
+          'seguindo de volta',
+          'apoiando',
+          'apoio por aqui',
+          'garotas apoiam garotas',
+          'follow back',
+          'sdv',
+        ],
+        sampleSize: 15,
+        maxScrolls: 3,
+        minMatchedComments: 3,
+        minConfidence: 0.15,
+        commentEnabled: true,
+        commentTemplates: [
+          'Sigo todos de volta 💕',
+          'Retribuo todos 🤝',
+          'Apoiando por aqui ✨',
+        ],
+        useAiVariation: false,
+        replaceNormalComment: true,
+        bypassNormalContentFilters: true,
+        likeCommentsEnabled: false,
+        maxCommentLikesPerVideo: 3,
+        dailyCommentLikeLimit: 10,
+        likeOnlyMatchingSignals: true,
+        excludeCreatorComments: true,
+      },
     };
   }
 
@@ -1970,6 +1824,678 @@ export class MobileAgent {
     };
   }
 
+  private skipTikTokComment(
+    reason: string,
+    details?: Record<string, unknown>,
+  ): void {
+    this.stats.commentSkips += 1;
+    this.log(
+      'comment',
+      'skipped',
+      reason,
+      details ? JSON.stringify(details) : undefined,
+    );
+  }
+
+  private async openTikTokCommentsPanel(): Promise<void> {
+    try {
+      await this.appium.findElement(
+        'id',
+        'com.zhiliaoapp.musically:id/ejc',
+      );
+      return;
+    }
+    catch {
+      // Open below.
+    }
+
+    let button;
+    try {
+      button = await this.appium.findElement(
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Leia ou adicione comentários")',
+      );
+    }
+    catch {
+      button = await this.appium.findElement(
+        'uiautomator',
+        'new UiSelector().descriptionContains("comment")',
+      );
+    }
+
+    await this.appium.clickElement(button.elementId);
+    await this.sleep(1200);
+
+    try {
+      await this.appium.findElement(
+        'id',
+        'com.zhiliaoapp.musically:id/ejc',
+      );
+    }
+    catch {
+      await this.appium.findElement(
+        'uiautomator',
+        'new UiSelector().className("android.widget.EditText")',
+      );
+    }
+  }
+
+  private async closeTikTokCommentsPanel(): Promise<void> {
+    try {
+      await this.appium.pressKey(4);
+      await this.sleep(700);
+    }
+    catch {
+      // Best effort return to feed.
+    }
+  }
+
+  private async sampleTikTokComments(
+    sampleSize: number,
+    maxScrolls: number,
+  ): Promise<TikTokVisibleComment[]> {
+    const collected = new Map<string, TikTokVisibleComment>();
+    const scans = Math.max(1, maxScrolls + 1);
+
+    for (let scan = 0; scan < scans; scan++) {
+      const source = await this.appium.getPageSource();
+      const visible = extractVisibleTikTokCommentsFromXml(source);
+
+      for (const comment of visible) {
+        if (!collected.has(comment.key)) {
+          collected.set(comment.key, comment);
+        }
+        if (collected.size >= sampleSize) break;
+      }
+
+      if (collected.size >= sampleSize || scan === scans - 1) break;
+
+      await this.swipeRelative(
+        0.5,
+        0.76,
+        0.38,
+        450,
+      );
+      await this.sleep(850);
+    }
+
+    return [...collected.values()].slice(0, sampleSize);
+  }
+
+  private async resetTikTokCommentsPanel(): Promise<void> {
+    await this.closeTikTokCommentsPanel();
+    await this.openTikTokCommentsPanel();
+  }
+
+  private async recordTikTokCommentHistory(
+    entry: Omit<TikTokCommentHistoryEntry, 'timestamp'>,
+  ): Promise<void> {
+    try {
+      await this.commentHistoryStore.record({
+        ...entry,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    catch (error: unknown) {
+      const message = error instanceof Error
+        ? error.message
+        : String(error);
+      this.log(
+        'system',
+        'info',
+        `TikTok comment history persistence skipped: ${message}`,
+      );
+    }
+  }
+
+  private async postTikTokCommentInOpenPanel(
+    commentText: string,
+  ): Promise<void> {
+    let commentInput;
+
+    try {
+      commentInput = await this.appium.findElement(
+        'id',
+        'com.zhiliaoapp.musically:id/ejc',
+      );
+    }
+    catch {
+      commentInput = await this.appium.findElement(
+        'uiautomator',
+        'new UiSelector().className("android.widget.EditText")',
+      );
+    }
+
+    await this.appium.clickElement(commentInput.elementId);
+    await this.appium.clearElement(commentInput.elementId);
+    await this.sleep(300);
+    await this.appium.setClipboard(commentText);
+    await this.appium.pressKey(279);
+    await this.sleep(800);
+
+    const source = await this.appium.getPageSource();
+
+    const inputLine = source
+      .split(/\r?\n/)
+      .find(line =>
+        line.includes('com.zhiliaoapp.musically:id/ejc'));
+
+    if (!inputLine) {
+      throw new Error('TikTok comment field could not be validated');
+    }
+
+    const sendLine = source
+      .split(/\r?\n/)
+      .find(line =>
+        line.includes('com.zhiliaoapp.musically:id/d1u'));
+
+    if (!sendLine || !sendLine.includes('enabled="true"')) {
+      throw new Error('TikTok comment send button is disabled');
+    }
+
+    const sendButton = await this.appium.findElement(
+      'id',
+      'com.zhiliaoapp.musically:id/d1u',
+    );
+
+    await this.appium.clickElement(sendButton.elementId);
+    await this.sleep(1500);
+  }
+
+  private async resolveTikTokGeneratedComment(
+    videoContext: TikTokVideoContext,
+    policy: TikTokCommentPolicyConfig,
+    kind: TikTokCommentKind,
+    detection?: TikTokFollowExchangeDetection,
+  ): Promise<string | null> {
+    const history = this.commentHistoryStore.list(500);
+    const attempts = kind === 'normal' ? 2 : 1;
+
+    for (let attempt = 0; attempt < attempts; attempt++) {
+      let text: string;
+
+      if (
+        kind === 'follow_exchange' &&
+        !policy.followExchange.useAiVariation
+      ) {
+        text = pickTikTokFollowExchangeTemplate(
+          policy.followExchange.commentTemplates,
+        );
+      }
+      else {
+        text = await this.generateComment(
+          'tiktok',
+          videoContext,
+          kind === 'follow_exchange'
+            ? {
+                followExchange: true,
+                template: pickTikTokFollowExchangeTemplate(
+                  policy.followExchange.commentTemplates,
+                ),
+                signals: detection?.matchedPhrases ?? [],
+              }
+            : undefined,
+        );
+      }
+
+      if (text === 'SKIP_COMMENT') return null;
+
+      const validation = validateGeneratedTikTokComment(
+        text,
+        this.config.content.maxLength,
+        policy,
+        history,
+      );
+
+      if (validation.valid) return text;
+
+      this.log(
+        'comment',
+        'info',
+        `Generated TikTok comment rejected by policy: ${validation.reasons.join('; ')}`,
+      );
+
+      if (
+        kind === 'follow_exchange' &&
+        policy.followExchange.useAiVariation
+      ) {
+        const fallback = pickTikTokFollowExchangeTemplate(
+          policy.followExchange.commentTemplates,
+        );
+        const fallbackValidation = validateGeneratedTikTokComment(
+          fallback,
+          this.config.content.maxLength,
+          policy,
+          history,
+        );
+        if (fallbackValidation.valid) return fallback;
+      }
+    }
+
+    return null;
+  }
+
+  private async publishOrPreviewTikTokComment(
+    commentText: string,
+    videoContext: TikTokVideoContext,
+    policy: TikTokCommentPolicyConfig,
+    kind: TikTokCommentKind,
+    panelAlreadyOpen: boolean,
+    metadata: Record<string, unknown> = {},
+  ): Promise<boolean> {
+    const videoKey = buildTikTokVideoKey(videoContext);
+    const creator = videoContext.creatorUsername
+      ? `@${videoContext.creatorUsername}`
+      : 'creator unknown';
+
+    if (this.config.testMode || policy.previewOnly) {
+      this.log(
+        'comment',
+        'success',
+        `${this.config.testMode ? '[TEST]' : '[PREVIEW]'} Would post TikTok ${kind === 'follow_exchange' ? 'follow-exchange ' : ''}comment on ${creator}: "${commentText}"`,
+        JSON.stringify(metadata),
+      );
+
+      await this.recordTikTokCommentHistory({
+        status: 'preview',
+        kind,
+        videoKey,
+        creatorUsername: videoContext.creatorUsername,
+        commentText,
+        commentKey: null,
+        metadata,
+      });
+
+      return false;
+    }
+
+    if (!panelAlreadyOpen) {
+      await this.openTikTokCommentsPanel();
+    }
+
+    await this.postTikTokCommentInOpenPanel(commentText);
+
+    await this.recordTikTokCommentHistory({
+      status: 'published',
+      kind,
+      videoKey,
+      creatorUsername: videoContext.creatorUsername,
+      commentText,
+      commentKey: null,
+      metadata,
+    });
+
+    this.log(
+      'comment',
+      'success',
+      `Posted TikTok ${kind === 'follow_exchange' ? 'follow-exchange ' : ''}comment: "${commentText.slice(0, 80)}"`,
+    );
+
+    return true;
+  }
+
+  private async engageTikTokFollowExchangeCommentLikes(
+    videoContext: TikTokVideoContext,
+    policy: TikTokCommentPolicyConfig,
+    initialComments: TikTokVisibleComment[],
+  ): Promise<number> {
+    const config = policy.followExchange;
+
+    if (
+      !config.likeCommentsEnabled ||
+      config.maxCommentLikesPerVideo <= 0 ||
+      config.dailyCommentLikeLimit <= 0
+    ) {
+      return 0;
+    }
+
+    const history = this.commentHistoryStore.list(1500);
+    const today = new Date().toISOString().slice(0, 10);
+
+    const likedToday = history.filter(entry =>
+      entry.status === 'comment_like' &&
+      entry.timestamp.slice(0, 10) === today).length;
+
+    const remainingDaily = Math.max(
+      0,
+      config.dailyCommentLikeLimit - likedToday,
+    );
+
+    const target = Math.min(
+      config.maxCommentLikesPerVideo,
+      remainingDaily,
+    );
+
+    if (target <= 0) {
+      this.log(
+        'comment',
+        'skipped',
+        'Follow-exchange comment likes skipped: daily comment-like limit reached',
+      );
+      return 0;
+    }
+
+    const alreadyLiked = new Set(
+      history
+        .filter(entry =>
+          entry.status === 'comment_like' &&
+          entry.commentKey)
+        .map(entry => entry.commentKey!),
+    );
+
+    const creator = videoContext.creatorUsername
+      ?.toLocaleLowerCase('pt-BR') ?? null;
+
+    const eligible = (
+      comments: TikTokVisibleComment[],
+    ): TikTokVisibleComment[] =>
+      comments.filter(comment => {
+        if (!comment.likeBounds || alreadyLiked.has(comment.key)) return false;
+
+        if (
+          config.excludeCreatorComments &&
+          creator &&
+          comment.username?.toLocaleLowerCase('pt-BR') === creator
+        ) {
+          return false;
+        }
+
+        if (config.likeOnlyMatchingSignals) {
+          return commentMatchesFollowExchangeSignals(
+            comment.text,
+            config.indicatorPhrases,
+          ).matched;
+        }
+
+        return true;
+      });
+
+    if (this.config.testMode || policy.previewOnly) {
+      const preview = eligible(initialComments).slice(0, target);
+
+      for (const comment of preview) {
+        this.log(
+          'comment',
+          'success',
+          `${this.config.testMode ? '[TEST]' : '[PREVIEW]'} Would like follow-exchange comment: "${comment.text}"`,
+        );
+      }
+
+      return preview.length;
+    }
+
+    await this.resetTikTokCommentsPanel();
+
+    let liked = 0;
+    const scans = Math.max(1, config.maxScrolls + 1);
+
+    for (
+      let scan = 0;
+      scan < scans && liked < target;
+      scan++
+    ) {
+      const source = await this.appium.getPageSource();
+      const visible = eligible(
+        extractVisibleTikTokCommentsFromXml(source),
+      );
+
+      for (const comment of visible) {
+        if (liked >= target || !comment.likeBounds) break;
+
+        const point = centerOfTikTokBounds(comment.likeBounds);
+        await this.appium.tap(point.x, point.y);
+        await this.sleep(650);
+
+        alreadyLiked.add(comment.key);
+        liked += 1;
+        this.stats.commentLikes += 1;
+
+        await this.recordTikTokCommentHistory({
+          status: 'comment_like',
+          kind: 'follow_exchange',
+          videoKey: buildTikTokVideoKey(videoContext),
+          creatorUsername: videoContext.creatorUsername,
+          commentText: comment.text,
+          commentKey: comment.key,
+          metadata: {
+            username: comment.username,
+          },
+        });
+
+        this.log(
+          'comment',
+          'success',
+          `Liked follow-exchange comment: "${comment.text.slice(0, 80)}"`,
+        );
+      }
+
+      if (liked >= target || scan === scans - 1) break;
+
+      await this.swipeRelative(
+        0.5,
+        0.76,
+        0.38,
+        450,
+      );
+      await this.sleep(850);
+    }
+
+    return liked;
+  }
+
+  private async executeTikTokCommentAction(): Promise<void> {
+    const policy = this.getTikTokCommentPolicy();
+    let videoContext = await this.getTikTokCurrentVideoContext();
+
+    const base = evaluateTikTokCommentBaseEligibility(
+      videoContext,
+      policy,
+      this.commentHistoryStore.list(500),
+    );
+
+    if (!base.allowed) {
+      this.skipTikTokComment(
+        `TikTok comment skipped: ${base.reasons.join('; ')}`,
+      );
+      return;
+    }
+
+    if (policy.friendsOnly) {
+      const inspection = await this.inspectTikTokCurrentCreatorRelationship(
+        videoContext,
+      );
+
+      if (inspection.relationship !== 'friends') {
+        this.skipTikTokComment(
+          `TikTok comment skipped: creator relationship is ${inspection.relationship}, friends required`,
+        );
+        return;
+      }
+
+      if (!inspection.restored || !inspection.restoredContext) {
+        this.skipTikTokComment(
+          'TikTok comment skipped: could not safely return to the same video after friends check',
+        );
+        return;
+      }
+
+      videoContext = {
+        ...inspection.restoredContext,
+        creatorUsername:
+          inspection.username ??
+          inspection.restoredContext.creatorUsername,
+      };
+    }
+
+    let panelOpen = false;
+
+    try {
+      const exchangeConfig = policy.followExchange;
+      let exchangeDetection: TikTokFollowExchangeDetection | null = null;
+      let sampledComments: TikTokVisibleComment[] = [];
+
+      if (exchangeConfig.enabled) {
+        await this.openTikTokCommentsPanel();
+        panelOpen = true;
+
+        sampledComments = await this.sampleTikTokComments(
+          exchangeConfig.sampleSize,
+          exchangeConfig.maxScrolls,
+        );
+
+        exchangeDetection = detectTikTokFollowExchange(
+          sampledComments.map(comment => comment.text),
+          videoContext,
+          exchangeConfig,
+        );
+
+        this.log(
+          'comment',
+          'info',
+          `Follow-exchange scan: detected=${exchangeDetection.detected} confidence=${Math.round(exchangeDetection.confidence * 100)}% matches=${exchangeDetection.matchedComments}/${exchangeDetection.sampledComments}`,
+          JSON.stringify({
+            matchedPhrases: exchangeDetection.matchedPhrases,
+            videoMatchedPhrases: exchangeDetection.videoMatchedPhrases,
+          }),
+        );
+
+        if (exchangeDetection.detected) {
+          this.stats.followExchangeDetections += 1;
+
+          if (!exchangeConfig.bypassNormalContentFilters) {
+            const content = evaluateTikTokCommentContentFilters(
+              videoContext,
+              policy,
+            );
+
+            if (!content.allowed) {
+              this.skipTikTokComment(
+                `Follow-exchange interaction skipped by normal content filters: ${content.reasons.join('; ')}`,
+              );
+              return;
+            }
+          }
+
+          await this.engageTikTokFollowExchangeCommentLikes(
+            videoContext,
+            policy,
+            sampledComments,
+          );
+
+          if (exchangeConfig.commentEnabled) {
+            const specialText = await this.resolveTikTokGeneratedComment(
+              videoContext,
+              policy,
+              'follow_exchange',
+              exchangeDetection,
+            );
+
+            if (!specialText) {
+              this.skipTikTokComment(
+                'Follow-exchange comment skipped: no generated/template text passed policy validation',
+              );
+            }
+            else {
+              await this.publishOrPreviewTikTokComment(
+                specialText,
+                videoContext,
+                policy,
+                'follow_exchange',
+                panelOpen,
+                {
+                  confidence: exchangeDetection.confidence,
+                  matchedComments: exchangeDetection.matchedComments,
+                  sampledComments: exchangeDetection.sampledComments,
+                  matchedPhrases: exchangeDetection.matchedPhrases,
+                },
+              );
+            }
+          }
+
+          if (exchangeConfig.replaceNormalComment) {
+            return;
+          }
+        }
+      }
+
+      if (
+        policy.requireVideoContext &&
+        !hasMeaningfulTikTokVideoContext(videoContext)
+      ) {
+        this.skipTikTokComment(
+          'TikTok comment skipped: current video has no reliable caption/hashtag context',
+        );
+        return;
+      }
+
+      const content = evaluateTikTokCommentContentFilters(
+        videoContext,
+        policy,
+      );
+
+      if (!content.allowed) {
+        this.skipTikTokComment(
+          `TikTok comment skipped by content filter: ${content.reasons.join('; ')}`,
+        );
+        return;
+      }
+
+      const commentText = await this.resolveTikTokGeneratedComment(
+        videoContext,
+        policy,
+        'normal',
+      );
+
+      if (!commentText) {
+        this.skipTikTokComment(
+          'TikTok comment skipped: AI/context did not produce a policy-compliant comment',
+        );
+        return;
+      }
+
+      if (
+        !panelOpen &&
+        !this.config.testMode &&
+        !policy.previewOnly
+      ) {
+        await this.openTikTokCommentsPanel();
+        panelOpen = true;
+      }
+
+      await this.publishOrPreviewTikTokComment(
+        commentText,
+        videoContext,
+        policy,
+        'normal',
+        panelOpen,
+        {
+          caption: videoContext.caption,
+          hashtags: videoContext.hashtags,
+          friendsOnly: policy.friendsOnly,
+        },
+      );
+    }
+    catch (err: unknown) {
+      const msg = err instanceof Error
+        ? err.message
+        : String(err);
+
+      this.log(
+        'comment',
+        'error',
+        'TikTok comment failed',
+        msg,
+      );
+
+      throw err;
+    }
+    finally {
+      if (panelOpen) {
+        await this.closeTikTokCommentsPanel();
+      }
+    }
+  }
+
   // ── AI Comment Generation ─────────────────────────────────────────
 
   private async generateComment(
@@ -1977,6 +2503,11 @@ export class MobileAgent {
       MobileApp,
     tikTokContext?:
       TikTokVideoContext,
+    options?: {
+      followExchange?: boolean;
+      template?: string;
+      signals?: string[];
+    },
   ): Promise<string> {
     const {
       tone,
@@ -1998,6 +2529,27 @@ export class MobileAgent {
         facebook:
           'Facebook',
       };
+
+    const commentPolicy =
+      this.getTikTokCommentPolicy();
+
+    const styleInstruction =
+      platform ===
+        'tiktok'
+        ? getTikTokCommentStyleInstruction(
+            commentPolicy.stylePreset,
+          )
+        : '';
+
+    const specialInstruction =
+      options?.followExchange
+        ? [
+            'This video was classified as mutual-support/follow-exchange content from visible comments.',
+            `Base phrase/template: ${options.template ?? 'Sigo todos de volta'}`,
+            `Detected signals: ${options.signals?.join(', ') || 'follow exchange'}`,
+            'Keep the same mutual-support intent. Do not make unrelated claims.',
+          ].join('\n')
+        : '';
 
     const contextBlock =
       platform ===
@@ -2021,9 +2573,11 @@ Write in ${language}. Tone: ${tone}.
 Preferred themes, only when they genuinely match the visible content: ${topics.join(', ')}.
 
 Rules:
+- Minimum ${platform === 'tiktok' ? commentPolicy.minLength : 1} characters
 - Maximum ${maxLength} characters
 - Sound natural, specific and useful
-- 1-2 emojis maximum, only when natural
+- Maximum ${platform === 'tiktok' ? commentPolicy.maxEmojis : 2} emojis
+${styleInstruction}
 - Never mention automation, bots or AI
 - Never use generic filler such as "Nice!" or "Great post!"
 - For TikTok, use ONLY facts present in CURRENT VIDEO CONTEXT
@@ -2031,7 +2585,9 @@ Rules:
 - If the TikTok context is insufficient to write a relevant comment, output exactly SKIP_COMMENT
 - Output ONLY the comment text or SKIP_COMMENT
 
-${contextBlock}`;
+${contextBlock}
+
+${specialInstruction}`;
 
     try {
       const response =
@@ -2291,7 +2847,22 @@ ${contextBlock}`;
   }
 
   private freshStats(): MobileAgentStats {
-    return { likes: 0, comments: 0, follows: 0, scrolls: 0, shares: 0, retweets: 0, replies: 0, errors: 0, totalActions: 0, actionsThisHour: 0, lastActionAt: null };
+    return {
+      likes: 0,
+      comments: 0,
+      follows: 0,
+      scrolls: 0,
+      shares: 0,
+      retweets: 0,
+      replies: 0,
+      errors: 0,
+      totalActions: 0,
+      actionsThisHour: 0,
+      commentLikes: 0,
+      followExchangeDetections: 0,
+      commentSkips: 0,
+      lastActionAt: null,
+    };
   }
 
   private log(action: MobileActionType | 'system', status: MobileAgentLogEntry['status'], message: string, details?: string): void {
