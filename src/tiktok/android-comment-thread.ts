@@ -201,7 +201,61 @@ export function extractVisibleTikTokCommentsFromXml(
     });
   }
 
-  return comments.sort((left, right) => left.bounds.top - right.bounds.top);
+  const byLikeTarget =
+    new Map<string, TikTokVisibleComment>();
+
+  const withoutLikeTarget:
+    TikTokVisibleComment[] =
+      [];
+
+  for (
+    const comment of
+      comments
+  ) {
+    if (
+      !comment.likeBounds
+    ) {
+      withoutLikeTarget.push(
+        comment,
+      );
+      continue;
+    }
+
+    const targetKey = [
+      comment.likeBounds.left,
+      comment.likeBounds.top,
+      comment.likeBounds.right,
+      comment.likeBounds.bottom,
+    ].join(':');
+
+    const existing =
+      byLikeTarget.get(
+        targetKey,
+      );
+
+    if (
+      !existing ||
+      comment.text.length >
+        existing.text.length
+    ) {
+      byLikeTarget.set(
+        targetKey,
+        comment,
+      );
+    }
+  }
+
+  return [
+    ...withoutLikeTarget,
+    ...byLikeTarget.values(),
+  ].sort(
+    (
+      left,
+      right,
+    ) =>
+      left.bounds.top -
+      right.bounds.top,
+  );
 }
 
 export function centerOfTikTokBounds(
