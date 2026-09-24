@@ -16,6 +16,17 @@ import {
   classifyTikTokRelationshipFromXml,
   confirmTikTokFollowTransition,
 } from '../../tiktok/android-relationship.js';
+import type {
+  TikTokRelationshipState,
+} from '../../tiktok/android-relationship.js';
+import {
+  extractTikTokVideoContextFromXml,
+  hasMeaningfulTikTokVideoContext,
+  tikTokVideoContextsMatch,
+} from '../../tiktok/android-video-context.js';
+import type {
+  TikTokVideoContext,
+} from '../../tiktok/android-video-context.js';
 import {
   registerConfirmedAndroidFollow,
 } from '../../tiktok/android-follow-registration.js';
@@ -33,7 +44,16 @@ export interface MobileAgentConfig {
   actions: MobileActionType[];
   schedule: Record<string, { intervalMinutes: number; dailyLimit: number }>;
   activeHours: { weekday: { start: number; end: number }; weekend: { start: number; end: number } };
-  content: { tone: string; language: string; topics: string[]; maxLength: number };
+  content: {
+    tone: string;
+    language: string;
+    topics: string[];
+    maxLength: number;
+    commentPolicy?: {
+      friendsOnly: boolean;
+      requireVideoContext: boolean;
+    };
+  };
   safety: { minDelaySeconds: number; maxActionsPerHour: number; pauseOnErrorCount: number; pauseDurationMinutes: number };
   testMode: boolean;
   /**
@@ -521,16 +541,114 @@ export class MobileAgent {
         break;
       }
       case 'comment': {
-        if (this.config.testMode) {
+        const policy =
+          this.getTikTokCommentPolicy();
+
+        let videoContext =
+          await this.getTikTokCurrentVideoContext();
+
+        if (
+          policy.requireVideoContext &&
+          !hasMeaningfulTikTokVideoContext(
+            videoContext,
+          )
+        ) {
           this.log(
             'comment',
-            'success',
-            '[TEST] Would comment on TikTok video'
+            'skipped',
+            'TikTok comment skipped: current video has no reliable caption/hashtag context',
           );
+
           return;
         }
 
-        const commentText = await this.generateComment('tiktok');
+        if (
+          policy.friendsOnly
+        ) {
+          const inspection =
+            await this.inspectTikTokCurrentCreatorRelationship(
+              videoContext,
+            );
+
+          if (
+            inspection.relationship !==
+              'friends'
+          ) {
+            this.log(
+              'comment',
+              'skipped',
+              `TikTok comment skipped: creator relationship is ${inspection.relationship}, friends required`,
+            );
+
+            return;
+          }
+
+          if (
+            !inspection.restored ||
+            !inspection.restoredContext
+          ) {
+            this.log(
+              'comment',
+              'skipped',
+              'TikTok comment skipped: could not safely return to the same video after friends check',
+            );
+
+            return;
+          }
+
+          videoContext = {
+            ...inspection.restoredContext,
+            creatorUsername:
+              inspection.username ??
+              inspection.restoredContext
+                .creatorUsername,
+          };
+        }
+
+        const commentText =
+          await this.generateComment(
+            'tiktok',
+            videoContext,
+          );
+
+        if (
+          commentText ===
+            'SKIP_COMMENT'
+        ) {
+          this.log(
+            'comment',
+            'skipped',
+            'TikTok comment skipped: AI found the visible video context insufficient for a relevant comment',
+          );
+
+          return;
+        }
+
+        if (
+          this.config.testMode
+        ) {
+          const creator =
+            videoContext
+              .creatorUsername
+              ? `@${videoContext.creatorUsername}`
+              : 'creator unknown';
+
+          this.log(
+            'comment',
+            'success',
+            `[TEST] Would post TikTok comment on ${creator}: "${commentText}"`,
+            JSON.stringify({
+              caption:
+                videoContext.caption,
+              hashtags:
+                videoContext.hashtags,
+              friendsOnly:
+                policy.friendsOnly,
+            }),
+          );
+
+          return;
+        }
 
         try {
           let commentButton;
@@ -571,8 +689,8 @@ export class MobileAgent {
             commentInput.elementId
           );
 
-          // TikTok ignora sendKeys neste campo.
-          // Limpa, usa o clipboard do Appium 3 e cola via Android.
+          // TikTok ignores sendKeys in this field.
+          // Clear, use the Appium clipboard and paste via Android.
           await this.appium.clearElement(
             commentInput.elementId
           );
@@ -1666,40 +1784,345 @@ export class MobileAgent {
 
     return true;
   }
-  // ── AI Comment Generation ─────────────────────────────────────────
+  private getTikTokCommentPolicy(): {
+    friendsOnly: boolean;
+    requireVideoContext: boolean;
+  } {
+    return {
+      friendsOnly:
+        this.config.content
+          .commentPolicy
+          ?.friendsOnly ??
+        false,
+      requireVideoContext:
+        this.config.content
+          .commentPolicy
+          ?.requireVideoContext ??
+        true,
+    };
+  }
 
-  private async generateComment(platform: MobileApp): Promise<string> {
-    const { tone, language, topics, maxLength } = this.config.content;
-    const platformNames: Record<MobileApp, string> = { tiktok: 'TikTok', twitter: 'X (Twitter)', facebook: 'Facebook' };
+  private async getTikTokCurrentVideoContext():
+    Promise<TikTokVideoContext> {
+    const source =
+      await this.appium
+        .getPageSource();
 
-    const systemPrompt = `You are a real person on ${platformNames[platform]}.
-Write in ${language}. Tone: ${tone}. Topics: ${topics.join(', ')}.
-Rules:
-- Maximum ${maxLength} characters
-- Sound authentic and human — casual, real
-- React to content naturally, add value
-- 1-2 emojis max, used naturally
-- NEVER mention being AI or automated
-- NEVER generic ("Nice!", "Great post!")
-- Output ONLY the text, nothing else`;
+    return extractTikTokVideoContextFromXml(
+      source,
+    );
+  }
+
+  private async inspectTikTokCurrentCreatorRelationship(
+    beforeContext:
+      TikTokVideoContext,
+  ): Promise<{
+    relationship:
+      TikTokRelationshipState;
+    username:
+      string | null;
+    restored:
+      boolean;
+    restoredContext:
+      TikTokVideoContext | null;
+  }> {
+    let profileOpened =
+      false;
+
+    let relationship:
+      TikTokRelationshipState =
+        'unknown';
+
+    let username =
+      beforeContext
+        .creatorUsername;
 
     try {
-      const response = await this.aiClient.chat({
-        systemPrompt,
-        messages: [{ role: 'user', content: `Write a short, engaging ${platform === 'twitter' ? 'reply' : 'comment'} about ${topics[Math.floor(Math.random() * topics.length)]}:` }],
-        maxTokens: Math.ceil(maxLength / 2),
-        temperature: 0.85,
-        isSubAgent: true,
-      });
-      let text = response.content.trim();
-      if ((text.startsWith('"') && text.endsWith('"')) || (text.startsWith("'") && text.endsWith("'"))) {
-        text = text.slice(1, -1);
+      let profileEntry;
+
+      try {
+        profileEntry =
+          await this.appium
+            .findElement(
+              'id',
+              'com.zhiliaoapp.musically:id/user_avatar',
+            );
       }
-      return text.slice(0, maxLength);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      this.log('system', 'error', `AI generation failed: ${msg}`);
-      throw new Error(`Content generation failed: ${msg}`);
+      catch {
+        profileEntry =
+          await this.appium
+            .findElement(
+              'id',
+              'com.zhiliaoapp.musically:id/title',
+            );
+      }
+
+      await this.appium
+        .clickElement(
+          profileEntry.elementId,
+        );
+
+      profileOpened =
+        true;
+
+      await this.sleep(
+        1200,
+      );
+
+      const profileSource =
+        await this.appium
+          .getPageSource();
+
+      const profileUsername =
+        extractTikTokProfileUsername(
+          profileSource,
+        );
+
+      if (
+        beforeContext
+          .creatorUsername &&
+        profileUsername &&
+        beforeContext
+          .creatorUsername
+          .toLocaleLowerCase(
+            'pt-BR',
+          ) !==
+        profileUsername
+          .toLocaleLowerCase(
+            'pt-BR',
+          )
+      ) {
+        throw new Error(
+          `TikTok creator identity changed during friends check: expected @${beforeContext.creatorUsername}, got @${profileUsername}`,
+        );
+      }
+
+      username =
+        profileUsername ??
+        username;
+
+      relationship =
+        classifyTikTokRelationshipFromXml(
+          profileSource,
+        );
+    }
+    finally {
+      if (
+        profileOpened
+      ) {
+        try {
+          await this.appium
+            .pressKey(4);
+
+          await this.sleep(
+            900,
+          );
+        }
+        catch {
+          return {
+            relationship,
+            username,
+            restored:
+              false,
+            restoredContext:
+              null,
+          };
+        }
+      }
+    }
+
+    let restoredContext:
+      TikTokVideoContext;
+
+    try {
+      restoredContext =
+        await this
+          .getTikTokCurrentVideoContext();
+    }
+    catch {
+      return {
+        relationship,
+        username,
+        restored:
+          false,
+        restoredContext:
+          null,
+      };
+    }
+
+    const contextForMatch = {
+      ...beforeContext,
+      creatorUsername:
+        beforeContext
+          .creatorUsername ??
+        username,
+    };
+
+    return {
+      relationship,
+      username,
+      restored:
+        tikTokVideoContextsMatch(
+          contextForMatch,
+          restoredContext,
+        ),
+      restoredContext,
+    };
+  }
+
+  // ── AI Comment Generation ─────────────────────────────────────────
+
+  private async generateComment(
+    platform:
+      MobileApp,
+    tikTokContext?:
+      TikTokVideoContext,
+  ): Promise<string> {
+    const {
+      tone,
+      language,
+      topics,
+      maxLength,
+    } =
+      this.config.content;
+
+    const platformNames:
+      Record<
+        MobileApp,
+        string
+      > = {
+        tiktok:
+          'TikTok',
+        twitter:
+          'X (Twitter)',
+        facebook:
+          'Facebook',
+      };
+
+    const contextBlock =
+      platform ===
+        'tiktok' &&
+      tikTokContext
+        ? [
+            'CURRENT VIDEO CONTEXT (read from the TikTok Android UI):',
+            `Creator: ${tikTokContext.creatorUsername ? '@' + tikTokContext.creatorUsername : 'unknown'}`,
+            `Caption/description: ${tikTokContext.caption ?? 'not available'}`,
+            `Hashtags: ${tikTokContext.hashtags.length > 0 ? tikTokContext.hashtags.map(tag => '#' + tag).join(' ') : 'none visible'}`,
+            `Other visible text: ${tikTokContext.snippets.slice(0, 6).join(' | ') || 'none'}`,
+          ]
+            .join(
+              '\n',
+            )
+        : '';
+
+    const systemPrompt =
+      `You are writing one social-media comment for ${platformNames[platform]}.
+Write in ${language}. Tone: ${tone}.
+Preferred themes, only when they genuinely match the visible content: ${topics.join(', ')}.
+
+Rules:
+- Maximum ${maxLength} characters
+- Sound natural, specific and useful
+- 1-2 emojis maximum, only when natural
+- Never mention automation, bots or AI
+- Never use generic filler such as "Nice!" or "Great post!"
+- For TikTok, use ONLY facts present in CURRENT VIDEO CONTEXT
+- Never invent what is visible, spoken, sold, demonstrated or claimed
+- If the TikTok context is insufficient to write a relevant comment, output exactly SKIP_COMMENT
+- Output ONLY the comment text or SKIP_COMMENT
+
+${contextBlock}`;
+
+    try {
+      const response =
+        await this.aiClient
+          .chat({
+            systemPrompt,
+            messages: [
+              {
+                role:
+                  'user',
+                content:
+                  platform ===
+                    'tiktok'
+                    ? 'Write one short comment that is directly relevant to the current TikTok video context.'
+                    : `Write a short, engaging ${platform === 'twitter' ? 'reply' : 'comment'} about ${topics[Math.floor(Math.random() * topics.length)]}:`,
+              },
+            ],
+            maxTokens:
+              Math.ceil(
+                maxLength /
+                  2,
+              ),
+            temperature:
+              0.75,
+            isSubAgent:
+              true,
+          });
+
+      let text =
+        response.content
+          .trim();
+
+      if (
+        (
+          text.startsWith(
+            '"',
+          ) &&
+          text.endsWith(
+            '"',
+          )
+        ) ||
+        (
+          text.startsWith(
+            "'",
+          ) &&
+          text.endsWith(
+            "'",
+          )
+        )
+      ) {
+        text =
+          text.slice(
+            1,
+            -1,
+          );
+      }
+
+      if (
+        platform ===
+          'tiktok' &&
+        text
+          .trim()
+          .toUpperCase() ===
+          'SKIP_COMMENT'
+      ) {
+        return 'SKIP_COMMENT';
+      }
+
+      return text.slice(
+        0,
+        maxLength,
+      );
+    }
+    catch (
+      err:
+        unknown
+    ) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : String(err);
+
+      this.log(
+        'system',
+        'error',
+        `AI generation failed: ${msg}`,
+      );
+
+      throw new Error(
+        `Content generation failed: ${msg}`,
+      );
     }
   }
 

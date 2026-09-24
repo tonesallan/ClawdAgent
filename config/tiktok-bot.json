@@ -47,7 +47,11 @@
       "produtos",
       "dicas"
     ],
-    "maxLength": 120
+    "maxLength": 120,
+    "commentPolicy": {
+      "friendsOnly": false,
+      "requireVideoContext": true
+    }
   },
   "safety": {
     "minDelaySeconds": 60,

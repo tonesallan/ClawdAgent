@@ -147,3 +147,23 @@ O UNFOLLOW continua deliberadamente manual: quando a checagem de follow-back ide
 - `UNFOLLOW` não é executado pelo scheduler nem pelo painel. O painel oferece somente **Cancelar UNFOLLOW**.
 - O único tipo executado automaticamente pelo Automation Core é `CHECK_FOLLOW_BACK`.
 - A checagem manual de relacionamento por username usa o provider Android em modo read-only e retorna ao feed ao finalizar.
+
+
+## Comentários contextuais
+
+O módulo de comentários TikTok usa contexto lido diretamente da interface Android antes de pedir o texto à IA:
+
+- legenda/descrição visível;
+- hashtags visíveis;
+- @username do criador quando disponível;
+- outros textos visíveis úteis do vídeo.
+
+A IA recebe esse contexto e é instruída a não inventar detalhes que não estejam presentes. Se **Exigir legenda/hashtags reais antes de comentar** estiver ligado e nenhum contexto confiável estiver disponível, a ação é ignorada.
+
+No modo **TESTE**, o comentário é gerado normalmente e aparece completo nos logs como `[TEST] Would post TikTok comment...`, mas o campo de comentários não é aberto e nada é publicado.
+
+### Somente amigos
+
+A opção **Comentar somente em perfis amigos (ambos se seguem)** faz uma verificação read-only do perfil do criador antes da geração/envio. O comentário só continua quando o relacionamento atual é classificado como `friends`.
+
+Depois da verificação, o bot volta para o vídeo anterior e confirma que o contexto retornado corresponde ao mesmo criador/vídeo. Se não conseguir confirmar com segurança, o comentário é ignorado.
