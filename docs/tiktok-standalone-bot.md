@@ -196,7 +196,7 @@ O histórico usado por cooldown, duplicidade, similaridade e likes em comentári
 
 ## Vídeos de troca de follow / apoio mútuo
 
-O detector é opcional e fica **desligado por padrão**. Quando ligado, a ação de comentário:
+O detector é opcional e fica **desligado por padrão**. Ele é executado dentro da ação `comment`, então **Comentar precisa estar ativa na aba Ações**. Quando ligado, a ação de comentário:
 
 1. abre os comentários sem publicar nada;
 2. lê uma amostra configurável de comentários visíveis;
