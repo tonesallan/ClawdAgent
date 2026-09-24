@@ -740,6 +740,8 @@ export async function runStandaloneTikTokBot(): Promise<void> {
             current.stats,
           commentHistory:
             current.commentHistory,
+          followSafety:
+            current.followSafety,
           logs:
             agent.getLogs(200),
           automationCore:
@@ -920,6 +922,63 @@ export async function runStandaloneTikTokBot(): Promise<void> {
 
         console.log(
           'TIKTOK_BOT_RESUMED=YES',
+        );
+
+        return;
+      }
+
+      if (
+        command ===
+          'activate_follow_cooldown'
+      ) {
+        const configuredHours =
+          config.safety
+            .followSafety
+            .restrictionCooldownHours;
+
+        const requestedHours =
+          typeof payload.hours ===
+            'number' &&
+          Number.isFinite(
+            payload.hours,
+          )
+            ? Math.max(
+                1,
+                Math.min(
+                  24 * 30,
+                  Math.floor(
+                    payload.hours,
+                  ),
+                ),
+              )
+            : configuredHours;
+
+        const result =
+          await agent
+            .activateTikTokFollowCooldown(
+              requestedHours,
+              'Manual follow restriction/cooldown activated from standalone panel',
+            );
+
+        complete(
+          true,
+          result,
+        );
+
+        return;
+      }
+
+      if (
+        command ===
+          'clear_follow_cooldown'
+      ) {
+        const result =
+          await agent
+            .clearTikTokFollowCooldown();
+
+        complete(
+          true,
+          result,
         );
 
         return;
