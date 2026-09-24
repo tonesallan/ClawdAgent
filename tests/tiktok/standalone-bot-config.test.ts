@@ -26,6 +26,19 @@ describe(
         ).toBe(true);
 
         expect(
+          config.feedNavigation,
+        ).toEqual({
+          target:
+            'current',
+          customLabel:
+            '',
+          strict:
+            true,
+          ensureBeforeEachAction:
+            true,
+        });
+
+        expect(
           config.safety,
         ).toEqual({
           minDelaySeconds:
@@ -226,6 +239,19 @@ describe(
         ).toBe(false);
 
         expect(
+          mobile.feedNavigation,
+        ).toEqual({
+          target:
+            'current',
+          customLabel:
+            '',
+          strict:
+            true,
+          ensureBeforeEachAction:
+            true,
+        });
+
+        expect(
           mobile.content.commentPolicy,
         ).toMatchObject({
           friendsOnly:
@@ -239,6 +265,55 @@ describe(
               false,
           },
         });
+      },
+    );
+
+    it(
+      'accepts standard/custom feed tabs and requires a custom label',
+      () => {
+        const following =
+          parseStandaloneTikTokBotConfig({
+            feedNavigation: {
+              target:
+                'following',
+            },
+          });
+
+        expect(
+          following
+            .feedNavigation
+            .target,
+        ).toBe(
+          'following',
+        );
+
+        const custom =
+          parseStandaloneTikTokBotConfig({
+            feedNavigation: {
+              target:
+                'custom',
+              customLabel:
+                'Ofertas',
+            },
+          });
+
+        expect(
+          custom
+            .feedNavigation
+            .customLabel,
+        ).toBe(
+          'Ofertas',
+        );
+
+        expect(
+          () =>
+            parseStandaloneTikTokBotConfig({
+              feedNavigation: {
+                target:
+                  'custom',
+              },
+            }),
+        ).toThrow();
       },
     );
 
