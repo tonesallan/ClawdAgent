@@ -18,6 +18,7 @@ describe(
           'import tiktok_panel_text as p',
           'assert p.repair_mojibake_text("Natural, amigÃ¡vel e relevante") == "Natural, amigável e relevante"',
           'assert p.repair_mojibake_text("Sigo todos de volta ðŸ’•") == "Sigo todos de volta 💕"',
+          'assert p.repair_mojibake_text("Apoiando por aqui âœ¨") == "Apoiando por aqui ✨"',
           'assert p.repair_mojibake_text("Comentários normais") == "Comentários normais"',
           'assert p.clean_special_comment_template("Comentários especiais: Sigo todos de volta 💕") == "Sigo todos de volta 💕"',
         ].join(';');
