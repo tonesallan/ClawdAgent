@@ -559,6 +559,7 @@ export const standaloneTikTokBotConfigSchema =
               'Apoiando por aqui ✨',
             ],
             useAiVariation: false,
+            allowRepeatedTemplates: true,
             replaceNormalComment: true,
             bypassNormalContentFilters: true,
             likeCommentsEnabled: false,
