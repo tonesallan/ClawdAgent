@@ -147,6 +147,7 @@ class TikTokBotPanel(tk.Tk):
         self.follow_exchange_comment_enabled = tk.BooleanVar(value=True)
         self.follow_exchange_templates = tk.StringVar(value="Sigo todos de volta 💕; Retribuo todos 🤝; Apoiando por aqui ✨")
         self.follow_exchange_ai_variation = tk.BooleanVar(value=False)
+        self.follow_exchange_allow_repeated_templates = tk.BooleanVar(value=True)
         self.follow_exchange_replace_normal = tk.BooleanVar(value=True)
         self.follow_exchange_bypass_filters = tk.BooleanVar(value=True)
         self.follow_exchange_like_comments = tk.BooleanVar(value=False)
@@ -486,21 +487,22 @@ class TikTokBotPanel(tk.Tk):
         ttk.Checkbutton(exchange, text="Comentar quando detectar", variable=self.follow_exchange_comment_enabled).grid(row=6, column=0, columnspan=2, sticky="w", padx=10, pady=3)
         self._entry_row(exchange, 7, "Comentários especiais (;)", self.follow_exchange_templates)
         ttk.Checkbutton(exchange, text="Usar IA para variar o comentário especial", variable=self.follow_exchange_ai_variation).grid(row=8, column=0, columnspan=2, sticky="w", padx=10, pady=3)
-        ttk.Checkbutton(exchange, text="Substituir comentário normal quando detectar", variable=self.follow_exchange_replace_normal).grid(row=9, column=0, columnspan=2, sticky="w", padx=10, pady=3)
-        ttk.Checkbutton(exchange, text="Ignorar filtros normais de tema/hashtag neste tipo", variable=self.follow_exchange_bypass_filters).grid(row=10, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Permitir reutilizar comentários especiais em outros vídeos", variable=self.follow_exchange_allow_repeated_templates).grid(row=9, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Substituir comentário normal quando detectar", variable=self.follow_exchange_replace_normal).grid(row=10, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Ignorar filtros normais de tema/hashtag neste tipo", variable=self.follow_exchange_bypass_filters).grid(row=11, column=0, columnspan=2, sticky="w", padx=10, pady=3)
 
-        ttk.Checkbutton(exchange, text="Curtir comentários deste vídeo", variable=self.follow_exchange_like_comments).grid(row=11, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 3))
-        self._entry_row(exchange, 12, "Máx. likes em comentários/vídeo", self.follow_exchange_max_likes)
-        self._entry_row(exchange, 13, "Máx. likes em comentários/dia", self.follow_exchange_daily_likes)
-        ttk.Checkbutton(exchange, text="Curtir só comentários que tenham sinais configurados", variable=self.follow_exchange_like_matching).grid(row=14, column=0, columnspan=2, sticky="w", padx=10, pady=3)
-        ttk.Checkbutton(exchange, text="Não curtir comentário do criador quando identificável", variable=self.follow_exchange_exclude_creator).grid(row=15, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Curtir comentários deste vídeo", variable=self.follow_exchange_like_comments).grid(row=12, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 3))
+        self._entry_row(exchange, 13, "Máx. likes em comentários/vídeo", self.follow_exchange_max_likes)
+        self._entry_row(exchange, 14, "Máx. likes em comentários/dia", self.follow_exchange_daily_likes)
+        ttk.Checkbutton(exchange, text="Curtir só comentários que tenham sinais configurados", variable=self.follow_exchange_like_matching).grid(row=15, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Não curtir comentário do criador quando identificável", variable=self.follow_exchange_exclude_creator).grid(row=16, column=0, columnspan=2, sticky="w", padx=10, pady=3)
 
         ttk.Label(
             exchange,
             text="A detecção usa comentários visíveis. O recurso fica desligado por padrão; no TESTE apenas registra o que faria.",
             style="Muted.TLabel",
             wraplength=470,
-        ).grid(row=16, column=0, columnspan=2, sticky="w", padx=10, pady=10)
+        ).grid(row=17, column=0, columnspan=2, sticky="w", padx=10, pady=10)
 
     def _build_automation_tab(self) -> None:
         core = ttk.LabelFrame(self.tab_automation, text="Follow-back / relacionamento")
@@ -813,6 +815,7 @@ class TikTokBotPanel(tk.Tk):
         self.follow_exchange_comment_enabled.set(bool(exchange.get("commentEnabled", True)))
         self.follow_exchange_templates.set("; ".join(exchange.get("commentTemplates", ["Sigo todos de volta 💕"])))
         self.follow_exchange_ai_variation.set(bool(exchange.get("useAiVariation", False)))
+        self.follow_exchange_allow_repeated_templates.set(bool(exchange.get("allowRepeatedTemplates", True)))
         self.follow_exchange_replace_normal.set(bool(exchange.get("replaceNormalComment", True)))
         self.follow_exchange_bypass_filters.set(bool(exchange.get("bypassNormalContentFilters", True)))
         self.follow_exchange_like_comments.set(bool(exchange.get("likeCommentsEnabled", False)))
@@ -920,6 +923,7 @@ class TikTokBotPanel(tk.Tk):
                         "commentEnabled": bool(self.follow_exchange_comment_enabled.get()),
                         "commentTemplates": self._semicolon(self.follow_exchange_templates.get()),
                         "useAiVariation": bool(self.follow_exchange_ai_variation.get()),
+                        "allowRepeatedTemplates": bool(self.follow_exchange_allow_repeated_templates.get()),
                         "replaceNormalComment": bool(self.follow_exchange_replace_normal.get()),
                         "bypassNormalContentFilters": bool(self.follow_exchange_bypass_filters.get()),
                         "likeCommentsEnabled": bool(self.follow_exchange_like_comments.get()),
