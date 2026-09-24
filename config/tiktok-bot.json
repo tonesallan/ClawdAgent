@@ -130,5 +130,11 @@
       "matchMode": "any",
       "maxCandidatesPerCycle": 20
     }
+  },
+  "feedNavigation": {
+    "target": "current",
+    "customLabel": "",
+    "strict": true,
+    "ensureBeforeEachAction": true
   }
 }
