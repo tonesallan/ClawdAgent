@@ -236,6 +236,19 @@ export const standaloneTikTokBotConfigSchema =
           .min(20)
           .max(500)
           .default(120),
+        commentPolicy: z
+          .object({
+            friendsOnly: z
+              .boolean()
+              .default(false),
+            requireVideoContext: z
+              .boolean()
+              .default(true),
+          })
+          .default({
+            friendsOnly: false,
+            requireVideoContext: true,
+          }),
       })
       .default({
         tone:
@@ -249,6 +262,10 @@ export const standaloneTikTokBotConfigSchema =
         ],
         maxLength:
           120,
+        commentPolicy: {
+          friendsOnly: false,
+          requireVideoContext: true,
+        },
       }),
     safety: z
       .object({

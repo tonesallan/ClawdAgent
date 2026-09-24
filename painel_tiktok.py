@@ -117,6 +117,8 @@ class TikTokBotPanel(tk.Tk):
         self.tone = tk.StringVar(value="Natural, amigável e relevante")
         self.topics = tk.StringVar(value="tecnologia, produtos, dicas")
         self.max_length = tk.StringVar(value="120")
+        self.comment_friends_only = tk.BooleanVar(value=False)
+        self.comment_require_context = tk.BooleanVar(value=True)
 
         self.core_enabled = tk.BooleanVar(value=True)
         self.followback_hours = tk.StringVar(value="48")
@@ -346,15 +348,27 @@ class TikTokBotPanel(tk.Tk):
         self._entry_row(content, 2, "Tópicos (vírgula)", self.topics)
         self._entry_row(content, 3, "Máx. caracteres", self.max_length)
 
+        ttk.Checkbutton(
+            content,
+            text="Exigir legenda/hashtags reais antes de comentar",
+            variable=self.comment_require_context,
+        ).grid(row=4, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 4))
+
+        ttk.Checkbutton(
+            content,
+            text="Comentar somente em perfis amigos (ambos se seguem)",
+            variable=self.comment_friends_only,
+        ).grid(row=5, column=0, columnspan=2, sticky="w", padx=10, pady=4)
+
         ttk.Label(
             content,
             text=(
-                "Os comentários usam o provedor de IA configurado no .env. "
-                "Se a geração falhar, a ação é registrada como erro."
+                "O comentário usa legenda/descrição, hashtags, criador e textos visíveis do vídeo. "
+                "No modo TESTE, a IA gera o texto completo e o painel mostra exatamente o que seria publicado, sem enviar."
             ),
             style="Muted.TLabel",
             wraplength=420,
-        ).grid(row=4, column=0, columnspan=2, sticky="w", padx=10, pady=12)
+        ).grid(row=6, column=0, columnspan=2, sticky="w", padx=10, pady=12)
 
     def _build_automation_tab(self) -> None:
         core = ttk.LabelFrame(self.tab_automation, text="Follow-back / relacionamento")
@@ -600,6 +614,9 @@ class TikTokBotPanel(tk.Tk):
         self.tone.set(str(content.get("tone", "Natural, amigável e relevante")))
         self.topics.set(", ".join(content.get("topics", ["tecnologia", "produtos", "dicas"])))
         self.max_length.set(str(content.get("maxLength", 120)))
+        comment_policy = content.get("commentPolicy", {})
+        self.comment_friends_only.set(bool(comment_policy.get("friendsOnly", False)))
+        self.comment_require_context.set(bool(comment_policy.get("requireVideoContext", True)))
 
         auto = data.get("automationCore", {})
         self.core_enabled.set(bool(auto.get("enabled", True)))
@@ -669,6 +686,10 @@ class TikTokBotPanel(tk.Tk):
                 "language": self.language.get().strip() or "pt-BR",
                 "topics": topics,
                 "maxLength": self._int(self.max_length.get(), "Máx. caracteres", 20, 500),
+                "commentPolicy": {
+                    "friendsOnly": bool(self.comment_friends_only.get()),
+                    "requireVideoContext": bool(self.comment_require_context.get()),
+                },
             }
 
             warm = self.warmup_seconds.get().strip()

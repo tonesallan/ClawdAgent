@@ -50,6 +50,15 @@ describe(
         });
 
         expect(
+          config.content.commentPolicy,
+        ).toEqual({
+          friendsOnly:
+            false,
+          requireVideoContext:
+            true,
+        });
+
+        expect(
           config.automationCore,
         ).toEqual({
           enabled:
@@ -165,6 +174,15 @@ describe(
         expect(
           mobile.testMode,
         ).toBe(false);
+
+        expect(
+          mobile.content.commentPolicy,
+        ).toEqual({
+          friendsOnly:
+            false,
+          requireVideoContext:
+            true,
+        });
       },
     );
 
