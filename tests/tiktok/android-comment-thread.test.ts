@@ -15,6 +15,7 @@ describe(
     const source = `
 <hierarchy>
   <android.widget.TextView class="android.widget.TextView" text="@maria" content-desc="" resource-id="u1" bounds="[20,500][180,550]" />
+  <android.widget.TextView class="android.widget.TextView" text="Maria Silva" content-desc="" resource-id="display1" bounds="[20,530][260,565]" />
   <android.widget.TextView class="android.widget.TextView" text="Sigo de volta todo mundo 💕" content-desc="" resource-id="c1" bounds="[20,555][760,620]" />
   <android.view.View class="android.view.View" text="" content-desc="Curtir comentário" resource-id="l1" bounds="[900,550][1040,630]" />
   <android.widget.TextView class="android.widget.TextView" text="@joao" content-desc="" resource-id="u2" bounds="[20,700][180,750]" />
