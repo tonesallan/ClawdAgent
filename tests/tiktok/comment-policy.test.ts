@@ -61,6 +61,7 @@ const policy: TikTokCommentPolicyConfig = {
     commentEnabled: true,
     commentTemplates: ['Sigo todos de volta 💕'],
     useAiVariation: false,
+    allowRepeatedTemplates: true,
     replaceNormalComment: true,
     bypassNormalContentFilters: true,
     likeCommentsEnabled: true,
