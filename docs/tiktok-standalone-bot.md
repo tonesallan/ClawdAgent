@@ -167,3 +167,66 @@ No modo **TESTE**, o comentário é gerado normalmente e aparece completo nos lo
 A opção **Comentar somente em perfis amigos (ambos se seguem)** faz uma verificação read-only do perfil do criador antes da geração/envio. O comentário só continua quando o relacionamento atual é classificado como `friends`.
 
 Depois da verificação, o bot volta para o vídeo anterior e confirma que o contexto retornado corresponde ao mesmo criador/vídeo. Se não conseguir confirmar com segurança, o comentário é ignorado.
+
+
+## Política avançada de comentários
+
+A aba **Conteúdo e limites** agora separa três grupos de configuração.
+
+### Comentários
+
+- mínimo e máximo de caracteres;
+- máximo de emojis;
+- idioma, tom e estilo;
+- exigir contexto visível;
+- comentar somente em perfis com relação `friends`;
+- modo somente prévia;
+- comparação com comentários recentes para reduzir repetição.
+
+### Filtros e repetição
+
+- palavras/assuntos obrigatórios ou proibidos;
+- hashtags obrigatórias ou proibidas com regra ANY/ALL;
+- lista de perfis permitidos e bloqueados;
+- cooldown por perfil;
+- janela para não repetir o mesmo vídeo;
+- máximo de comentários por perfil/dia.
+
+O histórico usado por cooldown, duplicidade, similaridade e likes em comentários fica em `.runtime/tiktok-comment-history.json` e não entra no Git.
+
+## Vídeos de troca de follow / apoio mútuo
+
+O detector é opcional e fica **desligado por padrão**. Quando ligado, a ação de comentário:
+
+1. abre os comentários sem publicar nada;
+2. lê uma amostra configurável de comentários visíveis;
+3. procura as frases indicadoras configuradas, por exemplo `sigo de volta`, `apoiando`, `garotas apoiam garotas`, `follow back` e `sdv`;
+4. calcula a proporção de comentários com sinais e compara com a confiança mínima;
+5. se o vídeo for classificado, pode publicar um comentário especial, curtir comentários elegíveis ou ambos.
+
+Tudo é configurável no painel:
+
+- frases indicadoras;
+- quantidade de comentários analisados;
+- número máximo de rolagens;
+- mínimo de comentários com sinais;
+- confiança mínima;
+- lista de comentários especiais;
+- variação por IA;
+- substituir ou não o comentário normal;
+- usar ou ignorar filtros normais de tema/hashtag;
+- ativar/desativar likes em comentários;
+- limite por vídeo e limite diário;
+- curtir apenas comentários com sinais;
+- evitar comentário do criador quando o username puder ser identificado.
+
+No modo **TESTE**, a detecção é executada e os logs mostram a confiança, o comentário que seria publicado e quais comentários seriam curtidos, mas nenhuma publicação ou like é realizado.
+
+### Histórico e contadores
+
+O painel também mostra:
+
+- quantidade de vídeos de troca-follow detectados;
+- quantidade de likes feitos em comentários;
+- quantidade de comentários ignorados pela política;
+- histórico local de comentários publicados, prévias e likes em comentários.
