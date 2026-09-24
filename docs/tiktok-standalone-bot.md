@@ -282,3 +282,45 @@ Também existem os controles:
 O estado é persistido em `.runtime/tiktok-follow-safety.json`, então reiniciar o bot não apaga a janela de 24 horas nem um cooldown ativo.
 
 O objetivo dessa proteção é reduzir tentativas durante limites/restrições; ela não tenta contornar, mascarar ou burlar os mecanismos do TikTok.
+
+
+## Seleção da aba do feed
+
+A aba **Ações** permite escolher em qual feed do TikTok o bot deve trabalhar antes de rolar ou executar interações.
+
+Opções integradas:
+
+- **Aba atual (não trocar)**: preserva exatamente a tela/feed deixado no aparelho;
+- **Para você**;
+- **Seguindo**;
+- **Loja / Shop**;
+- **Amigos**;
+- **Explorar / Descobrir**;
+- **STEM**;
+- **LIVE / Ao vivo**;
+- **Personalizada**: permite digitar o texto exato de qualquer aba nova, regional ou experimental exibida no aparelho.
+
+A configuração é salva em `feedNavigation`:
+
+```json
+{
+  "feedNavigation": {
+    "target": "for_you",
+    "customLabel": "",
+    "strict": true,
+    "ensureBeforeEachAction": true
+  }
+}
+```
+
+### Comportamento
+
+Quando uma aba específica é escolhida, o bot tenta selecioná-la logo após abrir o TikTok. Com **Confirmar/selecionar novamente antes de cada ação** ativo, ele verifica o destino novamente antes de rolagem, like, comentário, follow ou abertura segura do painel de compartilhamento.
+
+O **Modo estrito** fica ativado por padrão. Se a aba configurada não existir ou não puder ser localizada na interface Android, a ação não continua em outra aba por engano. O log informa qual aba não foi encontrada.
+
+A identificação usa texto e `content-desc` da UI Android e aceita os nomes localizados pt-BR/inglês das abas integradas. A opção **Personalizada** usa exatamente o texto informado pelo usuário.
+
+O status **FEED** no topo do painel mostra a aba solicitada e se ela foi confirmada, selecionada sem estado explícito ou considerada indisponível.
+
+A seleção da aba é somente navegação. No modo TESTE o bot pode tocar na aba escolhida para validar o fluxo, mas curtidas, comentários e follows continuam simulados.
