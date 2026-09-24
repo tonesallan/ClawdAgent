@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 import os
 import queue
-import re
 import shutil
 import subprocess
 import threading
@@ -12,6 +11,12 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import messagebox, ttk
 from urllib.request import urlopen
+
+from tiktok_panel_text import (
+    clean_special_comment_template,
+    repair_loaded_config,
+    repair_mojibake_text,
+)
 
 
 ROOT = Path(__file__).resolve().parent
@@ -1032,94 +1037,6 @@ class TikTokBotPanel(tk.Tk):
         parent.columnconfigure(1, weight=1)
 
     @staticmethod
-    def _mojibake_score(value: str) -> int:
-        markers = (
-            "Ã",
-            "Â",
-            "ðŸ",
-            "â",
-            "ï¿½",
-            "�",
-        )
-        return sum(value.count(marker) for marker in markers)
-
-    @classmethod
-    def _repair_mojibake_text(cls, value: str) -> str:
-        if cls._mojibake_score(value) == 0:
-            return value
-
-        best = value
-        best_score = cls._mojibake_score(best)
-
-        for _ in range(3):
-            improved = False
-
-            for encoding in ("cp1252", "latin1"):
-                try:
-                    candidate = best.encode(encoding).decode("utf-8")
-                except (UnicodeEncodeError, UnicodeDecodeError):
-                    continue
-
-                score = cls._mojibake_score(candidate)
-
-                if score < best_score:
-                    best = candidate
-                    best_score = score
-                    improved = True
-
-            if not improved:
-                break
-
-        return best
-
-    @classmethod
-    def _repair_mojibake_value(cls, value: object) -> object:
-        if isinstance(value, str):
-            return cls._repair_mojibake_text(value)
-
-        if isinstance(value, list):
-            return [cls._repair_mojibake_value(item) for item in value]
-
-        if isinstance(value, dict):
-            return {
-                key: cls._repair_mojibake_value(item)
-                for key, item in value.items()
-            }
-
-        return value
-
-    @staticmethod
-    def _clean_special_comment_template(value: str) -> str:
-        return re.sub(
-            r"^\s*coment[aá]rios\s+especiais\s*:\s*",
-            "",
-            value,
-            flags=re.IGNORECASE,
-        ).strip()
-
-    def _repair_loaded_config(self, data: dict[str, object]) -> tuple[dict[str, object], bool]:
-        repaired = self._repair_mojibake_value(data)
-
-        if not isinstance(repaired, dict):
-            return data, False
-
-        content = repaired.get("content")
-        if isinstance(content, dict):
-            policy = content.get("commentPolicy")
-            if isinstance(policy, dict):
-                exchange = policy.get("followExchange")
-                if isinstance(exchange, dict):
-                    templates = exchange.get("commentTemplates")
-                    if isinstance(templates, list):
-                        exchange["commentTemplates"] = [
-                            self._clean_special_comment_template(str(item))
-                            for item in templates
-                            if str(item).strip()
-                        ]
-
-        return repaired, repaired != data
-
-    @staticmethod
     def _csv(value: str) -> list[str]:
         return [item.strip().lstrip("#") for item in value.split(",") if item.strip()]
 
@@ -1150,7 +1067,7 @@ class TikTokBotPanel(tk.Tk):
         try:
             data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
 
-            repaired_data, repaired = self._repair_loaded_config(data)
+            repaired_data, repaired = repair_loaded_config(data)
 
             if repaired:
                 RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
@@ -1349,9 +1266,9 @@ class TikTokBotPanel(tk.Tk):
                 raise ValueError("Informe pelo menos um tópico para comentários.")
 
             data["content"] = {
-                "tone": self._repair_mojibake_text(self.tone.get().strip()) or "Natural, amigável e relevante",
-                "language": self._repair_mojibake_text(self.language.get().strip()) or "pt-BR",
-                "topics": [self._repair_mojibake_text(item) for item in topics],
+                "tone": repair_mojibake_text(self.tone.get().strip()) or "Natural, amigável e relevante",
+                "language": repair_mojibake_text(self.language.get().strip()) or "pt-BR",
+                "topics": [repair_mojibake_text(item) for item in topics],
                 "maxLength": self._int(self.max_length.get(), "Máx. caracteres", 20, 500),
                 "ignoreLive": bool(self.ignore_live.get()),
                 "commentPolicy": {
@@ -1384,12 +1301,12 @@ class TikTokBotPanel(tk.Tk):
                         "minConfidence": self._int(self.follow_exchange_confidence.get(), "Confiança mínima", 0, 100) / 100,
                         "commentEnabled": bool(self.follow_exchange_comment_enabled.get()),
                         "commentTemplates": [
-                            self._clean_special_comment_template(
-                                self._repair_mojibake_text(item)
+                            clean_special_comment_template(
+                                repair_mojibake_text(item)
                             )
                             for item in self._semicolon(self.follow_exchange_templates.get())
-                            if self._clean_special_comment_template(
-                                self._repair_mojibake_text(item)
+                            if clean_special_comment_template(
+                                repair_mojibake_text(item)
                             )
                         ],
                         "useAiVariation": bool(self.follow_exchange_ai_variation.get()),
