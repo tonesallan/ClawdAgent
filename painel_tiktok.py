@@ -98,6 +98,9 @@ class TikTokBotPanel(tk.Tk):
         self.provider_state = tk.StringVar(value="-")
         self.account_state = tk.StringVar(value="-")
         self.database_state = tk.StringVar(value="-")
+        self.follow_guard_state = tk.StringVar(value="aguardando")
+        self.follow_guard_counts = tk.StringVar(value="-")
+        self.follow_guard_reason = tk.StringVar(value="-")
         self.relationship_username = tk.StringVar(value="")
         self.relationship_result = tk.StringVar(value="-")
         self.review_count = tk.StringVar(value="0")
@@ -112,6 +115,15 @@ class TikTokBotPanel(tk.Tk):
         self.weekend_start = tk.StringVar(value="0")
         self.weekend_end = tk.StringVar(value="24")
         self.warmup_seconds = tk.StringVar(value="")
+
+        self.follow_safety_enabled = tk.BooleanVar(value=True)
+        self.follow_max_hour = tk.StringVar(value="10")
+        self.follow_max_24h = tk.StringVar(value="100")
+        self.follow_max_session = tk.StringVar(value="15")
+        self.follow_min_interval = tk.StringVar(value="5")
+        self.follow_cooldown_hours = tk.StringVar(value="24")
+        self.follow_stop_restriction = tk.BooleanVar(value=True)
+        self.follow_silent_failures = tk.StringVar(value="2")
 
         self.language = tk.StringVar(value="pt-BR")
         self.tone = tk.StringVar(value="Natural, amigável e relevante")
@@ -206,6 +218,7 @@ class TikTokBotPanel(tk.Tk):
         self._status_item(status_strip, "PROVIDER", self.provider_state, 4)
         self._status_item(status_strip, "CORE", self.core_state, 5)
         self._status_item(status_strip, "BANCO", self.database_state, 6)
+        self._status_item(status_strip, "FOLLOW GUARD", self.follow_guard_state, 7)
 
         controls = ttk.Frame(root, style="Card.TFrame")
         controls.pack(fill="x", pady=(0, 10), ipady=7)
@@ -352,6 +365,81 @@ class TikTokBotPanel(tk.Tk):
             ttk.Checkbutton(table, variable=enabled).grid(row=row, column=1, sticky="w", padx=8)
             ttk.Entry(table, textvariable=interval, width=14).grid(row=row, column=2, sticky="w", padx=8)
             ttk.Entry(table, textvariable=daily, width=14).grid(row=row, column=3, sticky="w", padx=8)
+
+        follow_guard = ttk.LabelFrame(self.tab_actions, text="Segurança específica para FOLLOW")
+        follow_guard.pack(fill="x", padx=14, pady=(12, 6))
+        follow_guard.columnconfigure(1, weight=1)
+        follow_guard.columnconfigure(3, weight=1)
+
+        ttk.Checkbutton(
+            follow_guard,
+            text="Ativar proteção de limites de follow",
+            variable=self.follow_safety_enabled,
+        ).grid(row=0, column=0, columnspan=4, sticky="w", padx=10, pady=(8, 4))
+
+        ttk.Label(follow_guard, text="Máx. follows/hora", style="Muted.TLabel").grid(row=1, column=0, sticky="w", padx=10, pady=5)
+        ttk.Entry(follow_guard, textvariable=self.follow_max_hour, width=12).grid(row=1, column=1, sticky="w", padx=10, pady=5)
+
+        ttk.Label(follow_guard, text="Máx. follows/24h corridas", style="Muted.TLabel").grid(row=1, column=2, sticky="w", padx=10, pady=5)
+        ttk.Entry(follow_guard, textvariable=self.follow_max_24h, width=12).grid(row=1, column=3, sticky="w", padx=10, pady=5)
+
+        ttk.Label(follow_guard, text="Máx. follows/sessão", style="Muted.TLabel").grid(row=2, column=0, sticky="w", padx=10, pady=5)
+        ttk.Entry(follow_guard, textvariable=self.follow_max_session, width=12).grid(row=2, column=1, sticky="w", padx=10, pady=5)
+
+        ttk.Label(follow_guard, text="Intervalo mínimo entre follows (min)", style="Muted.TLabel").grid(row=2, column=2, sticky="w", padx=10, pady=5)
+        ttk.Entry(follow_guard, textvariable=self.follow_min_interval, width=12).grid(row=2, column=3, sticky="w", padx=10, pady=5)
+
+        ttk.Label(follow_guard, text="Cooldown após restrição (h)", style="Muted.TLabel").grid(row=3, column=0, sticky="w", padx=10, pady=5)
+        ttk.Entry(follow_guard, textvariable=self.follow_cooldown_hours, width=12).grid(row=3, column=1, sticky="w", padx=10, pady=5)
+
+        ttk.Label(follow_guard, text="Falhas não confirmadas antes de bloquear", style="Muted.TLabel").grid(row=3, column=2, sticky="w", padx=10, pady=5)
+        ttk.Entry(follow_guard, textvariable=self.follow_silent_failures, width=12).grid(row=3, column=3, sticky="w", padx=10, pady=5)
+
+        ttk.Checkbutton(
+            follow_guard,
+            text="Ao detectar restrição/limite do TikTok, interromper FOLLOW e iniciar cooldown",
+            variable=self.follow_stop_restriction,
+        ).grid(row=4, column=0, columnspan=4, sticky="w", padx=10, pady=5)
+
+        controls = ttk.Frame(follow_guard, style="Card.TFrame")
+        controls.grid(row=5, column=0, columnspan=4, sticky="ew", padx=10, pady=(6, 4))
+
+        ttk.Button(
+            controls,
+            text="Marcar restrição agora",
+            command=self.activate_follow_cooldown,
+        ).pack(side="left", padx=(0, 6))
+
+        ttk.Button(
+            controls,
+            text="Limpar cooldown",
+            command=self.clear_follow_cooldown,
+        ).pack(side="left", padx=6)
+
+        ttk.Label(
+            controls,
+            textvariable=self.follow_guard_counts,
+            style="Card.TLabel",
+        ).pack(side="right")
+
+        ttk.Label(
+            follow_guard,
+            textvariable=self.follow_guard_reason,
+            style="Muted.TLabel",
+            wraplength=1060,
+        ).grid(row=6, column=0, columnspan=4, sticky="w", padx=10, pady=(4, 2))
+
+        ttk.Label(
+            follow_guard,
+            text=(
+                "Referência pública NÃO oficial: relatos convergem em ~15 follows/hora e ~200/dia; "
+                "há também referência recorrente de ~15 por sessão e ~10.000 contas seguidas no total. "
+                "O TikTok não publica esses números como limites garantidos. Oficialmente, seguir muitas contas "
+                "muito rápido pode gerar desativação/restrição por 24h. Os padrões do bot ficam abaixo dessas referências."
+            ),
+            style="Muted.TLabel",
+            wraplength=1060,
+        ).grid(row=7, column=0, columnspan=4, sticky="w", padx=10, pady=(4, 10))
 
         ttk.Label(
             self.tab_actions,
@@ -767,6 +855,16 @@ class TikTokBotPanel(tk.Tk):
         self.pause_errors.set(str(safety.get("pauseOnErrorCount", 2)))
         self.pause_minutes.set(str(safety.get("pauseDurationMinutes", 5)))
 
+        follow_safety = safety.get("followSafety", {})
+        self.follow_safety_enabled.set(bool(follow_safety.get("enabled", True)))
+        self.follow_max_hour.set(str(follow_safety.get("maxPerHour", 10)))
+        self.follow_max_24h.set(str(follow_safety.get("maxPer24Hours", 100)))
+        self.follow_max_session.set(str(follow_safety.get("maxPerSession", 15)))
+        self.follow_min_interval.set(str(follow_safety.get("minIntervalMinutes", 5)))
+        self.follow_cooldown_hours.set(str(follow_safety.get("restrictionCooldownHours", 24)))
+        self.follow_stop_restriction.set(bool(follow_safety.get("stopOnRestriction", True)))
+        self.follow_silent_failures.set(str(follow_safety.get("silentFailureThreshold", 2)))
+
         warmup = data.get("warmupSeconds")
         self.warmup_seconds.set("" if warmup is None else str(warmup))
 
@@ -865,6 +963,16 @@ class TikTokBotPanel(tk.Tk):
                 "maxActionsPerHour": self._int(self.max_per_hour.get(), "Máximo por hora", 1),
                 "pauseOnErrorCount": self._int(self.pause_errors.get(), "Erros antes da pausa", 1),
                 "pauseDurationMinutes": self._int(self.pause_minutes.get(), "Pausa por erro", 1),
+                "followSafety": {
+                    "enabled": bool(self.follow_safety_enabled.get()),
+                    "maxPerHour": self._int(self.follow_max_hour.get(), "Follow/hora", 1, 500),
+                    "maxPer24Hours": self._int(self.follow_max_24h.get(), "Follow/24h", 1, 5000),
+                    "maxPerSession": self._int(self.follow_max_session.get(), "Follow/sessão", 1, 500),
+                    "minIntervalMinutes": self._int(self.follow_min_interval.get(), "Intervalo entre follows", 0, 24 * 60),
+                    "restrictionCooldownHours": self._int(self.follow_cooldown_hours.get(), "Cooldown de restrição", 1, 24 * 30),
+                    "stopOnRestriction": bool(self.follow_stop_restriction.get()),
+                    "silentFailureThreshold": self._int(self.follow_silent_failures.get(), "Falhas antes do cooldown", 1, 10),
+                },
             }
             data["activeHours"] = {
                 "weekday": {
@@ -976,6 +1084,70 @@ class TikTokBotPanel(tk.Tk):
             messagebox.showerror("Configuração inválida", str(exc))
             return False
 
+    def _follow_reference_warning(self) -> str | None:
+        try:
+            hourly = int(self.follow_max_hour.get())
+            daily = int(self.follow_max_24h.get())
+            session = int(self.follow_max_session.get())
+        except ValueError:
+            return None
+
+        exceeded: list[str] = []
+        if hourly > 15:
+            exceeded.append(f"{hourly}/h > referência pública ~15/h")
+        if daily > 200:
+            exceeded.append(f"{daily}/24h > referência pública ~200/dia")
+        if session > 15:
+            exceeded.append(f"{session}/sessão > referência pública ~15/sessão")
+
+        if not exceeded:
+            return None
+
+        return (
+            "Você configurou limites acima de referências públicas não oficiais do TikTok:\n\n"
+            + "\n".join(f"• {item}" for item in exceeded)
+            + "\n\nO TikTok não publica um teto oficial por hora/dia. "
+              "Esses números não garantem que a conta ficará sem restrição."
+        )
+
+    def activate_follow_cooldown(self) -> None:
+        if self.bot_state.get().lower() not in ("running", "paused"):
+            messagebox.showwarning(
+                "Follow Guard",
+                "Inicie o bot em TESTE ou REAL antes de registrar o cooldown. "
+                "Se você já está restrito agora, mantenha FOLLOW desativado até iniciar o bot e registrar a pausa.",
+            )
+            return
+
+        try:
+            hours = self._int(self.follow_cooldown_hours.get(), "Cooldown de restrição", 1, 24 * 30)
+        except ValueError as exc:
+            messagebox.showerror("Follow Guard", str(exc))
+            return
+
+        confirmed = messagebox.askyesno(
+            "Marcar restrição de follow",
+            f"Bloquear novas tentativas de FOLLOW por {hours} hora(s)?\n\n"
+            "Isso não tenta contornar a restrição; o bot apenas deixa de seguir contas durante o período.",
+        )
+        if not confirmed:
+            return
+
+        self.send_command("activate_follow_cooldown", hours=hours)
+
+    def clear_follow_cooldown(self) -> None:
+        if self.bot_state.get().lower() not in ("running", "paused"):
+            messagebox.showwarning("Follow Guard", "Inicie o bot antes de limpar o cooldown.")
+            return
+
+        confirmed = messagebox.askyesno(
+            "Limpar cooldown",
+            "Remover o cooldown de FOLLOW agora?\n\n"
+            "Faça isso apenas se a restrição do TikTok realmente tiver terminado.",
+        )
+        if confirmed:
+            self.send_command("clear_follow_cooldown")
+
     def start_bot(self, mode: str) -> None:
         if self.process and self.process.poll() is None:
             messagebox.showwarning("TikTok Bot", "O bot já está em execução.")
@@ -985,6 +1157,15 @@ class TikTokBotPanel(tk.Tk):
             return
 
         if mode == "real":
+            follow_warning = self._follow_reference_warning()
+            if follow_warning and bool(self.action_vars.get("follow", {}).get("enabled").get()):
+                proceed = messagebox.askyesno(
+                    "Limites de FOLLOW acima da referência",
+                    follow_warning + "\n\nDeseja continuar mesmo assim?",
+                )
+                if not proceed:
+                    return
+
             confirmed = messagebox.askyesno(
                 "Modo REAL",
                 "No modo REAL, ações habilitadas podem alterar a conta do TikTok, incluindo comentários e likes em comentários quando configurados.\n\nDeseja iniciar?",
@@ -1164,6 +1345,35 @@ class TikTokBotPanel(tk.Tk):
         stats = data.get("stats", {})
         for key, variable in self.stat_vars.items():
             variable.set(str(stats.get(key, 0)))
+
+        follow_safety = data.get("followSafety")
+        if isinstance(follow_safety, dict):
+            allowed = bool(follow_safety.get("allowed", True))
+            restricted_until = follow_safety.get("restrictedUntil")
+            blocked_reason = str(follow_safety.get("blockedReason") or "-")
+
+            if restricted_until:
+                self.follow_guard_state.set("COOLDOWN")
+            elif allowed:
+                self.follow_guard_state.set("OK")
+            else:
+                self.follow_guard_state.set("LIMITADO")
+
+            self.follow_guard_counts.set(
+                "1h {hour}/{hour_max} • 24h {day}/{day_max} • sessão {session}/{session_max}".format(
+                    hour=follow_safety.get("followsLastHour", 0),
+                    hour_max=follow_safety.get("maxPerHour", "-"),
+                    day=follow_safety.get("followsLast24Hours", 0),
+                    day_max=follow_safety.get("maxPer24Hours", "-"),
+                    session=follow_safety.get("followsThisSession", 0),
+                    session_max=follow_safety.get("maxPerSession", "-"),
+                )
+            )
+            self.follow_guard_reason.set(blocked_reason)
+        else:
+            self.follow_guard_state.set("aguardando")
+            self.follow_guard_counts.set("-")
+            self.follow_guard_reason.set("-")
 
         core = data.get("automationCore", {})
         self.core_state.set(str(core.get("state", "stopped")))
@@ -1363,6 +1573,9 @@ class TikTokBotPanel(tk.Tk):
                         )
                     else:
                         self.relationship_result.set(f"erro: {error or 'falha na checagem'}")
+
+                if command in ("activate_follow_cooldown", "clear_follow_cooldown") and success:
+                    self._append_log("[PAINEL] Estado do Follow Guard atualizado.")
 
                 if success:
                     self._append_log(f"[PAINEL] Comando concluído: {command}")
