@@ -539,19 +539,9 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     });
   }
 
-  if (
-    existsSync(
-      stopPath,
-    )
-  ) {
-    rmSync(
-      stopPath,
-      {
-        force: true,
-      },
-    );
-  }
-  
+  // The launcher removes stale control files before spawning this runner.
+  // Do NOT delete stopPath here: a stop request can legitimately arrive
+  // while the PowerShell launcher is still doing its preflight checks.
   if (
     existsSync(
       commandPath,
@@ -584,6 +574,11 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     false;
   
   let statusTimer:
+    ReturnType<typeof setInterval> |
+    null =
+      null;
+
+  let startupControlTimer:
     ReturnType<typeof setInterval> |
     null =
       null;
@@ -698,7 +693,9 @@ export async function runStandaloneTikTokBot(): Promise<void> {
 
   function writeStatus(
     stateOverride?:
-      'stopped',
+      | 'starting'
+      | 'stopping'
+      | 'stopped',
   ): void {
     const current =
       agent.getStatus();
@@ -1231,6 +1228,26 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     );
 
     if (
+      startupControlTimer
+    ) {
+      clearInterval(
+        startupControlTimer,
+      );
+
+      startupControlTimer =
+        null;
+    }
+
+    try {
+      writeStatus(
+        'stopping',
+      );
+    }
+    catch {
+      // Best effort status update during shutdown.
+    }
+
+    if (
       statusTimer
     ) {
       clearInterval(
@@ -1351,7 +1368,61 @@ export async function runStandaloneTikTokBot(): Promise<void> {
   console.log('');
 
   try {
+    writeStatus(
+      'starting',
+    );
+
+    startupControlTimer =
+      setInterval(
+        () => {
+          if (
+            shuttingDown ||
+            !existsSync(
+              stopPath,
+            )
+          ) {
+            return;
+          }
+
+          void shutdown(
+            'stop requested during startup',
+          );
+        },
+        200,
+      );
+
+    if (
+      existsSync(
+        stopPath,
+      )
+    ) {
+      await shutdown(
+        'stop requested before Android startup',
+      );
+
+      return;
+    }
+
     await agent.start();
+
+    if (
+      startupControlTimer
+    ) {
+      clearInterval(
+        startupControlTimer,
+      );
+
+      startupControlTimer =
+        null;
+    }
+
+    if (
+      shuttingDown
+    ) {
+      await done;
+
+      return;
+    }
 
     if (
       databaseInitialized &&
@@ -1425,6 +1496,14 @@ export async function runStandaloneTikTokBot(): Promise<void> {
     error:
       unknown
   ) {
+    if (
+      shuttingDown
+    ) {
+      await done;
+
+      return;
+    }
+
     const message =
       error instanceof Error
         ? error.message

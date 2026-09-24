@@ -12,6 +12,18 @@ if ($Real -and $Test) {
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $root
 
+$runtimeDir = Join-Path $root ".runtime"
+$stopPath = Join-Path $runtimeDir "tiktok-bot.stop"
+$commandPath = Join-Path $runtimeDir "tiktok-bot.command.json"
+
+New-Item -ItemType Directory -Force -Path $runtimeDir | Out-Null
+
+# Clear only stale controls from the previous execution, before preflight begins.
+# Any STOP written after this point belongs to the new execution and must survive
+# until the Node runner can observe it.
+Remove-Item -LiteralPath $stopPath -Force -ErrorAction SilentlyContinue
+Remove-Item -LiteralPath $commandPath -Force -ErrorAction SilentlyContinue
+
 Write-Host ""
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host " TIKTOK BOT - INICIALIZADOR ANDROID" -ForegroundColor Cyan

@@ -24,6 +24,7 @@ CONFIG_PATH = ROOT / "config" / "tiktok-bot.json"
 RUNTIME_DIR = ROOT / ".runtime"
 STATUS_PATH = RUNTIME_DIR / "tiktok-bot.status.json"
 COMMAND_PATH = RUNTIME_DIR / "tiktok-bot.command.json"
+STOP_PATH = RUNTIME_DIR / "tiktok-bot.stop"
 START_SCRIPT = ROOT / "INICIAR_TIKTOK_BOT.ps1"
 
 ACTIONS = (
@@ -1432,10 +1433,14 @@ class TikTokBotPanel(tk.Tk):
             state = self.bot_state.get().lower()
 
             if self._stopping or state in ("stopped", "stopping", "error"):
-                self._pending_start_mode = mode
                 self._append_log(
-                    f"[PAINEL] A execução anterior ainda está finalizando. "
-                    f"O modo {mode.upper()} iniciará automaticamente assim que o processo encerrar."
+                    "[PAINEL] A execução atual ainda está finalizando. "
+                    "Aguarde o BOT ficar parado antes de iniciar novamente."
+                )
+                messagebox.showwarning(
+                    "TikTok Bot",
+                    "A execução anterior ainda está finalizando.\n\n"
+                    "Aguarde o BOT ficar parado antes de iniciar TESTE ou REAL novamente.",
                 )
                 return
 
@@ -1530,14 +1535,10 @@ class TikTokBotPanel(tk.Tk):
         self._process_started_at_epoch = 0.0
         self._stopping = False
 
-        pending_mode = self._pending_start_mode
         self._pending_start_mode = None
 
-        if pending_mode and not self._closing:
-            self._append_log(
-                f"[PAINEL] Processo anterior encerrado. Iniciando modo {pending_mode.upper()} agora."
-            )
-            self.after(150, lambda: self.start_bot(pending_mode))
+        if not self._closing:
+            self.bot_state.set("stopped")
 
     def stop_bot(self) -> None:
         process_running = bool(
@@ -1554,18 +1555,28 @@ class TikTokBotPanel(tk.Tk):
             self._append_log("[PAINEL] O bot já está parado.")
             return
 
-        if state == "stopped" and process_running:
-            self._stopping = True
-            self._append_log(
-                "[PAINEL] O bot já parou; aguardando apenas a finalização do processo anterior."
-            )
-            return
-
         self._stopping = True
         self.bot_state.set("stopping")
         self._pending_start_mode = None
-        self.send_command("stop")
-        self._append_log("[PAINEL] Parada solicitada. Aguarde a finalização do processo.")
+
+        RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Durable STOP latch. Unlike the single command JSON, this file cannot
+        # be overwritten by a later pause/resume command while startup is busy.
+        stop_temp = STOP_PATH.with_suffix(".tmp")
+        stop_temp.write_text("stop\n", encoding="utf-8")
+        stop_temp.replace(STOP_PATH)
+
+        self.send_command("stop", _allow_while_stopping=True)
+
+        if state == "stopped" and process_running:
+            self._append_log(
+                "[PAINEL] O bot já informou parada; aguardando apenas a finalização do processo."
+            )
+        else:
+            self._append_log(
+                "[PAINEL] Parada solicitada e travada. O bot não aceitará Retomar/Iniciar até encerrar."
+            )
 
     def _drain_output_queue(self) -> None:
         try:
@@ -1588,6 +1599,18 @@ class TikTokBotPanel(tk.Tk):
             self.logs_text.delete("1.0", "200.0")
 
     def send_command(self, command: str, **extra: object) -> str:
+        allow_while_stopping = bool(extra.pop("_allow_while_stopping", False))
+
+        if (
+            self._stopping
+            and command != "stop"
+            and not allow_while_stopping
+        ):
+            self._append_log(
+                f"[PAINEL] Comando ignorado durante a parada: {command}"
+            )
+            return ""
+
         RUNTIME_DIR.mkdir(parents=True, exist_ok=True)
 
         request_id = f"{int(time.time() * 1000)}-{os.getpid()}"
@@ -1703,7 +1726,13 @@ class TikTokBotPanel(tk.Tk):
     def _read_status(self) -> None:
         data = json.loads(STATUS_PATH.read_text(encoding="utf-8"))
 
-        self.bot_state.set(str(data.get("state", "stopped")))
+        incoming_state = str(data.get("state", "stopped")).lower()
+
+        if self._stopping and incoming_state != "stopped":
+            self.bot_state.set("stopping")
+        else:
+            self.bot_state.set(incoming_state)
+
         self.bot_mode.set(str(data.get("mode", "-")).upper())
         self.current_action.set(str(data.get("currentAction") or "-"))
         self.last_action.set(str(data.get("lastAction") or "-"))
@@ -2071,7 +2100,7 @@ class TikTokBotPanel(tk.Tk):
     def _on_close(self) -> None:
         state = self.bot_state.get().lower()
 
-        if state in ("running", "paused"):
+        if state in ("starting", "running", "paused", "stopping"):
             answer = messagebox.askyesnocancel(
                 "Fechar painel",
                 "O bot está ativo.\n\nSim = parar o bot e fechar\nNão = manter o bot rodando e fechar o painel\nCancelar = voltar",
