@@ -1645,6 +1645,7 @@ export class MobileAgent {
           'Apoiando por aqui ✨',
         ],
         useAiVariation: false,
+        allowRepeatedTemplates: true,
         replaceNormalComment: true,
         bypassNormalContentFilters: true,
         likeCommentsEnabled: false,
@@ -2040,10 +2041,20 @@ export class MobileAgent {
 
       if (text === 'SKIP_COMMENT') return null;
 
+      const validationPolicy =
+        kind === 'follow_exchange' &&
+        policy.followExchange.allowRepeatedTemplates
+          ? {
+              ...policy,
+              avoidRecentCommentSimilarity:
+                false,
+            }
+          : policy;
+
       const validation = validateGeneratedTikTokComment(
         text,
         this.config.content.maxLength,
-        policy,
+        validationPolicy,
         history,
       );
 
@@ -2065,7 +2076,7 @@ export class MobileAgent {
         const fallbackValidation = validateGeneratedTikTokComment(
           fallback,
           this.config.content.maxLength,
-          policy,
+          validationPolicy,
           history,
         );
         if (fallbackValidation.valid) return fallback;
