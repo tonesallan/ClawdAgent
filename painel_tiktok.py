@@ -481,7 +481,7 @@ class TikTokBotPanel(tk.Tk):
         self.logs_text.configure(yscrollcommand=scroll.set)
 
     def _build_actions_tab(self) -> None:
-        scrollable = ScrollableTab(body)
+        scrollable = ScrollableTab(self.tab_actions)
         scrollable.pack(
             fill="both",
             expand=True,
