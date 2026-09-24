@@ -1439,9 +1439,7 @@ class TikTokBotPanel(tk.Tk):
                 )
                 messagebox.showwarning(
                     "TikTok Bot",
-                    "A execução anterior ainda está finalizando.
-
-"
+                    "A execução anterior ainda está finalizando.\n\n"
                     "Aguarde o BOT ficar parado antes de iniciar TESTE ou REAL novamente.",
                 )
                 return
