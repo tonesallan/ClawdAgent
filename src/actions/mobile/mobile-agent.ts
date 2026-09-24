@@ -56,6 +56,14 @@ import type {
 import {
   TikTokCommentHistoryStore,
 } from '../../tiktok/comment-history-store.js';
+import {
+  detectTikTokFollowRestriction,
+  TikTokFollowSafetyStore,
+} from '../../tiktok/follow-safety.js';
+import type {
+  TikTokFollowSafetyConfig,
+  TikTokFollowSafetySnapshot,
+} from '../../tiktok/follow-safety.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -77,7 +85,13 @@ export interface MobileAgentConfig {
     maxLength: number;
     commentPolicy?: TikTokCommentPolicyConfig;
   };
-  safety: { minDelaySeconds: number; maxActionsPerHour: number; pauseOnErrorCount: number; pauseDurationMinutes: number };
+  safety: {
+    minDelaySeconds: number;
+    maxActionsPerHour: number;
+    pauseOnErrorCount: number;
+    pauseDurationMinutes: number;
+    followSafety?: TikTokFollowSafetyConfig;
+  };
   testMode: boolean;
   /**
    * Warm-up duration before the autonomous action loop starts.
@@ -103,6 +117,7 @@ export interface MobileAgentStatus {
   nextActionTime: string | null;
   config: MobileAgentConfig;
   commentHistory: TikTokCommentHistoryEntry[];
+  followSafety: TikTokFollowSafetySnapshot | null;
 }
 
 export interface MobileAgentStats {
@@ -159,6 +174,8 @@ export class MobileAgent {
   private aiClient: AIClient;
   private screenSize: { width: number; height: number } | null = null;
   private commentHistoryStore = new TikTokCommentHistoryStore();
+  private followSafetyStore = new TikTokFollowSafetyStore();
+  private lastFollowSafetyNotice = '';
 
   private constructor(config: MobileAgentConfig) {
     this.config = config;
@@ -274,6 +291,7 @@ export class MobileAgent {
     this.consecutiveErrors = 0;
     this.stats = this.freshStats();
     await this.commentHistoryStore.load();
+    await this.followSafetyStore.load();
     this.log('system', 'info', `Starting mobile agent: ${this.config.app} on device ${this.config.deviceId}`);
 
     try {
@@ -353,11 +371,71 @@ export class MobileAgent {
       startedAt: this.startedAt, lastAction, lastActionTime: this.stats.lastActionAt,
       nextActionTime, config: this.config,
       commentHistory: this.commentHistoryStore.list(100),
+      followSafety:
+        this.config.app === 'tiktok'
+          ? this.getTikTokFollowSafetySnapshot()
+          : null,
     };
   }
 
   getLogs(limit = 50): MobileAgentLogEntry[] { return this.logs.slice(-limit); }
   getConfig(): MobileAgentConfig { return { ...this.config }; }
+
+  getTikTokFollowSafetySnapshot():
+    TikTokFollowSafetySnapshot {
+    return this.followSafetyStore
+      .snapshot(
+        this.getTikTokFollowSafetyPolicy(),
+        this.startedAt,
+      );
+  }
+
+  async activateTikTokFollowCooldown(
+    hours?:
+      number,
+    reason =
+      'Manual follow cooldown activated from panel',
+  ): Promise<TikTokFollowSafetySnapshot> {
+    const policy =
+      this.getTikTokFollowSafetyPolicy();
+
+    await this.followSafetyStore
+      .recordExplicitRestriction(
+        reason,
+        hours ??
+          policy
+            .restrictionCooldownHours,
+      );
+
+    const snapshot =
+      this.getTikTokFollowSafetySnapshot();
+
+    this.log(
+      'follow',
+      'skipped',
+      `Follow safety cooldown activated until ${snapshot.restrictedUntil ?? 'unknown'}`,
+      reason,
+    );
+
+    return snapshot;
+  }
+
+  async clearTikTokFollowCooldown():
+    Promise<TikTokFollowSafetySnapshot> {
+    await this.followSafetyStore
+      .clearRestriction();
+
+    const snapshot =
+      this.getTikTokFollowSafetySnapshot();
+
+    this.log(
+      'follow',
+      'info',
+      'Follow safety cooldown cleared manually',
+    );
+
+    return snapshot;
+  }
 
   async takeScreenshot(): Promise<string> {
     try { return await this.appium.screenshot(); }
@@ -575,6 +653,14 @@ export class MobileAgent {
         break;
       }
       case 'follow': {
+        if (
+          !this.canAttemptTikTokFollow(
+            true,
+          )
+        ) {
+          return;
+        }
+
         if (this.config.testMode) {
           this.log('follow', 'success', '[TEST] Would follow user');
           return;
@@ -712,6 +798,35 @@ export class MobileAgent {
             await this.appium
               .getPageSource();
 
+          const restrictionSignal =
+            detectTikTokFollowRestriction(
+              afterSource,
+            );
+
+          if (
+            restrictionSignal
+          ) {
+            const policy =
+              this.getTikTokFollowSafetyPolicy();
+
+            if (
+              policy
+                .stopOnRestriction
+            ) {
+              await this
+                .followSafetyStore
+                .recordExplicitRestriction(
+                  restrictionSignal,
+                  policy
+                    .restrictionCooldownHours,
+                );
+            }
+
+            throw new Error(
+              restrictionSignal,
+            );
+          }
+
           if (
             !tikTokProfileSourceMatchesUsername(
               afterSource,
@@ -767,10 +882,38 @@ export class MobileAgent {
             confirmedRelationship !==
               'friends'
           ) {
+            const policy =
+              this.getTikTokFollowSafetyPolicy();
+
+            const activated =
+              await this
+                .followSafetyStore
+                .recordUnconfirmedAttempt(
+                  policy,
+                  `@${username}: ${confirmedRelationship}`,
+                );
+
+            if (
+              activated
+            ) {
+              const snapshot =
+                this
+                  .getTikTokFollowSafetySnapshot();
+
+              throw new Error(
+                `TikTok Follow was not confirmed for @${username}; safety cooldown activated until ${snapshot.restrictedUntil ?? 'unknown'}.`,
+              );
+            }
+
             throw new Error(
               `TikTok Follow was not confirmed for @${username}: ${confirmedRelationship}`,
             );
           }
+
+          await this.followSafetyStore
+            .recordConfirmedFollow(
+              username,
+            );
 
           await registerConfirmedAndroidFollow({
             accountKey:
@@ -2693,6 +2836,71 @@ ${specialInstruction}`;
     }
   }
 
+  private getTikTokFollowSafetyPolicy():
+    TikTokFollowSafetyConfig {
+    return (
+      this.config.safety
+        .followSafety ??
+      {
+        enabled: true,
+        maxPerHour: 10,
+        maxPer24Hours: 100,
+        maxPerSession: 15,
+        minIntervalMinutes: 5,
+        restrictionCooldownHours: 24,
+        stopOnRestriction: true,
+        silentFailureThreshold: 2,
+      }
+    );
+  }
+
+  private canAttemptTikTokFollow(
+    announce:
+      boolean,
+  ): boolean {
+    const snapshot =
+      this.getTikTokFollowSafetySnapshot();
+
+    if (
+      snapshot.allowed
+    ) {
+      this.lastFollowSafetyNotice =
+        '';
+
+      return true;
+    }
+
+    const notice =
+      [
+        snapshot
+          .blockedReason ??
+          'follow safety blocked',
+        snapshot.nextAllowedAt
+          ? `next=${snapshot.nextAllowedAt}`
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
+    if (
+      announce &&
+      notice !==
+        this
+          .lastFollowSafetyNotice
+    ) {
+      this.lastFollowSafetyNotice =
+        notice;
+
+      this.log(
+        'follow',
+        'skipped',
+        `TikTok follow safety: ${notice}`,
+      );
+    }
+
+    return false;
+  }
+
   // ── Helpers ────────────────────────────────────────────────────────
 
   private async getScreenSize(): Promise<{ width: number; height: number }> {
@@ -2825,6 +3033,19 @@ ${specialInstruction}`;
       const elapsed = now - lastTime;
       const intervalMs = schedule.intervalMinutes * 60_000;
       if (elapsed < intervalMs) continue;
+
+      if (
+        this.config.app ===
+          'tiktok' &&
+        action ===
+          'follow' &&
+        !this.canAttemptTikTokFollow(
+          true,
+        )
+      ) {
+        continue;
+      }
+
       available.push({ action, priority: elapsed / intervalMs });
     }
     if (available.length === 0) return null;
