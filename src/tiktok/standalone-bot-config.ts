@@ -592,6 +592,61 @@ export const standaloneTikTokBotConfigSchema =
           .int()
           .min(1)
           .default(5),
+        followSafety: z
+          .object({
+            enabled: z
+              .boolean()
+              .default(true),
+            maxPerHour: z
+              .number()
+              .int()
+              .min(1)
+              .max(500)
+              .default(10),
+            maxPer24Hours: z
+              .number()
+              .int()
+              .min(1)
+              .max(5000)
+              .default(100),
+            maxPerSession: z
+              .number()
+              .int()
+              .min(1)
+              .max(500)
+              .default(15),
+            minIntervalMinutes: z
+              .number()
+              .int()
+              .min(0)
+              .max(24 * 60)
+              .default(5),
+            restrictionCooldownHours: z
+              .number()
+              .int()
+              .min(1)
+              .max(24 * 30)
+              .default(24),
+            stopOnRestriction: z
+              .boolean()
+              .default(true),
+            silentFailureThreshold: z
+              .number()
+              .int()
+              .min(1)
+              .max(10)
+              .default(2),
+          })
+          .default({
+            enabled: true,
+            maxPerHour: 10,
+            maxPer24Hours: 100,
+            maxPerSession: 15,
+            minIntervalMinutes: 5,
+            restrictionCooldownHours: 24,
+            stopOnRestriction: true,
+            silentFailureThreshold: 2,
+          }),
       })
       .default({
         minDelaySeconds:
@@ -602,6 +657,16 @@ export const standaloneTikTokBotConfigSchema =
           2,
         pauseDurationMinutes:
           5,
+        followSafety: {
+          enabled: true,
+          maxPerHour: 10,
+          maxPer24Hours: 100,
+          maxPerSession: 15,
+          minIntervalMinutes: 5,
+          restrictionCooldownHours: 24,
+          stopOnRestriction: true,
+          silentFailureThreshold: 2,
+        },
       }),
   })
     .strict();
