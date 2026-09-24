@@ -324,3 +324,36 @@ A identificação usa texto e `content-desc` da UI Android e aceita os nomes loc
 O status **FEED** no topo do painel mostra a aba solicitada e se ela foi confirmada, selecionada sem estado explícito ou considerada indisponível.
 
 A seleção da aba é somente navegação. No modo TESTE o bot pode tocar na aba escolhida para validar o fluxo, mas curtidas, comentários e follows continuam simulados.
+
+
+## Filtro de LIVE
+
+Em **Conteúdo e limites → Filtro do feed** existe a opção **Ignorar LIVE**.
+
+Quando ativa:
+
+- o bot inspeciona a interface Android antes da ação;
+- se o item atual for identificado como LIVE/transmissão ao vivo, ele desliza imediatamente para o próximo item;
+- esse pulo não conta como scroll, like, comentário, follow ou outra ação;
+- o delay global não é aplicado entre a detecção da LIVE e o pulo;
+- apenas um curto tempo técnico de estabilização da UI é usado para ler o próximo item;
+- o contador **LIVE ignoradas** registra quantas transmissões foram puladas.
+
+A detecção evita tratar a aba de navegação superior **LIVE** como se o vídeo atual fosse uma transmissão. Ela usa sinais visíveis como badge LIVE fora da navegação superior e textos típicos de transmissão, por exemplo **Enviar presente / Send gift**, **Ao vivo agora / LIVE now** e equivalentes.
+
+## Diagnóstico de curtidas e comentários
+
+Em TESTE, a ação de curtida agora também valida de forma read-only se o controle de like da versão atual do TikTok pode ser localizado. O log informa qual seletor/descrição seria usado, sem clicar.
+
+Em REAL, depois do clique o bot tenta confirmar a mudança do controle para o estado de vídeo curtido. Se o TikTok alterar novamente a interface, o erro passa a incluir os rótulos de ação visíveis na tela para facilitar a atualização do seletor.
+
+A abertura dos comentários aceita múltiplos rótulos pt-BR/inglês e possui fallback por XPath. Nenhum comentário é publicado em TESTE.
+
+## Correção automática de caracteres UTF-8
+
+O painel detecta padrões comuns de mojibake, por exemplo:
+
+- `amigÃ¡vel` → `amigável`;
+- sequências corrompidas de emoji como `ðŸ’•` → `💕`.
+
+Quando encontra esses casos ao abrir `config/tiktok-bot.json`, cria um backup em `.runtime`, corrige os valores em memória e regrava o JSON em UTF-8 sem escapar acentos/emojis. O painel também remove o prefixo acidental `Comentários especiais:` quando ele tiver sido salvo dentro do primeiro template de troca de follow.
