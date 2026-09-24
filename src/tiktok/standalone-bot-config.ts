@@ -244,10 +244,262 @@ export const standaloneTikTokBotConfigSchema =
             requireVideoContext: z
               .boolean()
               .default(true),
+            minLength: z
+              .number()
+              .int()
+              .min(1)
+              .max(500)
+              .default(8),
+            maxEmojis: z
+              .number()
+              .int()
+              .min(0)
+              .max(10)
+              .default(2),
+            stylePreset: z
+              .enum([
+                'natural',
+                'short',
+                'curious',
+                'question',
+                'informative',
+                'light_humor',
+              ])
+              .default('natural'),
+            previewOnly: z
+              .boolean()
+              .default(false),
+            requiredKeywords: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            excludedKeywords: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            keywordMatchMode: z
+              .enum(['any', 'all'])
+              .default('any'),
+            requiredHashtags: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            excludedHashtags: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            hashtagMatchMode: z
+              .enum(['any', 'all'])
+              .default('any'),
+            allowedProfiles: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            blockedProfiles: z
+              .array(z.string().trim().min(1))
+              .default([]),
+            profileCooldownHours: z
+              .number()
+              .int()
+              .min(0)
+              .max(24 * 30)
+              .default(12),
+            duplicateVideoWindowHours: z
+              .number()
+              .int()
+              .min(0)
+              .max(24 * 30)
+              .default(72),
+            maxCommentsPerProfilePerDay: z
+              .number()
+              .int()
+              .min(0)
+              .max(100)
+              .default(2),
+            avoidRecentCommentSimilarity: z
+              .boolean()
+              .default(true),
+            similarityThreshold: z
+              .number()
+              .min(0)
+              .max(1)
+              .default(0.8),
+            recentCommentComparisonCount: z
+              .number()
+              .int()
+              .min(1)
+              .max(200)
+              .default(20),
+            followExchange: z
+              .object({
+                enabled: z
+                  .boolean()
+                  .default(false),
+                indicatorPhrases: z
+                  .array(z.string().trim().min(1))
+                  .min(1)
+                  .default([
+                    'sigo de volta',
+                    'sigo todos de volta',
+                    'segue que sigo',
+                    'seguindo de volta',
+                    'apoiando',
+                    'apoio por aqui',
+                    'garotas apoiam garotas',
+                    'follow back',
+                    'sdv',
+                  ]),
+                sampleSize: z
+                  .number()
+                  .int()
+                  .min(3)
+                  .max(100)
+                  .default(15),
+                maxScrolls: z
+                  .number()
+                  .int()
+                  .min(0)
+                  .max(10)
+                  .default(3),
+                minMatchedComments: z
+                  .number()
+                  .int()
+                  .min(1)
+                  .max(100)
+                  .default(3),
+                minConfidence: z
+                  .number()
+                  .min(0)
+                  .max(1)
+                  .default(0.15),
+                commentEnabled: z
+                  .boolean()
+                  .default(true),
+                commentTemplates: z
+                  .array(z.string().trim().min(1))
+                  .min(1)
+                  .default([
+                    'Sigo todos de volta 💕',
+                    'Retribuo todos 🤝',
+                    'Apoiando por aqui ✨',
+                  ]),
+                useAiVariation: z
+                  .boolean()
+                  .default(false),
+                allowRepeatedTemplates: z
+                  .boolean()
+                  .default(true),
+                replaceNormalComment: z
+                  .boolean()
+                  .default(true),
+                bypassNormalContentFilters: z
+                  .boolean()
+                  .default(true),
+                likeCommentsEnabled: z
+                  .boolean()
+                  .default(false),
+                maxCommentLikesPerVideo: z
+                  .number()
+                  .int()
+                  .min(0)
+                  .max(50)
+                  .default(3),
+                dailyCommentLikeLimit: z
+                  .number()
+                  .int()
+                  .min(0)
+                  .max(500)
+                  .default(10),
+                likeOnlyMatchingSignals: z
+                  .boolean()
+                  .default(true),
+                excludeCreatorComments: z
+                  .boolean()
+                  .default(true),
+              })
+              .default({
+                enabled: false,
+                indicatorPhrases: [
+                  'sigo de volta',
+                  'sigo todos de volta',
+                  'segue que sigo',
+                  'seguindo de volta',
+                  'apoiando',
+                  'apoio por aqui',
+                  'garotas apoiam garotas',
+                  'follow back',
+                  'sdv',
+                ],
+                sampleSize: 15,
+                maxScrolls: 3,
+                minMatchedComments: 3,
+                minConfidence: 0.15,
+                commentEnabled: true,
+                commentTemplates: [
+                  'Sigo todos de volta 💕',
+                  'Retribuo todos 🤝',
+                  'Apoiando por aqui ✨',
+                ],
+                useAiVariation: false,
+                allowRepeatedTemplates: true,
+                replaceNormalComment: true,
+                bypassNormalContentFilters: true,
+                likeCommentsEnabled: false,
+                maxCommentLikesPerVideo: 3,
+                dailyCommentLikeLimit: 10,
+                likeOnlyMatchingSignals: true,
+                excludeCreatorComments: true,
+              }),
           })
           .default({
             friendsOnly: false,
             requireVideoContext: true,
+            minLength: 8,
+            maxEmojis: 2,
+            stylePreset: 'natural',
+            previewOnly: false,
+            requiredKeywords: [],
+            excludedKeywords: [],
+            keywordMatchMode: 'any',
+            requiredHashtags: [],
+            excludedHashtags: [],
+            hashtagMatchMode: 'any',
+            allowedProfiles: [],
+            blockedProfiles: [],
+            profileCooldownHours: 12,
+            duplicateVideoWindowHours: 72,
+            maxCommentsPerProfilePerDay: 2,
+            avoidRecentCommentSimilarity: true,
+            similarityThreshold: 0.8,
+            recentCommentComparisonCount: 20,
+            followExchange: {
+              enabled: false,
+              indicatorPhrases: [
+                'sigo de volta',
+                'sigo todos de volta',
+                'segue que sigo',
+                'seguindo de volta',
+                'apoiando',
+                'apoio por aqui',
+                'garotas apoiam garotas',
+                'follow back',
+                'sdv',
+              ],
+              sampleSize: 15,
+              maxScrolls: 3,
+              minMatchedComments: 3,
+              minConfidence: 0.15,
+              commentEnabled: true,
+              commentTemplates: [
+                'Sigo todos de volta 💕',
+                'Retribuo todos 🤝',
+                'Apoiando por aqui ✨',
+              ],
+              useAiVariation: false,
+              allowRepeatedTemplates: true,
+              replaceNormalComment: true,
+              bypassNormalContentFilters: true,
+              likeCommentsEnabled: false,
+              maxCommentLikesPerVideo: 3,
+              dailyCommentLikeLimit: 10,
+              likeOnlyMatchingSignals: true,
+              excludeCreatorComments: true,
+            },
           }),
       })
       .default({
@@ -265,6 +517,57 @@ export const standaloneTikTokBotConfigSchema =
         commentPolicy: {
           friendsOnly: false,
           requireVideoContext: true,
+          minLength: 8,
+          maxEmojis: 2,
+          stylePreset: 'natural',
+          previewOnly: false,
+          requiredKeywords: [],
+          excludedKeywords: [],
+          keywordMatchMode: 'any',
+          requiredHashtags: [],
+          excludedHashtags: [],
+          hashtagMatchMode: 'any',
+          allowedProfiles: [],
+          blockedProfiles: [],
+          profileCooldownHours: 12,
+          duplicateVideoWindowHours: 72,
+          maxCommentsPerProfilePerDay: 2,
+          avoidRecentCommentSimilarity: true,
+          similarityThreshold: 0.8,
+          recentCommentComparisonCount: 20,
+          followExchange: {
+            enabled: false,
+            indicatorPhrases: [
+              'sigo de volta',
+              'sigo todos de volta',
+              'segue que sigo',
+              'seguindo de volta',
+              'apoiando',
+              'apoio por aqui',
+              'garotas apoiam garotas',
+              'follow back',
+              'sdv',
+            ],
+            sampleSize: 15,
+            maxScrolls: 3,
+            minMatchedComments: 3,
+            minConfidence: 0.15,
+            commentEnabled: true,
+            commentTemplates: [
+              'Sigo todos de volta 💕',
+              'Retribuo todos 🤝',
+              'Apoiando por aqui ✨',
+            ],
+            useAiVariation: false,
+            allowRepeatedTemplates: true,
+            replaceNormalComment: true,
+            bypassNormalContentFilters: true,
+            likeCommentsEnabled: false,
+            maxCommentLikesPerVideo: 3,
+            dailyCommentLikeLimit: 10,
+            likeOnlyMatchingSignals: true,
+            excludeCreatorComments: true,
+          },
         },
       }),
     safety: z

@@ -738,6 +738,8 @@ export async function runStandaloneTikTokBot(): Promise<void> {
             current.lastError,
           stats:
             current.stats,
+          commentHistory:
+            current.commentHistory,
           logs:
             agent.getLogs(200),
           automationCore:

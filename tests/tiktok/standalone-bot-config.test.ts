@@ -51,11 +51,43 @@ describe(
 
         expect(
           config.content.commentPolicy,
-        ).toEqual({
+        ).toMatchObject({
           friendsOnly:
             false,
           requireVideoContext:
             true,
+          minLength:
+            8,
+          maxEmojis:
+            2,
+          stylePreset:
+            'natural',
+          previewOnly:
+            false,
+          profileCooldownHours:
+            12,
+          duplicateVideoWindowHours:
+            72,
+          maxCommentsPerProfilePerDay:
+            2,
+          followExchange: {
+            enabled:
+              false,
+            sampleSize:
+              15,
+            minMatchedComments:
+              3,
+            minConfidence:
+              0.15,
+            commentEnabled:
+              true,
+            likeCommentsEnabled:
+              false,
+            maxCommentLikesPerVideo:
+              3,
+            dailyCommentLikeLimit:
+              10,
+          },
         });
 
         expect(
@@ -177,11 +209,17 @@ describe(
 
         expect(
           mobile.content.commentPolicy,
-        ).toEqual({
+        ).toMatchObject({
           friendsOnly:
             false,
           requireVideoContext:
             true,
+          minLength:
+            8,
+          followExchange: {
+            enabled:
+              false,
+          },
         });
       },
     );

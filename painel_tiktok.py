@@ -34,8 +34,8 @@ class TikTokBotPanel(tk.Tk):
         super().__init__()
 
         self.title("TikTok Bot - Android / Appium")
-        self.geometry("1220x820")
-        self.minsize(1060, 700)
+        self.geometry("1320x900")
+        self.minsize(1160, 760)
 
         self.process: subprocess.Popen[str] | None = None
         self.output_queue: queue.Queue[str] = queue.Queue()
@@ -119,6 +119,44 @@ class TikTokBotPanel(tk.Tk):
         self.max_length = tk.StringVar(value="120")
         self.comment_friends_only = tk.BooleanVar(value=False)
         self.comment_require_context = tk.BooleanVar(value=True)
+        self.comment_min_length = tk.StringVar(value="8")
+        self.comment_max_emojis = tk.StringVar(value="2")
+        self.comment_style = tk.StringVar(value="natural")
+        self.comment_preview_only = tk.BooleanVar(value=False)
+        self.comment_required_keywords = tk.StringVar(value="")
+        self.comment_excluded_keywords = tk.StringVar(value="")
+        self.comment_keyword_mode = tk.StringVar(value="any")
+        self.comment_required_hashtags = tk.StringVar(value="")
+        self.comment_excluded_hashtags = tk.StringVar(value="")
+        self.comment_hashtag_mode = tk.StringVar(value="any")
+        self.comment_allowed_profiles = tk.StringVar(value="")
+        self.comment_blocked_profiles = tk.StringVar(value="")
+        self.comment_profile_cooldown = tk.StringVar(value="12")
+        self.comment_duplicate_window = tk.StringVar(value="72")
+        self.comment_max_profile_day = tk.StringVar(value="2")
+        self.comment_avoid_similarity = tk.BooleanVar(value=True)
+        self.comment_similarity_threshold = tk.StringVar(value="80")
+        self.comment_similarity_count = tk.StringVar(value="20")
+
+        self.follow_exchange_enabled = tk.BooleanVar(value=False)
+        self.follow_exchange_phrases = tk.StringVar(value="sigo de volta; sigo todos de volta; segue que sigo; seguindo de volta; apoiando; apoio por aqui; garotas apoiam garotas; follow back; sdv")
+        self.follow_exchange_sample_size = tk.StringVar(value="15")
+        self.follow_exchange_max_scrolls = tk.StringVar(value="3")
+        self.follow_exchange_min_matches = tk.StringVar(value="3")
+        self.follow_exchange_confidence = tk.StringVar(value="15")
+        self.follow_exchange_comment_enabled = tk.BooleanVar(value=True)
+        self.follow_exchange_templates = tk.StringVar(value="Sigo todos de volta 💕; Retribuo todos 🤝; Apoiando por aqui ✨")
+        self.follow_exchange_ai_variation = tk.BooleanVar(value=False)
+        self.follow_exchange_allow_repeated_templates = tk.BooleanVar(value=True)
+        self.follow_exchange_replace_normal = tk.BooleanVar(value=True)
+        self.follow_exchange_bypass_filters = tk.BooleanVar(value=True)
+        self.follow_exchange_like_comments = tk.BooleanVar(value=False)
+        self.follow_exchange_max_likes = tk.StringVar(value="3")
+        self.follow_exchange_daily_likes = tk.StringVar(value="10")
+        self.follow_exchange_like_matching = tk.BooleanVar(value=True)
+        self.follow_exchange_exclude_creator = tk.BooleanVar(value=True)
+
+        self.comment_history_count = tk.StringVar(value="0")
 
         self.core_enabled = tk.BooleanVar(value=True)
         self.followback_hours = tk.StringVar(value="48")
@@ -137,6 +175,9 @@ class TikTokBotPanel(tk.Tk):
             "errors": tk.StringVar(value="0"),
             "totalActions": tk.StringVar(value="0"),
             "actionsThisHour": tk.StringVar(value="0"),
+            "commentLikes": tk.StringVar(value="0"),
+            "followExchangeDetections": tk.StringVar(value="0"),
+            "commentSkips": tk.StringVar(value="0"),
         }
 
     def _build_ui(self) -> None:
@@ -248,10 +289,13 @@ class TikTokBotPanel(tk.Tk):
             ("Curtidas", "likes"),
             ("Comentários", "comments"),
             ("Seguidos", "follows"),
-            ("Shares", "shares"),
+            ("Likes comentários", "commentLikes"),
+            ("Troca-follow detectada", "followExchangeDetections"),
+            ("Comentários ignorados", "commentSkips"),
             ("Erros", "errors"),
             ("Total", "totalActions"),
             ("Nesta hora", "actionsThisHour"),
+            ("Shares", "shares"),
         )
         for idx, (title, key) in enumerate(stat_titles):
             col = idx % 4
@@ -341,34 +385,124 @@ class TikTokBotPanel(tk.Tk):
         self._entry_row(hours, 2, "Fim de semana início", self.weekend_start)
         self._entry_row(hours, 3, "Fim de semana fim", self.weekend_end)
 
-        content = ttk.LabelFrame(outer, text="Comentários automáticos")
-        content.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=6, pady=6)
-        self._entry_row(content, 0, "Idioma", self.language)
-        self._entry_row(content, 1, "Tom", self.tone)
-        self._entry_row(content, 2, "Tópicos (vírgula)", self.topics)
-        self._entry_row(content, 3, "Máx. caracteres", self.max_length)
+        comment_box = ttk.LabelFrame(outer, text="Política de comentários")
+        comment_box.grid(row=0, column=1, rowspan=2, sticky="nsew", padx=6, pady=6)
+        comment_box.rowconfigure(0, weight=1)
+        comment_box.columnconfigure(0, weight=1)
+
+        comment_tabs = ttk.Notebook(comment_box)
+        comment_tabs.grid(row=0, column=0, sticky="nsew", padx=6, pady=6)
+
+        general = ttk.Frame(comment_tabs, style="Card.TFrame")
+        filters = ttk.Frame(comment_tabs, style="Card.TFrame")
+        exchange = ttk.Frame(comment_tabs, style="Card.TFrame")
+
+        comment_tabs.add(general, text="Comentários")
+        comment_tabs.add(filters, text="Filtros e repetição")
+        comment_tabs.add(exchange, text="Troca de follow")
+
+        self._entry_row(general, 0, "Idioma", self.language)
+        self._entry_row(general, 1, "Tom", self.tone)
+        self._entry_row(general, 2, "Tópicos (vírgula)", self.topics)
+        self._entry_row(general, 3, "Mín. caracteres", self.comment_min_length)
+        self._entry_row(general, 4, "Máx. caracteres", self.max_length)
+        self._entry_row(general, 5, "Máx. emojis", self.comment_max_emojis)
+
+        ttk.Label(general, text="Estilo", style="Muted.TLabel").grid(row=6, column=0, sticky="w", padx=10, pady=6)
+        ttk.Combobox(
+            general,
+            textvariable=self.comment_style,
+            values=("natural", "short", "curious", "question", "informative", "light_humor"),
+            state="readonly",
+            width=24,
+        ).grid(row=6, column=1, sticky="ew", padx=10, pady=6)
 
         ttk.Checkbutton(
-            content,
-            text="Exigir legenda/hashtags reais antes de comentar",
+            general,
+            text="Exigir legenda/hashtags reais antes de comentário normal",
             variable=self.comment_require_context,
-        ).grid(row=4, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 4))
+        ).grid(row=7, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 3))
 
         ttk.Checkbutton(
-            content,
+            general,
             text="Comentar somente em perfis amigos (ambos se seguem)",
             variable=self.comment_friends_only,
-        ).grid(row=5, column=0, columnspan=2, sticky="w", padx=10, pady=4)
+        ).grid(row=8, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+
+        ttk.Checkbutton(
+            general,
+            text="Somente prévia: nunca publicar/curtir comentários mesmo em REAL",
+            variable=self.comment_preview_only,
+        ).grid(row=9, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+
+        ttk.Checkbutton(
+            general,
+            text="Evitar comentários parecidos com os últimos publicados",
+            variable=self.comment_avoid_similarity,
+        ).grid(row=10, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+
+        self._entry_row(general, 11, "Similaridade máx. (%)", self.comment_similarity_threshold)
+        self._entry_row(general, 12, "Comparar últimos N comentários", self.comment_similarity_count)
 
         ttk.Label(
-            content,
-            text=(
-                "O comentário usa legenda/descrição, hashtags, criador e textos visíveis do vídeo. "
-                "No modo TESTE, a IA gera o texto completo e o painel mostra exatamente o que seria publicado, sem enviar."
-            ),
+            general,
+            text="No TESTE, o texto final aparece no log e nada é publicado.",
             style="Muted.TLabel",
-            wraplength=420,
-        ).grid(row=6, column=0, columnspan=2, sticky="w", padx=10, pady=12)
+            wraplength=470,
+        ).grid(row=13, column=0, columnspan=2, sticky="w", padx=10, pady=10)
+
+        self._entry_row(filters, 0, "Palavras obrigatórias (vírgula)", self.comment_required_keywords)
+        ttk.Label(filters, text="Regra palavras", style="Muted.TLabel").grid(row=1, column=0, sticky="w", padx=10, pady=6)
+        ttk.Combobox(filters, textvariable=self.comment_keyword_mode, values=("any", "all"), state="readonly", width=16).grid(row=1, column=1, sticky="w", padx=10, pady=6)
+        self._entry_row(filters, 2, "Palavras/assuntos proibidos", self.comment_excluded_keywords)
+        self._entry_row(filters, 3, "Hashtags obrigatórias", self.comment_required_hashtags)
+        ttk.Label(filters, text="Regra hashtags", style="Muted.TLabel").grid(row=4, column=0, sticky="w", padx=10, pady=6)
+        ttk.Combobox(filters, textvariable=self.comment_hashtag_mode, values=("any", "all"), state="readonly", width=16).grid(row=4, column=1, sticky="w", padx=10, pady=6)
+        self._entry_row(filters, 5, "Hashtags proibidas", self.comment_excluded_hashtags)
+        self._entry_row(filters, 6, "Perfis permitidos (@, vírgula)", self.comment_allowed_profiles)
+        self._entry_row(filters, 7, "Perfis bloqueados (@, vírgula)", self.comment_blocked_profiles)
+        self._entry_row(filters, 8, "Cooldown por perfil (h)", self.comment_profile_cooldown)
+        self._entry_row(filters, 9, "Não repetir vídeo por (h)", self.comment_duplicate_window)
+        self._entry_row(filters, 10, "Máx. comentários/perfil/dia", self.comment_max_profile_day)
+
+        ttk.Label(
+            filters,
+            text="Lista permitida vazia = qualquer perfil. Cooldown/duplicidade usam histórico local em .runtime.",
+            style="Muted.TLabel",
+            wraplength=470,
+        ).grid(row=11, column=0, columnspan=2, sticky="w", padx=10, pady=10)
+
+        ttk.Checkbutton(
+            exchange,
+            text="Ativar detector de vídeos de troca de follow / apoio mútuo",
+            variable=self.follow_exchange_enabled,
+        ).grid(row=0, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 4))
+
+        self._entry_row(exchange, 1, "Frases indicadoras (;)", self.follow_exchange_phrases)
+        self._entry_row(exchange, 2, "Comentários para analisar", self.follow_exchange_sample_size)
+        self._entry_row(exchange, 3, "Máx. rolagens dos comentários", self.follow_exchange_max_scrolls)
+        self._entry_row(exchange, 4, "Mín. comentários com sinais", self.follow_exchange_min_matches)
+        self._entry_row(exchange, 5, "Confiança mínima (%)", self.follow_exchange_confidence)
+
+        ttk.Checkbutton(exchange, text="Comentar quando detectar", variable=self.follow_exchange_comment_enabled).grid(row=6, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        self._entry_row(exchange, 7, "Comentários especiais (;)", self.follow_exchange_templates)
+        ttk.Checkbutton(exchange, text="Usar IA para variar o comentário especial", variable=self.follow_exchange_ai_variation).grid(row=8, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Permitir reutilizar comentários especiais em outros vídeos", variable=self.follow_exchange_allow_repeated_templates).grid(row=9, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Substituir comentário normal quando detectar", variable=self.follow_exchange_replace_normal).grid(row=10, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Ignorar filtros normais de tema/hashtag neste tipo", variable=self.follow_exchange_bypass_filters).grid(row=11, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+
+        ttk.Checkbutton(exchange, text="Curtir comentários deste vídeo", variable=self.follow_exchange_like_comments).grid(row=12, column=0, columnspan=2, sticky="w", padx=10, pady=(8, 3))
+        self._entry_row(exchange, 13, "Máx. likes em comentários/vídeo", self.follow_exchange_max_likes)
+        self._entry_row(exchange, 14, "Máx. likes em comentários/dia", self.follow_exchange_daily_likes)
+        ttk.Checkbutton(exchange, text="Curtir só comentários que tenham sinais configurados", variable=self.follow_exchange_like_matching).grid(row=15, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+        ttk.Checkbutton(exchange, text="Não curtir comentário do criador quando identificável", variable=self.follow_exchange_exclude_creator).grid(row=16, column=0, columnspan=2, sticky="w", padx=10, pady=3)
+
+        ttk.Label(
+            exchange,
+            text="Este módulo executa durante a ação Comentar: deixe Comentar ativa na aba Ações. A detecção usa comentários visíveis; no TESTE apenas registra o que faria.",
+            style="Muted.TLabel",
+            wraplength=470,
+        ).grid(row=17, column=0, columnspan=2, sticky="w", padx=10, pady=10)
 
     def _build_automation_tab(self) -> None:
         core = ttk.LabelFrame(self.tab_automation, text="Follow-back / relacionamento")
@@ -553,6 +687,33 @@ class TikTokBotPanel(tk.Tk):
 
         self.relationship_tree.pack(fill="both", expand=True, padx=6, pady=6)
 
+        comments_frame = ttk.LabelFrame(self.tab_history, text="Histórico local de comentários")
+        comments_frame.pack(fill="both", expand=True, padx=12, pady=(6, 12))
+
+        comment_columns = ("time", "kind", "status", "username", "comment")
+        self.comment_history_tree = ttk.Treeview(comments_frame, columns=comment_columns, show="headings", height=6)
+
+        comment_headings = {
+            "time": "Data/hora",
+            "kind": "Tipo",
+            "status": "Status",
+            "username": "Perfil",
+            "comment": "Comentário / alvo",
+        }
+        comment_widths = {
+            "time": 180,
+            "kind": 130,
+            "status": 100,
+            "username": 160,
+            "comment": 560,
+        }
+
+        for column in comment_columns:
+            self.comment_history_tree.heading(column, text=comment_headings[column])
+            self.comment_history_tree.column(column, width=comment_widths[column], anchor="w")
+
+        self.comment_history_tree.pack(fill="both", expand=True, padx=6, pady=6)
+
     def _entry_row(self, parent: ttk.Widget, row: int, label: str, variable: tk.StringVar) -> None:
         ttk.Label(parent, text=label, style="Muted.TLabel").grid(row=row, column=0, sticky="w", padx=10, pady=6)
         ttk.Entry(parent, textvariable=variable, width=28).grid(row=row, column=1, sticky="ew", padx=10, pady=6)
@@ -561,6 +722,14 @@ class TikTokBotPanel(tk.Tk):
     @staticmethod
     def _csv(value: str) -> list[str]:
         return [item.strip().lstrip("#") for item in value.split(",") if item.strip()]
+
+    @staticmethod
+    def _profiles(value: str) -> list[str]:
+        return [item.strip().lstrip("@") for item in value.split(",") if item.strip()]
+
+    @staticmethod
+    def _semicolon(value: str) -> list[str]:
+        return [item.strip() for item in value.split(";") if item.strip()]
 
     @staticmethod
     def _int(value: str, name: str, minimum: int, maximum: int | None = None) -> int:
@@ -617,6 +786,43 @@ class TikTokBotPanel(tk.Tk):
         comment_policy = content.get("commentPolicy", {})
         self.comment_friends_only.set(bool(comment_policy.get("friendsOnly", False)))
         self.comment_require_context.set(bool(comment_policy.get("requireVideoContext", True)))
+        self.comment_min_length.set(str(comment_policy.get("minLength", 8)))
+        self.comment_max_emojis.set(str(comment_policy.get("maxEmojis", 2)))
+        self.comment_style.set(str(comment_policy.get("stylePreset", "natural")))
+        self.comment_preview_only.set(bool(comment_policy.get("previewOnly", False)))
+        self.comment_required_keywords.set(", ".join(comment_policy.get("requiredKeywords", [])))
+        self.comment_excluded_keywords.set(", ".join(comment_policy.get("excludedKeywords", [])))
+        self.comment_keyword_mode.set(str(comment_policy.get("keywordMatchMode", "any")))
+        self.comment_required_hashtags.set(", ".join(comment_policy.get("requiredHashtags", [])))
+        self.comment_excluded_hashtags.set(", ".join(comment_policy.get("excludedHashtags", [])))
+        self.comment_hashtag_mode.set(str(comment_policy.get("hashtagMatchMode", "any")))
+        self.comment_allowed_profiles.set(", ".join(comment_policy.get("allowedProfiles", [])))
+        self.comment_blocked_profiles.set(", ".join(comment_policy.get("blockedProfiles", [])))
+        self.comment_profile_cooldown.set(str(comment_policy.get("profileCooldownHours", 12)))
+        self.comment_duplicate_window.set(str(comment_policy.get("duplicateVideoWindowHours", 72)))
+        self.comment_max_profile_day.set(str(comment_policy.get("maxCommentsPerProfilePerDay", 2)))
+        self.comment_avoid_similarity.set(bool(comment_policy.get("avoidRecentCommentSimilarity", True)))
+        self.comment_similarity_threshold.set(str(round(float(comment_policy.get("similarityThreshold", 0.8)) * 100)))
+        self.comment_similarity_count.set(str(comment_policy.get("recentCommentComparisonCount", 20)))
+
+        exchange = comment_policy.get("followExchange", {})
+        self.follow_exchange_enabled.set(bool(exchange.get("enabled", False)))
+        self.follow_exchange_phrases.set("; ".join(exchange.get("indicatorPhrases", ["sigo de volta", "apoiando", "garotas apoiam garotas"])))
+        self.follow_exchange_sample_size.set(str(exchange.get("sampleSize", 15)))
+        self.follow_exchange_max_scrolls.set(str(exchange.get("maxScrolls", 3)))
+        self.follow_exchange_min_matches.set(str(exchange.get("minMatchedComments", 3)))
+        self.follow_exchange_confidence.set(str(round(float(exchange.get("minConfidence", 0.15)) * 100)))
+        self.follow_exchange_comment_enabled.set(bool(exchange.get("commentEnabled", True)))
+        self.follow_exchange_templates.set("; ".join(exchange.get("commentTemplates", ["Sigo todos de volta 💕"])))
+        self.follow_exchange_ai_variation.set(bool(exchange.get("useAiVariation", False)))
+        self.follow_exchange_allow_repeated_templates.set(bool(exchange.get("allowRepeatedTemplates", True)))
+        self.follow_exchange_replace_normal.set(bool(exchange.get("replaceNormalComment", True)))
+        self.follow_exchange_bypass_filters.set(bool(exchange.get("bypassNormalContentFilters", True)))
+        self.follow_exchange_like_comments.set(bool(exchange.get("likeCommentsEnabled", False)))
+        self.follow_exchange_max_likes.set(str(exchange.get("maxCommentLikesPerVideo", 3)))
+        self.follow_exchange_daily_likes.set(str(exchange.get("dailyCommentLikeLimit", 10)))
+        self.follow_exchange_like_matching.set(bool(exchange.get("likeOnlyMatchingSignals", True)))
+        self.follow_exchange_exclude_creator.set(bool(exchange.get("excludeCreatorComments", True)))
 
         auto = data.get("automationCore", {})
         self.core_enabled.set(bool(auto.get("enabled", True)))
@@ -689,8 +895,56 @@ class TikTokBotPanel(tk.Tk):
                 "commentPolicy": {
                     "friendsOnly": bool(self.comment_friends_only.get()),
                     "requireVideoContext": bool(self.comment_require_context.get()),
+                    "minLength": self._int(self.comment_min_length.get(), "Mín. caracteres", 1, 500),
+                    "maxEmojis": self._int(self.comment_max_emojis.get(), "Máx. emojis", 0, 10),
+                    "stylePreset": self.comment_style.get() if self.comment_style.get() in ("natural", "short", "curious", "question", "informative", "light_humor") else "natural",
+                    "previewOnly": bool(self.comment_preview_only.get()),
+                    "requiredKeywords": self._csv(self.comment_required_keywords.get()),
+                    "excludedKeywords": self._csv(self.comment_excluded_keywords.get()),
+                    "keywordMatchMode": self.comment_keyword_mode.get() if self.comment_keyword_mode.get() in ("any", "all") else "any",
+                    "requiredHashtags": self._csv(self.comment_required_hashtags.get()),
+                    "excludedHashtags": self._csv(self.comment_excluded_hashtags.get()),
+                    "hashtagMatchMode": self.comment_hashtag_mode.get() if self.comment_hashtag_mode.get() in ("any", "all") else "any",
+                    "allowedProfiles": self._profiles(self.comment_allowed_profiles.get()),
+                    "blockedProfiles": self._profiles(self.comment_blocked_profiles.get()),
+                    "profileCooldownHours": self._int(self.comment_profile_cooldown.get(), "Cooldown por perfil", 0, 24 * 30),
+                    "duplicateVideoWindowHours": self._int(self.comment_duplicate_window.get(), "Não repetir vídeo", 0, 24 * 30),
+                    "maxCommentsPerProfilePerDay": self._int(self.comment_max_profile_day.get(), "Máx. comentários/perfil/dia", 0, 100),
+                    "avoidRecentCommentSimilarity": bool(self.comment_avoid_similarity.get()),
+                    "similarityThreshold": self._int(self.comment_similarity_threshold.get(), "Similaridade máxima", 0, 100) / 100,
+                    "recentCommentComparisonCount": self._int(self.comment_similarity_count.get(), "Comparar últimos comentários", 1, 200),
+                    "followExchange": {
+                        "enabled": bool(self.follow_exchange_enabled.get()),
+                        "indicatorPhrases": self._semicolon(self.follow_exchange_phrases.get()),
+                        "sampleSize": self._int(self.follow_exchange_sample_size.get(), "Comentários para analisar", 3, 100),
+                        "maxScrolls": self._int(self.follow_exchange_max_scrolls.get(), "Máx. rolagens", 0, 10),
+                        "minMatchedComments": self._int(self.follow_exchange_min_matches.get(), "Mín. comentários com sinais", 1, 100),
+                        "minConfidence": self._int(self.follow_exchange_confidence.get(), "Confiança mínima", 0, 100) / 100,
+                        "commentEnabled": bool(self.follow_exchange_comment_enabled.get()),
+                        "commentTemplates": self._semicolon(self.follow_exchange_templates.get()),
+                        "useAiVariation": bool(self.follow_exchange_ai_variation.get()),
+                        "allowRepeatedTemplates": bool(self.follow_exchange_allow_repeated_templates.get()),
+                        "replaceNormalComment": bool(self.follow_exchange_replace_normal.get()),
+                        "bypassNormalContentFilters": bool(self.follow_exchange_bypass_filters.get()),
+                        "likeCommentsEnabled": bool(self.follow_exchange_like_comments.get()),
+                        "maxCommentLikesPerVideo": self._int(self.follow_exchange_max_likes.get(), "Likes em comentários/vídeo", 0, 50),
+                        "dailyCommentLikeLimit": self._int(self.follow_exchange_daily_likes.get(), "Likes em comentários/dia", 0, 500),
+                        "likeOnlyMatchingSignals": bool(self.follow_exchange_like_matching.get()),
+                        "excludeCreatorComments": bool(self.follow_exchange_exclude_creator.get()),
+                    },
                 },
             }
+
+            if data["content"]["commentPolicy"]["minLength"] > data["content"]["maxLength"]:
+                raise ValueError("Mín. caracteres não pode ser maior que Máx. caracteres.")
+
+            exchange_cfg = data["content"]["commentPolicy"]["followExchange"]
+            if exchange_cfg["enabled"] and not exchange_cfg["indicatorPhrases"]:
+                raise ValueError("Informe ao menos uma frase indicadora para troca de follow.")
+            if exchange_cfg["commentEnabled"] and not exchange_cfg["commentTemplates"]:
+                raise ValueError("Informe ao menos um comentário especial para troca de follow.")
+            if exchange_cfg["minMatchedComments"] > exchange_cfg["sampleSize"]:
+                raise ValueError("Mín. comentários com sinais não pode ser maior que Comentários para analisar.")
 
             warm = self.warmup_seconds.get().strip()
             if warm:
@@ -733,7 +987,7 @@ class TikTokBotPanel(tk.Tk):
         if mode == "real":
             confirmed = messagebox.askyesno(
                 "Modo REAL",
-                "No modo REAL, curtidas, comentários e follows habilitados alteram a conta do TikTok.\n\nDeseja iniciar?",
+                "No modo REAL, ações habilitadas podem alterar a conta do TikTok, incluindo comentários e likes em comentários quando configurados.\n\nDeseja iniciar?",
             )
             if not confirmed:
                 return
@@ -1055,6 +1309,35 @@ class TikTokBotPanel(tk.Tk):
             )
 
         self._replace_tree(self.relationship_tree, relation_rows)
+
+        comment_history = data.get("commentHistory", [])
+        if not isinstance(comment_history, list):
+            comment_history = []
+
+        comment_rows: list[tuple[str, tuple[object, ...]]] = []
+        for index, entry in enumerate(comment_history):
+            if not isinstance(entry, dict):
+                continue
+
+            text = str(entry.get("commentText") or "")
+            if entry.get("status") == "comment_like":
+                text = f"LIKE: {text}"
+
+            comment_rows.append(
+                (
+                    f"comment-history-{index}",
+                    (
+                        str(entry.get("timestamp") or ""),
+                        str(entry.get("kind") or ""),
+                        str(entry.get("status") or ""),
+                        str(entry.get("creatorUsername") or ""),
+                        text,
+                    ),
+                )
+            )
+
+        self.comment_history_count.set(str(len(comment_rows)))
+        self._replace_tree(self.comment_history_tree, comment_rows)
 
         control_result = data.get("lastControlResult")
         if isinstance(control_result, dict):
