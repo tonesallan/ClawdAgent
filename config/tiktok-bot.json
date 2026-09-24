@@ -99,7 +99,8 @@
         "maxCommentLikesPerVideo": 3,
         "dailyCommentLikeLimit": 10,
         "likeOnlyMatchingSignals": true,
-        "excludeCreatorComments": true
+        "excludeCreatorComments": true,
+        "allowRepeatedTemplates": true
       }
     }
   },
