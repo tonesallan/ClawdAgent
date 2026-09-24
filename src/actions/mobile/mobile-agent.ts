@@ -612,6 +612,19 @@ export class MobileAgent {
           );
 
         if (
+          commentText ===
+            'SKIP_COMMENT'
+        ) {
+          this.log(
+            'comment',
+            'skipped',
+            'TikTok comment skipped: AI found the visible video context insufficient for a relevant comment',
+          );
+
+          return;
+        }
+
+        if (
           this.config.testMode
         ) {
           const creator =
@@ -2084,9 +2097,7 @@ ${contextBlock}`;
           .toUpperCase() ===
           'SKIP_COMMENT'
       ) {
-        throw new Error(
-          'TikTok comment generation skipped because the visible video context was insufficient.',
-        );
+        return 'SKIP_COMMENT';
       }
 
       return text.slice(
