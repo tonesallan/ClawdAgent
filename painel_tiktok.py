@@ -28,6 +28,20 @@ ACTIONS = (
     ("share", "Compartilhar painel"),
 )
 
+FEED_TAB_OPTIONS = {
+    "Aba atual (não trocar)": "current",
+    "Para você": "for_you",
+    "Seguindo": "following",
+    "Loja": "shop",
+    "Amigos": "friends",
+    "Explorar / Descobrir": "explore",
+    "STEM": "stem",
+    "LIVE / Ao vivo": "live",
+    "Personalizada": "custom",
+}
+
+FEED_TAB_DISPLAY = {value: label for label, value in FEED_TAB_OPTIONS.items()}
+
 
 class TikTokBotPanel(tk.Tk):
     def __init__(self) -> None:
@@ -101,6 +115,11 @@ class TikTokBotPanel(tk.Tk):
         self.follow_guard_state = tk.StringVar(value="aguardando")
         self.follow_guard_counts = tk.StringVar(value="-")
         self.follow_guard_reason = tk.StringVar(value="-")
+        self.feed_state = tk.StringVar(value="aba atual")
+        self.feed_target = tk.StringVar(value="Aba atual (não trocar)")
+        self.feed_custom_label = tk.StringVar(value="")
+        self.feed_strict = tk.BooleanVar(value=True)
+        self.feed_ensure_each = tk.BooleanVar(value=True)
         self.relationship_username = tk.StringVar(value="")
         self.relationship_result = tk.StringVar(value="-")
         self.review_count = tk.StringVar(value="0")
@@ -219,6 +238,7 @@ class TikTokBotPanel(tk.Tk):
         self._status_item(status_strip, "CORE", self.core_state, 5)
         self._status_item(status_strip, "BANCO", self.database_state, 6)
         self._status_item(status_strip, "FOLLOW GUARD", self.follow_guard_state, 7)
+        self._status_item(status_strip, "FEED", self.feed_state, 8)
 
         controls = ttk.Frame(root, style="Card.TFrame")
         controls.pack(fill="x", pady=(0, 10), ipady=7)
@@ -342,6 +362,46 @@ class TikTokBotPanel(tk.Tk):
             text="Escolha as ações do bot e seus limites individuais.",
             style="Card.TLabel",
         ).pack(anchor="w", padx=14, pady=(14, 8))
+
+        feed = ttk.LabelFrame(self.tab_actions, text="Aba do TikTok para interação")
+        feed.pack(fill="x", padx=14, pady=(4, 10))
+        feed.columnconfigure(1, weight=1)
+        feed.columnconfigure(3, weight=1)
+
+        ttk.Label(feed, text="Interagir na aba", style="Muted.TLabel").grid(row=0, column=0, sticky="w", padx=10, pady=7)
+        ttk.Combobox(
+            feed,
+            textvariable=self.feed_target,
+            values=tuple(FEED_TAB_OPTIONS.keys()),
+            state="readonly",
+            width=28,
+        ).grid(row=0, column=1, sticky="w", padx=10, pady=7)
+
+        ttk.Label(feed, text="Nome personalizado", style="Muted.TLabel").grid(row=0, column=2, sticky="w", padx=10, pady=7)
+        ttk.Entry(feed, textvariable=self.feed_custom_label, width=28).grid(row=0, column=3, sticky="ew", padx=10, pady=7)
+
+        ttk.Checkbutton(
+            feed,
+            text="Modo estrito: se a aba escolhida não for encontrada, não interagir em outra aba",
+            variable=self.feed_strict,
+        ).grid(row=1, column=0, columnspan=2, sticky="w", padx=10, pady=5)
+
+        ttk.Checkbutton(
+            feed,
+            text="Confirmar/selecionar novamente antes de cada ação",
+            variable=self.feed_ensure_each,
+        ).grid(row=1, column=2, columnspan=2, sticky="w", padx=10, pady=5)
+
+        ttk.Label(
+            feed,
+            text=(
+                "A seleção vale para rolagem, like, comentário e follow. "
+                "O bot tenta selecionar a aba no início e, se configurado, antes de cada ação. "
+                "Use Personalizada para qualquer aba nova/regional do TikTok digitando o texto exatamente como aparece no celular."
+            ),
+            style="Muted.TLabel",
+            wraplength=1080,
+        ).grid(row=2, column=0, columnspan=4, sticky="w", padx=10, pady=(3, 9))
 
         table = ttk.Frame(self.tab_actions, style="Card.TFrame")
         table.pack(fill="x", padx=14, pady=6)
@@ -849,6 +909,13 @@ class TikTokBotPanel(tk.Tk):
                 vars_["intervalMinutes"].set(str(action.get("intervalMinutes", 1)))
                 vars_["dailyLimit"].set(str(action.get("dailyLimit", 20)))
 
+        feed_navigation = data.get("feedNavigation", {})
+        feed_target = str(feed_navigation.get("target", "current"))
+        self.feed_target.set(FEED_TAB_DISPLAY.get(feed_target, "Aba atual (não trocar)"))
+        self.feed_custom_label.set(str(feed_navigation.get("customLabel", "")))
+        self.feed_strict.set(bool(feed_navigation.get("strict", True)))
+        self.feed_ensure_each.set(bool(feed_navigation.get("ensureBeforeEachAction", True)))
+
         safety = data.get("safety", {})
         self.min_delay.set(str(safety.get("minDelaySeconds", 60)))
         self.max_per_hour.set(str(safety.get("maxActionsPerHour", 10)))
@@ -958,6 +1025,20 @@ class TikTokBotPanel(tk.Tk):
                 raise ValueError("Ative pelo menos uma ação.")
 
             data["actions"] = actions
+
+            feed_target = FEED_TAB_OPTIONS.get(self.feed_target.get(), "current")
+            custom_label = self.feed_custom_label.get().strip()
+
+            if feed_target == "custom" and not custom_label:
+                raise ValueError("Informe o nome da aba personalizada exatamente como aparece no TikTok.")
+
+            data["feedNavigation"] = {
+                "target": feed_target,
+                "customLabel": custom_label,
+                "strict": bool(self.feed_strict.get()),
+                "ensureBeforeEachAction": bool(self.feed_ensure_each.get()),
+            }
+
             data["safety"] = {
                 "minDelaySeconds": self._int(self.min_delay.get(), "Delay mínimo", 1),
                 "maxActionsPerHour": self._int(self.max_per_hour.get(), "Máximo por hora", 1),
@@ -1166,9 +1247,11 @@ class TikTokBotPanel(tk.Tk):
                 if not proceed:
                     return
 
+            selected_feed = self.feed_target.get()
             confirmed = messagebox.askyesno(
                 "Modo REAL",
-                "No modo REAL, ações habilitadas podem alterar a conta do TikTok, incluindo comentários e likes em comentários quando configurados.\n\nDeseja iniciar?",
+                "No modo REAL, ações habilitadas podem alterar a conta do TikTok, incluindo comentários e likes em comentários quando configurados.\n\n"
+                f"Aba escolhida para interação: {selected_feed}.\n\nDeseja iniciar?",
             )
             if not confirmed:
                 return
@@ -1374,6 +1457,25 @@ class TikTokBotPanel(tk.Tk):
             self.follow_guard_state.set("aguardando")
             self.follow_guard_counts.set("-")
             self.follow_guard_reason.set("-")
+
+        feed_navigation = data.get("feedNavigation")
+        if isinstance(feed_navigation, dict):
+            feed_label = str(feed_navigation.get("requestedLabel") or "Aba atual")
+            feed_status = str(feed_navigation.get("state") or "current")
+            feed_error = str(feed_navigation.get("lastError") or "")
+
+            if feed_error:
+                self.feed_state.set(f"{feed_label} • ERRO")
+            elif feed_status == "confirmed":
+                self.feed_state.set(f"{feed_label} • OK")
+            elif feed_status == "clicked":
+                self.feed_state.set(f"{feed_label} • selecionada")
+            elif feed_status == "unavailable":
+                self.feed_state.set(f"{feed_label} • indisponível")
+            else:
+                self.feed_state.set(feed_label)
+        else:
+            self.feed_state.set("aba atual")
 
         core = data.get("automationCore", {})
         self.core_state.set(str(core.get("state", "stopped")))
