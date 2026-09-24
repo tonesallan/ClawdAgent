@@ -64,6 +64,17 @@ import type {
   TikTokFollowSafetyConfig,
   TikTokFollowSafetySnapshot,
 } from '../../tiktok/follow-safety.js';
+import {
+  escapeTikTokUiSelectorText,
+  findTikTokFeedTabCandidate,
+  getTikTokFeedTabDisplayName,
+  getTikTokFeedTabLabels,
+  isTikTokFeedTabSelected,
+} from '../../tiktok/android-feed-navigation.js';
+import type {
+  TikTokFeedNavigationConfig,
+  TikTokFeedNavigationStatus,
+} from '../../tiktok/android-feed-navigation.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -92,6 +103,7 @@ export interface MobileAgentConfig {
     pauseDurationMinutes: number;
     followSafety?: TikTokFollowSafetyConfig;
   };
+  feedNavigation?: TikTokFeedNavigationConfig;
   testMode: boolean;
   /**
    * Warm-up duration before the autonomous action loop starts.
@@ -118,6 +130,7 @@ export interface MobileAgentStatus {
   config: MobileAgentConfig;
   commentHistory: TikTokCommentHistoryEntry[];
   followSafety: TikTokFollowSafetySnapshot | null;
+  feedNavigation: TikTokFeedNavigationStatus | null;
 }
 
 export interface MobileAgentStats {
@@ -176,6 +189,13 @@ export class MobileAgent {
   private commentHistoryStore = new TikTokCommentHistoryStore();
   private followSafetyStore = new TikTokFollowSafetyStore();
   private lastFollowSafetyNotice = '';
+  private feedNavigationStatus: TikTokFeedNavigationStatus = {
+    target: 'current',
+    requestedLabel: 'Aba atual',
+    state: 'current',
+    lastCheckedAt: null,
+    lastError: null,
+  };
 
   private constructor(config: MobileAgentConfig) {
     this.config = config;
@@ -322,6 +342,48 @@ export class MobileAgent {
 
     await this.sleep(3000);
     await this.dismissPopups();
+
+    if (
+      this.config.app ===
+        'tiktok'
+    ) {
+      try {
+        await this.ensureTikTokFeedTab(
+          'startup',
+        );
+      }
+      catch (
+        error:
+          unknown
+      ) {
+        const message =
+          error instanceof Error
+            ? error.message
+            : String(error);
+
+        this.state =
+          'error';
+        this.lastError =
+          message;
+
+        this.log(
+          'system',
+          'error',
+          `TikTok feed tab selection failed at startup: ${message}`,
+        );
+
+        try {
+          await this.appium
+            .deleteSession();
+        }
+        catch {
+          // Best effort cleanup.
+        }
+
+        throw error;
+      }
+    }
+
     this.startWarmup();
   }
 
@@ -375,11 +437,377 @@ export class MobileAgent {
         this.config.app === 'tiktok'
           ? this.getTikTokFollowSafetySnapshot()
           : null,
+      feedNavigation:
+        this.config.app === 'tiktok'
+          ? {
+              ...this.feedNavigationStatus,
+            }
+          : null,
     };
   }
 
   getLogs(limit = 50): MobileAgentLogEntry[] { return this.logs.slice(-limit); }
   getConfig(): MobileAgentConfig { return { ...this.config }; }
+
+  getTikTokFeedNavigationStatus():
+    TikTokFeedNavigationStatus {
+    return {
+      ...this.feedNavigationStatus,
+    };
+  }
+
+  private getTikTokFeedNavigationPolicy():
+    TikTokFeedNavigationConfig {
+    return (
+      this.config
+        .feedNavigation ??
+      {
+        target:
+          'current',
+        customLabel:
+          '',
+        strict:
+          true,
+        ensureBeforeEachAction:
+          true,
+      }
+    );
+  }
+
+  private setTikTokFeedNavigationStatus(
+    update:
+      Partial<TikTokFeedNavigationStatus>,
+  ): void {
+    const policy =
+      this.getTikTokFeedNavigationPolicy();
+
+    this.feedNavigationStatus = {
+      ...this.feedNavigationStatus,
+      target:
+        policy.target,
+      requestedLabel:
+        getTikTokFeedTabDisplayName(
+          policy,
+        ),
+      ...update,
+      lastCheckedAt:
+        new Date()
+          .toISOString(),
+    };
+  }
+
+  private async findTikTokFeedTabElement(
+    labels:
+      string[],
+  ): Promise<{
+    elementId: string;
+    label: string;
+  } | null> {
+    for (
+      const label of
+        labels
+    ) {
+      const escaped =
+        escapeTikTokUiSelectorText(
+          label,
+        );
+
+      const selectors = [
+        `new UiSelector().text("${escaped}")`,
+        `new UiSelector().description("${escaped}")`,
+      ];
+
+      for (
+        const selector of
+          selectors
+      ) {
+        try {
+          const element =
+            await this.appium
+              .findElement(
+                'uiautomator',
+                selector,
+              );
+
+          if (
+            await this.appium
+              .isElementDisplayed(
+                element.elementId,
+              )
+          ) {
+            return {
+              ...element,
+              label,
+            };
+          }
+        }
+        catch {
+          // Try next localized label/selector.
+        }
+      }
+    }
+
+    return null;
+  }
+
+  private async ensureTikTokFeedTab(
+    reason:
+      string,
+  ): Promise<boolean> {
+    if (
+      this.config.app !==
+        'tiktok'
+    ) {
+      return true;
+    }
+
+    const policy =
+      this.getTikTokFeedNavigationPolicy();
+
+    if (
+      policy.target ===
+        'current'
+    ) {
+      this.setTikTokFeedNavigationStatus({
+        state:
+          'current',
+        lastError:
+          null,
+      });
+
+      return true;
+    }
+
+    const labels =
+      getTikTokFeedTabLabels(
+        policy,
+      );
+
+    if (
+      labels.length ===
+        0
+    ) {
+      const message =
+        'TikTok feed tab target has no usable label.';
+
+      this.setTikTokFeedNavigationStatus({
+        state:
+          'error',
+        lastError:
+          message,
+      });
+
+      if (
+        policy.strict
+      ) {
+        throw new Error(
+          message,
+        );
+      }
+
+      this.log(
+        'system',
+        'skipped',
+        message,
+      );
+
+      return false;
+    }
+
+    const inspectCurrent =
+      async (): Promise<{
+        selected: boolean;
+        visible: boolean;
+      }> => {
+        const source =
+          await this.appium
+            .getPageSource();
+
+        return {
+          selected:
+            isTikTokFeedTabSelected(
+              source,
+              labels,
+            ),
+          visible:
+            Boolean(
+              findTikTokFeedTabCandidate(
+                source,
+                labels,
+              ),
+            ),
+        };
+      };
+
+    try {
+      let inspection =
+        await inspectCurrent();
+
+      if (
+        inspection.selected
+      ) {
+        this.setTikTokFeedNavigationStatus({
+          state:
+            'confirmed',
+          lastError:
+            null,
+        });
+
+        return true;
+      }
+
+      if (
+        !inspection.visible
+      ) {
+        await this.goToTikTokHome();
+
+        inspection =
+          await inspectCurrent();
+
+        if (
+          inspection.selected
+        ) {
+          this.setTikTokFeedNavigationStatus({
+            state:
+              'confirmed',
+            lastError:
+              null,
+          });
+
+          return true;
+        }
+      }
+
+      const target =
+        await this
+          .findTikTokFeedTabElement(
+            labels,
+          );
+
+      if (
+        !target
+      ) {
+        const message =
+          `TikTok feed tab "${getTikTokFeedTabDisplayName(policy)}" was not found (${reason}).`;
+
+        this.setTikTokFeedNavigationStatus({
+          state:
+            'unavailable',
+          lastError:
+            message,
+        });
+
+        if (
+          policy.strict
+        ) {
+          throw new Error(
+            message,
+          );
+        }
+
+        this.log(
+          'system',
+          'skipped',
+          message,
+        );
+
+        return false;
+      }
+
+      await this.appium
+        .clickElement(
+          target.elementId,
+        );
+
+      await this.sleep(
+        1000,
+      );
+
+      let selectedByAttribute =
+        false;
+
+      try {
+        const selected =
+          await this.appium
+            .getElementAttribute(
+              target.elementId,
+              'selected',
+            );
+
+        const checked =
+          await this.appium
+            .getElementAttribute(
+              target.elementId,
+              'checked',
+            );
+
+        selectedByAttribute =
+          selected ===
+            'true' ||
+          checked ===
+            'true';
+      }
+      catch {
+        // Element may have been recreated after tab switch.
+      }
+
+      const after =
+        await inspectCurrent();
+
+      const confirmed =
+        selectedByAttribute ||
+        after.selected;
+
+      this.setTikTokFeedNavigationStatus({
+        state:
+          confirmed
+            ? 'confirmed'
+            : 'clicked',
+        lastError:
+          null,
+      });
+
+      this.log(
+        'system',
+        'info',
+        confirmed
+          ? `TikTok feed tab selected and confirmed: ${target.label} (${reason})`
+          : `TikTok feed tab clicked: ${target.label}; selected state is not exposed by this TikTok UI (${reason})`,
+      );
+
+      return true;
+    }
+    catch (
+      error:
+        unknown
+    ) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : String(error);
+
+      this.setTikTokFeedNavigationStatus({
+        state:
+          'error',
+        lastError:
+          message,
+      });
+
+      if (
+        policy.strict
+      ) {
+        throw error;
+      }
+
+      this.log(
+        'system',
+        'skipped',
+        `TikTok feed tab selection skipped after navigation error: ${message}`,
+      );
+
+      return false;
+    }
+  }
 
   getTikTokFollowSafetySnapshot():
     TikTokFollowSafetySnapshot {
@@ -549,6 +977,20 @@ export class MobileAgent {
         this.log('system', 'skipped', 'No actions available');
         this.loopTimer = setTimeout(() => this.actionLoop(), 60_000);
         return;
+      }
+
+      const feedPolicy =
+        this.getTikTokFeedNavigationPolicy();
+
+      if (
+        this.config.app ===
+          'tiktok' &&
+        feedPolicy
+          .ensureBeforeEachAction
+      ) {
+        await this.ensureTikTokFeedTab(
+          `before ${action}`,
+        );
       }
 
       // Random pre-action navigation is disabled in testMode.
