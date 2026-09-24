@@ -36,6 +36,24 @@ describe(
             2,
           pauseDurationMinutes:
             5,
+          followSafety: {
+            enabled:
+              true,
+            maxPerHour:
+              10,
+            maxPer24Hours:
+              100,
+            maxPerSession:
+              15,
+            minIntervalMinutes:
+              5,
+            restrictionCooldownHours:
+              24,
+            stopOnRestriction:
+              true,
+            silentFailureThreshold:
+              2,
+          },
         });
 
         expect(
