@@ -75,6 +75,9 @@ import type {
   TikTokFeedNavigationConfig,
   TikTokFeedNavigationStatus,
 } from '../../tiktok/android-feed-navigation.js';
+import {
+  detectTikTokLiveFromXml,
+} from '../../tiktok/android-live-detection.js';
 
 // ── Types ─────────────────────────────────────────────────────────────
 
@@ -94,6 +97,7 @@ export interface MobileAgentConfig {
     language: string;
     topics: string[];
     maxLength: number;
+    ignoreLive?: boolean;
     commentPolicy?: TikTokCommentPolicyConfig;
   };
   safety: {
@@ -147,6 +151,7 @@ export interface MobileAgentStats {
   commentLikes: number;
   followExchangeDetections: number;
   commentSkips: number;
+  liveSkips: number;
   lastActionAt: string | null;
 }
 
@@ -993,12 +998,36 @@ export class MobileAgent {
         );
       }
 
+      if (
+        this.config.app ===
+          'tiktok' &&
+        !await this.ensureTikTokNonLiveFeedItem()
+      ) {
+        this.loopTimer = setTimeout(
+          () =>
+            this.actionLoop(),
+          750,
+        );
+        return;
+      }
+
       // Random pre-action navigation is disabled in testMode.
       if (!this.config.testMode && Math.random() < 0.4) {
         const scrolls = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < scrolls; i++) {
           await this.swipeRelative(0.5, 0.625, 5 / 24, 400 + Math.floor(Math.random() * 400));
           await this.sleep(2000 + Math.random() * 4000);
+        }
+
+        if (
+          !await this.ensureTikTokNonLiveFeedItem()
+        ) {
+          this.loopTimer = setTimeout(
+            () =>
+              this.actionLoop(),
+            750,
+          );
+          return;
         }
       }
 
@@ -1057,37 +1086,82 @@ export class MobileAgent {
   private async executeTikTokAction(action: MobileActionType): Promise<void> {
     switch (action) {
       case 'like': {
-        if (this.config.testMode) { this.log('like', 'success', '[TEST] Would like a video'); return; }
-        try {
-          let likeButton;
+        const likeControl =
+          await this.findTikTokLikeControl();
 
-          try {
-            likeButton = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().descriptionStartsWith("Curtir vídeo")'
+        if (
+          !likeControl
+        ) {
+          const source =
+            await this.appium
+              .getPageSource();
+
+          const diagnostics =
+            this.getTikTokFeedControlDiagnostics(
+              source,
             );
-          } catch {
-            likeButton = await this.appium.findElement(
-              'uiautomator',
-              'new UiSelector().descriptionStartsWith("Like video")'
-            );
-          }
 
-          await this.appium.clickElement(likeButton.elementId);
-          await this.sleep(1000);
-
-          this.log(
-            'like',
-            'success',
-            'Clicked TikTok like button'
+          throw new Error(
+            `TikTok like control not found. Visible action labels: ${diagnostics || 'none'}`,
           );
-        } catch {
+        }
+
+        if (
+          likeControl
+            .alreadyLiked
+        ) {
           this.log(
             'like',
             'skipped',
-            'Video already liked or TikTok like button not found'
+            `TikTok video is already liked (${likeControl.label})`,
+          );
+
+          return;
+        }
+
+        if (
+          this.config
+            .testMode
+        ) {
+          this.log(
+            'like',
+            'success',
+            `[TEST] Like control found; would like the video using: ${likeControl.label}`,
+          );
+
+          return;
+        }
+
+        await this.appium
+          .clickElement(
+            likeControl
+              .elementId,
+          );
+
+        await this.sleep(
+          900,
+        );
+
+        const after =
+          await this
+            .findTikTokLikeControl();
+
+        if (
+          after &&
+          !after
+            .alreadyLiked
+        ) {
+          throw new Error(
+            `TikTok like click was not confirmed. Control still appears unliked: ${after.label}`,
           );
         }
+
+        this.log(
+          'like',
+          'success',
+          `TikTok like confirmed using: ${likeControl.label}`,
+        );
+
         break;
       }
       case 'comment': {
@@ -3480,6 +3554,320 @@ ${specialInstruction}`;
     }
   }
 
+  private getTikTokFeedControlDiagnostics(
+    source: string,
+  ): string {
+    const values =
+      [
+        ...source.matchAll(
+          /(?:text|content-desc)="([^"]{1,100})"/g,
+        ),
+      ]
+        .map(
+          match =>
+            match[1]
+              ?.trim(),
+        )
+        .filter(
+          (
+            value,
+          ): value is string =>
+            Boolean(
+              value,
+            ),
+        )
+        .filter(
+          value =>
+            /curt|like|coment|comment|compart|share|live|ao vivo/i.test(
+              value,
+            ),
+        )
+        .filter(
+          (
+            value,
+            index,
+            all,
+          ) =>
+            all.indexOf(
+              value,
+            ) ===
+              index,
+        )
+        .slice(
+          0,
+          30,
+        );
+
+    return values.join(
+      ' | ',
+    );
+  }
+
+  private async findTikTokLikeControl(): Promise<{
+    elementId: string;
+    label: string;
+    alreadyLiked: boolean;
+  } | null> {
+    const selectors: Array<
+      [
+        strategy:
+          string,
+        selector:
+          string,
+        label:
+          string,
+      ]
+    > = [
+      [
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Curtir vídeo")',
+        'pt-BR content-desc Curtir vídeo',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Curtir")',
+        'pt-BR content-desc Curtir',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Descurtir")',
+        'pt-BR content-desc Descurtir',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Like video")',
+        'EN content-desc Like video',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Like")',
+        'EN content-desc Like',
+      ],
+      [
+        'uiautomator',
+        'new UiSelector().descriptionStartsWith("Unlike")',
+        'EN content-desc Unlike',
+      ],
+      [
+        'xpath',
+        '//*[starts-with(@content-desc,"Curtir") or starts-with(@content-desc,"Descurtir") or starts-with(@content-desc,"Like") or starts-with(@content-desc,"Unlike") or @text="Curtir" or @text="Like"]',
+        'generic like XPath',
+      ],
+    ];
+
+    for (
+      const [
+        strategy,
+        selector,
+        matchedBy,
+      ] of selectors
+    ) {
+      try {
+        const element =
+          await this.appium
+            .findElement(
+              strategy,
+              selector,
+            );
+
+        if (
+          !await this.appium
+            .isElementDisplayed(
+              element.elementId,
+            )
+        ) {
+          continue;
+        }
+
+        let text =
+          '';
+
+        let description =
+          '';
+
+        let selected =
+          '';
+
+        let checked =
+          '';
+
+        try {
+          text =
+            await this.appium
+              .getElementAttribute(
+                element.elementId,
+                'text',
+              ) ??
+            '';
+        }
+        catch {
+          // Optional attribute.
+        }
+
+        try {
+          description =
+            await this.appium
+              .getElementAttribute(
+                element.elementId,
+                'contentDescription',
+              ) ??
+            '';
+        }
+        catch {
+          try {
+            description =
+              await this.appium
+                .getElementAttribute(
+                  element.elementId,
+                  'content-desc',
+                ) ??
+              '';
+          }
+          catch {
+            // Optional attribute.
+          }
+        }
+
+        try {
+          selected =
+            await this.appium
+              .getElementAttribute(
+                element.elementId,
+                'selected',
+              ) ??
+            '';
+        }
+        catch {
+          // Optional attribute.
+        }
+
+        try {
+          checked =
+            await this.appium
+              .getElementAttribute(
+                element.elementId,
+                'checked',
+              ) ??
+            '';
+        }
+        catch {
+          // Optional attribute.
+        }
+
+        const visibleLabel =
+          [
+            description,
+            text,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .trim();
+
+        const normalized =
+          visibleLabel
+            .normalize('NFD')
+            .replace(
+              /[\u0300-\u036f]/g,
+              '',
+            )
+            .toLocaleLowerCase(
+              'pt-BR',
+            );
+
+        const alreadyLiked =
+          normalized.startsWith(
+            'descurtir',
+          ) ||
+          normalized.startsWith(
+            'unlike',
+          ) ||
+          selected ===
+            'true' ||
+          checked ===
+            'true';
+
+        return {
+          elementId:
+            element.elementId,
+          label:
+            visibleLabel ||
+            matchedBy,
+          alreadyLiked,
+        };
+      }
+      catch {
+        // Try next current/localized locator.
+      }
+    }
+
+    return null;
+  }
+
+  private async ensureTikTokNonLiveFeedItem():
+    Promise<boolean> {
+    if (
+      !this.config.content
+        .ignoreLive
+    ) {
+      return true;
+    }
+
+    const maxImmediateSkips =
+      8;
+
+    for (
+      let index = 0;
+      index <
+        maxImmediateSkips;
+      index++
+    ) {
+      const source =
+        await this.appium
+          .getPageSource();
+
+      const detection =
+        detectTikTokLiveFromXml(
+          source,
+        );
+
+      if (
+        !detection.isLive
+      ) {
+        return true;
+      }
+
+      this.stats.liveSkips +=
+        1;
+
+      this.log(
+        'scroll',
+        'skipped',
+        `LIVE detected — skipping immediately without action delay (${detection.reasons.join('; ')})`,
+      );
+
+      await this.swipeRelative(
+        0.5,
+        0.72,
+        0.2,
+        420,
+      );
+
+      // Only the minimum UI-settle time needed to inspect the next item.
+      // This is intentionally not the configured global action delay.
+      await this.sleep(
+        550,
+      );
+    }
+
+    this.log(
+      'scroll',
+      'skipped',
+      `LIVE filter reached ${maxImmediateSkips} consecutive immediate skips; retrying feed shortly.`,
+    );
+
+    return false;
+  }
+
   private getTikTokFollowSafetyPolicy():
     TikTokFollowSafetyConfig {
     return (
@@ -3737,6 +4125,7 @@ ${specialInstruction}`;
       commentLikes: 0,
       followExchangeDetections: 0,
       commentSkips: 0,
+      liveSkips: 0,
       lastActionAt: null,
     };
   }
