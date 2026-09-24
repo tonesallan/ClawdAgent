@@ -24,12 +24,14 @@ if (Test-Path $statusPath) {
     }
 }
 
+# Register the STOP request first. The status file can still contain "stopped"
+# from the previous run while a new launcher is in preflight/startup.
+Set-Content -LiteralPath $stopPath -Value "stop" -Encoding UTF8
+
 if ($status -and $status.state -eq "stopped") {
-    Write-Host "O bot ja esta parado." -ForegroundColor Green
+    Write-Host "Sinal de parada registrado. Se o bot estiver iniciando, ele sera interrompido assim que o runner assumir." -ForegroundColor Green
     exit 0
 }
-
-Set-Content -LiteralPath $stopPath -Value "stop" -Encoding UTF8
 
 for ($i = 0; $i -lt 30; $i++) {
     Start-Sleep -Milliseconds 500
