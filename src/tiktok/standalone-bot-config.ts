@@ -69,6 +69,67 @@ export const standaloneTikTokBotConfigSchema =
       .number()
       .nonnegative()
       .optional(),
+    feedNavigation: z
+      .object({
+        target: z
+          .enum([
+            'current',
+            'for_you',
+            'following',
+            'shop',
+            'friends',
+            'explore',
+            'stem',
+            'live',
+            'custom',
+          ])
+          .default('current'),
+        customLabel: z
+          .string()
+          .trim()
+          .max(80)
+          .default(''),
+        strict: z
+          .boolean()
+          .default(true),
+        ensureBeforeEachAction: z
+          .boolean()
+          .default(true),
+      })
+      .superRefine(
+        (
+          value,
+          context,
+        ) => {
+          if (
+            value.target ===
+              'custom' &&
+            !value.customLabel
+              .trim()
+          ) {
+            context.addIssue({
+              code:
+                z.ZodIssueCode
+                  .custom,
+              path: [
+                'customLabel',
+              ],
+              message:
+                'customLabel is required when feedNavigation.target=custom.',
+            });
+          }
+        },
+      )
+      .default({
+        target:
+          'current',
+        customLabel:
+          '',
+        strict:
+          true,
+        ensureBeforeEachAction:
+          true,
+      }),
     actions: z
       .object({
         scroll:
@@ -746,6 +807,8 @@ export function buildStandaloneTikTokAgentConfig(
       config.content,
     safety:
       config.safety,
+    feedNavigation:
+      config.feedNavigation,
     testMode:
       config.testMode,
     warmupSeconds:
