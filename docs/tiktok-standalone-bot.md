@@ -230,3 +230,55 @@ O painel também mostra:
 - quantidade de likes feitos em comentários;
 - quantidade de comentários ignorados pela política;
 - histórico local de comentários publicados, prévias e likes em comentários.
+
+
+## Follow Guard — limites e restrições do TikTok
+
+O bot possui uma proteção específica para `follow`, independente do limite diário da aba **Ações**.
+
+A pesquisa de referência foi revisada em setembro de 2026. O TikTok **não publica um número oficial fixo de follows por hora ou por dia**. A Central de Ajuda confirma, porém, que seguir muitas contas em pouco tempo pode gerar o aviso de atividade "muito rápida" e uma desativação/restrição temporária de até 24 horas para impedir spam.
+
+Fontes públicas não oficiais convergem aproximadamente em:
+
+- cerca de 10–15 follows por hora como faixa conservadora;
+- cerca de 200 follows por dia como referência amplamente reportada;
+- cerca de 15 follows por sessão em algumas referências;
+- cerca de 10.000 contas seguidas como teto total amplamente reportado.
+
+Esses números **não são garantias do TikTok** e podem variar por conta, histórico, região, idade da conta e outros sinais internos. Por isso, o bot usa padrões deliberadamente mais conservadores e nunca trata as referências públicas como um limite seguro garantido.
+
+### Padrões do bot
+
+- proteção de follow: ativada;
+- máximo específico: 10 follows/hora;
+- máximo em janela móvel de 24h: 100;
+- máximo por sessão: 15;
+- intervalo mínimo entre follows confirmados: 5 minutos;
+- cooldown após sinal de restrição: 24 horas;
+- duas tentativas consecutivas sem confirmação ativam o cooldown;
+- ao detectar texto compatível com "following too fast", "limit reached" ou "try again later", novas tentativas de follow são suspensas.
+
+O limite diário normal da ação `follow` continua existindo. O Follow Guard funciona como uma **segunda camada**; prevalece sempre o limite que bloquear primeiro.
+
+### Painel
+
+Na aba **Ações → Segurança específica para FOLLOW** é possível configurar:
+
+- máximo por hora;
+- máximo em 24 horas corridas;
+- máximo por sessão;
+- intervalo mínimo;
+- duração do cooldown;
+- quantidade de falhas não confirmadas antes da suspensão;
+- interrupção automática quando o TikTok indicar restrição.
+
+Se forem configurados valores acima das referências públicas de ~15/h, ~200/24h ou ~15/sessão, o painel exibe um alerta antes de iniciar em modo REAL.
+
+Também existem os controles:
+
+- **Marcar restrição agora**: bloqueia novas tentativas de follow pelo período configurado;
+- **Limpar cooldown**: remove o bloqueio manual, devendo ser usado somente quando a restrição do TikTok realmente tiver terminado.
+
+O estado é persistido em `.runtime/tiktok-follow-safety.json`, então reiniciar o bot não apaga a janela de 24 horas nem um cooldown ativo.
+
+O objetivo dessa proteção é reduzir tentativas durante limites/restrições; ela não tenta contornar, mascarar ou burlar os mecanismos do TikTok.
