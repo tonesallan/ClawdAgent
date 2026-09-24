@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import os
 import queue
+import shutil
 import subprocess
 import threading
 import time
@@ -41,6 +42,7 @@ class TikTokBotPanel(tk.Tk):
         self.seen_logs: set[str] = set()
         self._last_status_mtime = 0.0
         self._last_control_result_key = ""
+        self._connection_refresh_inflight = False
         self._closing = False
 
         self.action_vars: dict[str, dict[str, tk.Variable]] = {}
@@ -51,7 +53,7 @@ class TikTokBotPanel(tk.Tk):
         self.load_config()
         self.after(200, self._drain_output_queue)
         self.after(600, self._poll_status)
-        self.after(1000, self.refresh_connections)
+        self.after(1000, self._connection_monitor_tick)
 
         self.protocol("WM_DELETE_WINDOW", self._on_close)
 
@@ -1080,14 +1082,48 @@ class TikTokBotPanel(tk.Tk):
             message = str(entry.get("message", ""))
             self._append_log(f"{timestamp} [{action}/{status}] {message}")
 
+    def _resolve_adb_command(self) -> str:
+        candidates: list[Path] = []
+
+        for variable in ("ANDROID_SDK_ROOT", "ANDROID_HOME"):
+            value = os.environ.get(variable)
+            if value:
+                candidates.append(Path(value) / "platform-tools" / "adb.exe")
+
+        local_app_data = os.environ.get("LOCALAPPDATA")
+        if local_app_data:
+            candidates.append(
+                Path(local_app_data) / "Android" / "Sdk" / "platform-tools" / "adb.exe"
+            )
+
+        for candidate in candidates:
+            if candidate.exists():
+                return str(candidate)
+
+        discovered = shutil.which("adb")
+        return discovered or "adb"
+
+    def _connection_monitor_tick(self) -> None:
+        if self._closing:
+            return
+
+        self.refresh_connections()
+        self.after(5000, self._connection_monitor_tick)
+
     def refresh_connections(self) -> None:
+        if self._connection_refresh_inflight:
+            return
+
+        self._connection_refresh_inflight = True
+
         def worker() -> None:
             device_text = "não encontrado"
             appium_text = "offline"
 
             try:
+                adb_command = self._resolve_adb_command()
                 out = subprocess.check_output(
-                    ["adb", "devices"],
+                    [adb_command, "devices"],
                     cwd=str(ROOT),
                     text=True,
                     encoding="utf-8",
@@ -1109,12 +1145,22 @@ class TikTokBotPanel(tk.Tk):
                 url = str(config.get("appiumUrl", "http://127.0.0.1:4723")).rstrip("/") + "/status"
                 with urlopen(url, timeout=3) as response:
                     if 200 <= response.status < 300:
-                        appium_text = "online"
+                        payload = json.loads(response.read().decode("utf-8", errors="replace") or "{}")
+                        value = payload.get("value", payload) if isinstance(payload, dict) else {}
+                        ready = value.get("ready") if isinstance(value, dict) else None
+                        appium_text = "online" if ready is not False else "ocupado"
             except Exception:
                 appium_text = "offline"
 
-            self.after(0, lambda: self.device_state.set(device_text))
-            self.after(0, lambda: self.appium_state.set(appium_text))
+            def apply_result() -> None:
+                self._connection_refresh_inflight = False
+                if self._closing:
+                    return
+
+                self.device_state.set(device_text)
+                self.appium_state.set(appium_text)
+
+            self.after(0, apply_result)
 
         threading.Thread(target=worker, daemon=True).start()
 
