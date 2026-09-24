@@ -499,7 +499,7 @@ class TikTokBotPanel(tk.Tk):
 
         ttk.Label(
             exchange,
-            text="A detecção usa comentários visíveis. O recurso fica desligado por padrão; no TESTE apenas registra o que faria.",
+            text="Este módulo executa durante a ação Comentar: deixe Comentar ativa na aba Ações. A detecção usa comentários visíveis; no TESTE apenas registra o que faria.",
             style="Muted.TLabel",
             wraplength=470,
         ).grid(row=17, column=0, columnspan=2, sticky="w", padx=10, pady=10)
