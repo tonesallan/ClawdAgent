@@ -742,6 +742,8 @@ export async function runStandaloneTikTokBot(): Promise<void> {
             current.commentHistory,
           followSafety:
             current.followSafety,
+          feedNavigation:
+            current.feedNavigation,
           logs:
             agent.getLogs(200),
           automationCore:
